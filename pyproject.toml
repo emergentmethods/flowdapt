@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flowdapt"
-version = "0.0.0"
+version = "0.1.0"
 description = "A generalized framework for robust modular deployments of large-scale, real-time adaptive modeling on chaotic data."
 authors = ["Emergent Methods, LLC <contact@emergentmethods.ai>"]
 
