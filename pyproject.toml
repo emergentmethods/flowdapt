@@ -1,0 +1,109 @@
+[tool.poetry]
+name = "flowdapt"
+version = "0.0.0"
+description = "A generalized framework for robust modular deployments of large-scale, real-time adaptive modeling on chaotic data."
+authors = ["Emergent Methods, LLC <contact@emergentmethods.ai>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+rich = "^13.7.0"
+uvicorn = "0.23.2"
+uvloop = "0.17.0"
+typer = "0.9.0"
+orjson = "3.9.10"
+dask = { version = "2023.5.1", extras = ["diagnostics", "distributed"] }
+ray = { version = "^2.9.0", extras = ["default"] }
+async_timeout = "^4.0.3"
+pandas = "^2.0.2"
+cloudpickle = "2.2.0"
+pyarrow = "^12.0.0"
+llvmlite = "^0.40.0"
+python-multipart = "^0.0.6"
+coolname = "^2.2.0"
+python-dotenv = "^1.0.0"
+crontab = "1.0.0"
+python-rapidjson = "^1.10"
+pynvml = "^11.5.0"
+semver = "2.13.0"
+aiosonic = "^0.16.1"
+asynctempfile = "^0.5.0"
+gpustat = "1.0.0"
+dill = "^0.3.6"
+cryptography = "^40.0.2"
+structlog = "^23.1.0"
+opentelemetry-api = "1.18.0"
+opentelemetry-sdk = "1.18.0"
+opentelemetry-exporter-otlp = "1.18.0"
+opentelemetry-instrumentation-asgi = "^0.39b0"
+opentelemetry-instrumentation-system-metrics = "^0.39b0"
+opentelemetry-instrumentation-sqlalchemy = "^0.39b0"
+opentelemetry-exporter-otlp-proto-http = "1.18.0"
+tinydb = "^4.8.0"
+aiotinydb = "^2.0.0"
+motor = "^3.3.1"
+tinydb-serialization = "^2.1.1"
+fastapi = "0.104.1"
+pydantic = "^2.5.3"
+python-manifest = "^2.2.3"
+pytimeparse = "^1.1.8"
+s3fs = "^2023.12.1"
+pympler = "^1.0.1"
+
+
+[tool.poetry.scripts]
+flowdapt = "flowdapt.cli:cli"
+
+[tool.poetry.group.dev.dependencies]
+autopep8 = "^2.0.1"
+pre-commit = "^3.1.1"
+pytest = "^7.2.2"
+flake8 = "^6.0.0"
+mypy = "^0.991"
+pytest-asyncio = "^0.20.3"
+coverage = "^7.2.1"
+mkdocs = "^1.4.0"
+mkdocs-material = "^9.1.0"
+pytest-mock = "^3.10.0"
+mkdocs-click = "^0.8.0"
+types-pyyaml = "^6.0.12.9"
+mkdocstrings = { version = "^0.22.0", extras = ["python"] }
+docdantic = "0.3.1"
+
+[tool.mypy]
+ignore_missing_imports = true
+namespace_packages = true
+exclude = [
+    '^client\.py$',
+    '^tests\.py$',
+    '^user_data\.py$'
+]
+
+[tool.pytest.ini_options]
+addopts = "-s -p no:warnings"
+testpaths = [
+    "tests",
+]
+asyncio_mode = "auto"
+log_cli = "True"
+log_auto_indent = "False"
+
+[tool.coverage.run]
+source = ["flowdapt"]
+
+[tool.coverage.report]
+ignore_errors = "true"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "$version"
+version_scheme = "semver"
+version_provider = "poetry"
+update_changelog_on_bump = true
+bump_message = "chore(release): Release $new_version"

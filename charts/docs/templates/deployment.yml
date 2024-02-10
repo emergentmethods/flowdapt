@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace}}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ .Release.Name }}
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.image.port }}
+        {{- if .Values.env }}
+        env:
+        {{- range $name, $value := .Values.env }}
+        - name: {{ $name }}
+          {{- if $value.value }}
+          value: {{ $value.value | quote }}
+          {{- else if $value.secretKeyRef }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ $value.secretKeyRef.name }}
+              key: {{ $value.secretKeyRef.key }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+      {{- if .Values.configMaps }}
+        volumeMounts:
+        {{- range .Values.configMaps }}
+        - name: {{ .name }}
+          mountPath: {{ .mountPath }}
+          {{- if .subPath }}
+          subPath: {{ .subPath }}
+          {{- end }}
+        {{- end }}
+      volumes:
+      {{- range .Values.configMaps }}
+      - name: {{ .name }}
+        configMap:
+          name: {{ .name }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- range $key, $value := .Values.nodeSelector }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      {{- end }}

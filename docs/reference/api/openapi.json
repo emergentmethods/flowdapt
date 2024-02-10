@@ -1,0 +1,4207 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "title": "Flowdapt",
+        "description": "An ML Workflow Orchestration server.",
+        "version": "v1"
+    },
+    "paths": {
+        "/": {
+            "get": {
+                "summary": "Ping",
+                "operationId": "ping",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PingResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/workflows/": {
+            "get": {
+                "tags": [
+                    "workflows"
+                ],
+                "summary": "List all Workflows",
+                "operationId": "list_workflows",
+                "parameters": [
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of Workflows",
+                        "content": {
+                            "application/vnd.flowdapt.ai.workflow.v1alpha1+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/V1Alpha1WorkflowResourceReadResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "workflows"
+                ],
+                "summary": "Create a Workflow",
+                "operationId": "create_workflow",
+                "parameters": [
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created Workflow",
+                        "content": {
+                            "application/vnd.flowdapt.ai.workflow.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1WorkflowResourceCreateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1WorkflowResourceCreateRequest"
+                                    }
+                                ]
+                            }
+                        },
+                        "application/vnd.flowdapt.ai.workflow.v1alpha1+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/V1Alpha1WorkflowResourceCreateRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/workflows/{identifier}": {
+            "get": {
+                "tags": [
+                    "workflows"
+                ],
+                "summary": "Get a Workflow",
+                "operationId": "get_workflow",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The Workflow Definition",
+                        "content": {
+                            "application/vnd.flowdapt.ai.workflow.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1WorkflowResourceReadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "workflows"
+                ],
+                "summary": "Delete Workflow",
+                "operationId": "delete_workflow",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The Workflow that was deleted",
+                        "content": {
+                            "application/vnd.flowdapt.ai.workflow.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1WorkflowResourceReadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "workflows"
+                ],
+                "summary": "Update a Workflow",
+                "operationId": "update_workflow",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated Workflow",
+                        "content": {
+                            "application/vnd.flowdapt.ai.workflow.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1WorkflowResourceUpdateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1WorkflowResourceUpdateRequest"
+                                    }
+                                ]
+                            }
+                        },
+                        "application/vnd.flowdapt.ai.workflow.v1alpha1+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/V1Alpha1WorkflowResourceUpdateRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/workflows/{identifier}/run": {
+            "post": {
+                "tags": [
+                    "workflows"
+                ],
+                "summary": "Run a Workflow",
+                "operationId": "run_workflow",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "namespace",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Namespace"
+                        }
+                    },
+                    {
+                        "name": "wait",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Wait"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "default": {},
+                                "title": "Payload"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The WorkflowRun that was created",
+                        "content": {
+                            "application/vnd.flowdapt.ai.workflow_run.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1WorkflowRunReadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "workflows"
+                ],
+                "summary": "List Workflow Runs",
+                "operationId": "list_workflow_runs",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of Workflow Runs",
+                        "content": {
+                            "application/vnd.flowdapt.ai.workflow_run.v1alpha1+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/V1Alpha1WorkflowRunReadResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/workflows/run/{identifier}": {
+            "get": {
+                "tags": [
+                    "workflows"
+                ],
+                "summary": "Get a Workflow Run",
+                "operationId": "get_workflow_run",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The Workflow Run",
+                        "content": {
+                            "application/vnd.flowdapt.ai.workflow_run.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1WorkflowRunReadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "workflows"
+                ],
+                "summary": "Delete a Workflow Run",
+                "operationId": "delete_workflow_run",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The deleted Workflow Run",
+                        "content": {
+                            "application/vnd.flowdapt.ai.workflow_run.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1WorkflowRunReadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/configs/": {
+            "get": {
+                "tags": [
+                    "configs"
+                ],
+                "summary": "List all Configs",
+                "operationId": "list_configs",
+                "parameters": [
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of Configs",
+                        "content": {
+                            "application/vnd.flowdapt.ai.config.v1alpha1+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/V1Alpha1ConfigResourceReadResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "configs"
+                ],
+                "summary": "Create a Config",
+                "operationId": "create_config",
+                "parameters": [
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created Config",
+                        "content": {
+                            "application/vnd.flowdapt.ai.config.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1ConfigResourceCreateResponse"
+                                }
+                            },
+                            "application/vnd.flowdapt.ai.config.v1alpha2+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha2ConfigResourceCreateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1ConfigResourceCreateRequest"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha2ConfigResourceCreateRequest"
+                                    }
+                                ]
+                            }
+                        },
+                        "application/vnd.flowdapt.ai.config.v1alpha1+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/V1Alpha1ConfigResourceCreateRequest"
+                            }
+                        },
+                        "application/vnd.flowdapt.ai.config.v1alpha2+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/V1Alpha2ConfigResourceCreateRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/configs/{identifier}": {
+            "get": {
+                "tags": [
+                    "configs"
+                ],
+                "summary": "Get a Config",
+                "operationId": "get_config",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Config",
+                        "content": {
+                            "application/vnd.flowdapt.ai.config.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1ConfigResourceReadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "configs"
+                ],
+                "summary": "Delete a Config",
+                "operationId": "delete_config",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted Config",
+                        "content": {
+                            "application/vnd.flowdapt.ai.config.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1ConfigResourceReadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "configs"
+                ],
+                "summary": "Update a Config",
+                "operationId": "update_config",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Updated Config",
+                        "content": {
+                            "application/vnd.flowdapt.ai.config.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1ConfigResourceUpdateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1ConfigResourceUpdateRequest"
+                                    }
+                                ]
+                            }
+                        },
+                        "application/vnd.flowdapt.ai.config.v1alpha1+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/V1Alpha1ConfigResourceUpdateRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/triggers/": {
+            "get": {
+                "tags": [
+                    "triggers"
+                ],
+                "summary": "List all Trigger Rules",
+                "operationId": "list_triggers",
+                "parameters": [
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of Trigger Rules",
+                        "content": {
+                            "application/vnd.flowdapt.ai.trigger_rule.v1alpha1+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceReadResponse"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "triggers"
+                ],
+                "summary": "Create a new Trigger Rule",
+                "operationId": "create_trigger",
+                "parameters": [
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created Trigger Rule",
+                        "content": {
+                            "application/vnd.flowdapt.ai.trigger_rule.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceCreateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceCreateRequest"
+                                    }
+                                ]
+                            }
+                        },
+                        "application/vnd.flowdapt.ai.trigger_rule.v1alpha1+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceCreateRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/triggers/{identifier}": {
+            "get": {
+                "tags": [
+                    "triggers"
+                ],
+                "summary": "Get a Trigger Rule",
+                "operationId": "get_trigger",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            ],
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The Trigger Rule",
+                        "content": {
+                            "application/vnd.flowdapt.ai.trigger_rule.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceReadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "triggers"
+                ],
+                "summary": "Delete a Trigger Rule",
+                "operationId": "delete_trigger",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                }
+                            ],
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The deleted Trigger Rule",
+                        "content": {
+                            "application/vnd.flowdapt.ai.trigger_rule.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceReadResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "triggers"
+                ],
+                "summary": "Update a Trigger Rule",
+                "operationId": "update_trigger",
+                "parameters": [
+                    {
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Identifier"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated Trigger Rule",
+                        "content": {
+                            "application/vnd.flowdapt.ai.trigger_rule.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceUpdateResponse"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceUpdateRequest"
+                                    }
+                                ]
+                            }
+                        },
+                        "application/vnd.flowdapt.ai.trigger_rule.v1alpha1+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceUpdateRequest"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/status": {
+            "get": {
+                "tags": [
+                    "health"
+                ],
+                "summary": "Current system information",
+                "operationId": "status",
+                "parameters": [
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "System info",
+                        "content": {
+                            "application/vnd.flowdapt.ai.system.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1SystemStatus"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugin/{plugin_name}": {
+            "get": {
+                "tags": [
+                    "plugins"
+                ],
+                "summary": "Get information about a specific Plugin",
+                "operationId": "get_plugin",
+                "parameters": [
+                    {
+                        "name": "plugin_name",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Plugin Name"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Plugin info",
+                        "content": {
+                            "application/vnd.flowdapt.ai.plugin.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1Plugin"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugin/": {
+            "get": {
+                "tags": [
+                    "plugins"
+                ],
+                "summary": "List all installed Plugins",
+                "operationId": "list_plugins",
+                "parameters": [
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of Plugins",
+                        "content": {
+                            "application/vnd.flowdapt.ai.plugin.v1alpha1+json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/V1Alpha1Plugin"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugin/{plugin_name}/files": {
+            "get": {
+                "tags": [
+                    "plugins"
+                ],
+                "summary": "Get a list of files bundled with a Plugin",
+                "operationId": "list_plugin_files",
+                "parameters": [
+                    {
+                        "name": "plugin_name",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Plugin Name"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of files",
+                        "content": {
+                            "application/vnd.flowdapt.ai.plugin.files.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1PluginFiles"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/plugin/{plugin_name}/files/{file_name}": {
+            "get": {
+                "tags": [
+                    "plugins"
+                ],
+                "summary": "Download a file from a specific Plugin",
+                "operationId": "get_plugin_file",
+                "parameters": [
+                    {
+                        "name": "plugin_name",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Plugin Name"
+                        }
+                    },
+                    {
+                        "name": "file_name",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "File Name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The file requested",
+                        "content": {
+                            "application/octet-stream": {}
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Not Found"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics": {
+            "get": {
+                "tags": [
+                    "health"
+                ],
+                "summary": "Current system metrics",
+                "operationId": "metrics",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Name"
+                        }
+                    },
+                    {
+                        "name": "start_time",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Start Time"
+                        }
+                    },
+                    {
+                        "name": "end_time",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "End Time"
+                        }
+                    },
+                    {
+                        "name": "max_length",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Max Length"
+                        }
+                    },
+                    {
+                        "name": "x-api-version",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Api-Version"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "System metrics",
+                        "content": {
+                            "application/vnd.flowdapt.ai.metrics.v1alpha1+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/V1Alpha1Metrics"
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Method Not Allowed"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/APIErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "APIErrorModel": {
+                "properties": {
+                    "status_code": {
+                        "type": "integer",
+                        "title": "Status Code",
+                        "default": 500
+                    },
+                    "detail": {
+                        "type": "string",
+                        "title": "Detail",
+                        "default": "string"
+                    }
+                },
+                "type": "object",
+                "title": "APIErrorModel"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "PingResponse": {
+                "properties": {
+                    "app": {
+                        "type": "string",
+                        "title": "App"
+                    },
+                    "version": {
+                        "type": "string",
+                        "title": "Version"
+                    },
+                    "api_version": {
+                        "type": "string",
+                        "title": "Api Version"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "app",
+                    "version",
+                    "api_version"
+                ],
+                "title": "PingResponse"
+            },
+            "V1Alpha1ConfigResourceCreateResponse": {
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind",
+                        "default": "config"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1ConfigResourceSpec"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1ConfigResourceCreateResponse"
+            },
+            "V1Alpha1ConfigResourceReadResponse": {
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind",
+                        "default": "config"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1ConfigResourceSpec"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1ConfigResourceReadResponse"
+            },
+            "V1Alpha1ConfigResourceSpec": {
+                "properties": {
+                    "selector": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/V1Alpha1ConfigSelector"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "data": {
+                        "type": "object",
+                        "title": "Data"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "data"
+                ],
+                "title": "V1Alpha1ConfigResourceSpec"
+            },
+            "V1Alpha1ConfigResourceUpdateResponse": {
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind",
+                        "default": "config"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1ConfigResourceSpec"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1ConfigResourceUpdateResponse"
+            },
+            "V1Alpha1ConfigSelector": {
+                "properties": {
+                    "kind": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Kind"
+                    },
+                    "type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/V1Alpha1ConfigSelectorType"
+                            }
+                        ],
+                        "default": "name"
+                    },
+                    "value": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Value"
+                    }
+                },
+                "type": "object",
+                "title": "V1Alpha1ConfigSelector"
+            },
+            "V1Alpha1ConfigSelectorType": {
+                "type": "string",
+                "enum": [
+                    "name",
+                    "annotation"
+                ],
+                "title": "V1Alpha1ConfigSelectorType"
+            },
+            "V1Alpha1Metrics": {
+                "additionalProperties": {
+                    "items": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/V1Alpha1MetricsCountValue"
+                            },
+                            {
+                                "$ref": "#/components/schemas/V1Alpha1MetricsBucketValue"
+                            }
+                        ]
+                    },
+                    "type": "array"
+                },
+                "type": "object",
+                "title": "V1Alpha1Metrics"
+            },
+            "V1Alpha1MetricsBucketValue": {
+                "properties": {
+                    "attributes": {
+                        "type": "object",
+                        "title": "Attributes"
+                    },
+                    "start_time_unix_nano": {
+                        "type": "integer",
+                        "title": "Start Time Unix Nano"
+                    },
+                    "time_unix_nano": {
+                        "type": "integer",
+                        "title": "Time Unix Nano"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "title": "Count"
+                    },
+                    "bucket_counts": {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array",
+                        "title": "Bucket Counts"
+                    },
+                    "explicit_bounds": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "number"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Explicit Bounds"
+                    },
+                    "sum": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            }
+                        ],
+                        "title": "Sum"
+                    },
+                    "min": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            }
+                        ],
+                        "title": "Min"
+                    },
+                    "max": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            }
+                        ],
+                        "title": "Max"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "attributes",
+                    "start_time_unix_nano",
+                    "time_unix_nano",
+                    "count",
+                    "bucket_counts",
+                    "explicit_bounds",
+                    "sum",
+                    "min",
+                    "max"
+                ],
+                "title": "V1Alpha1MetricsBucketValue"
+            },
+            "V1Alpha1MetricsCountValue": {
+                "properties": {
+                    "attributes": {
+                        "type": "object",
+                        "title": "Attributes"
+                    },
+                    "start_time_unix_nano": {
+                        "type": "integer",
+                        "title": "Start Time Unix Nano"
+                    },
+                    "time_unix_nano": {
+                        "type": "integer",
+                        "title": "Time Unix Nano"
+                    },
+                    "value": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "integer"
+                            }
+                        ],
+                        "title": "Value"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "attributes",
+                    "start_time_unix_nano",
+                    "time_unix_nano",
+                    "value"
+                ],
+                "title": "V1Alpha1MetricsCountValue"
+            },
+            "V1Alpha1Plugin": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1PluginMetadata"
+                    },
+                    "module": {
+                        "type": "string",
+                        "title": "Module"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "metadata",
+                    "module"
+                ],
+                "title": "V1Alpha1Plugin"
+            },
+            "V1Alpha1PluginFiles": {
+                "properties": {
+                    "files": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Files"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "files"
+                ],
+                "title": "V1Alpha1PluginFiles"
+            },
+            "V1Alpha1PluginMetadata": {
+                "properties": {
+                    "description": {
+                        "type": "string",
+                        "title": "Description"
+                    },
+                    "author": {
+                        "type": "string",
+                        "title": "Author"
+                    },
+                    "license": {
+                        "type": "string",
+                        "title": "License"
+                    },
+                    "url": {
+                        "type": "string",
+                        "title": "Url"
+                    },
+                    "version": {
+                        "type": "string",
+                        "title": "Version"
+                    },
+                    "requirements": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Requirements",
+                        "default": []
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "description",
+                    "author",
+                    "license",
+                    "url",
+                    "version"
+                ],
+                "title": "V1Alpha1PluginMetadata"
+            },
+            "V1Alpha1ResourceMetadata": {
+                "properties": {
+                    "uid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Uid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Updated At"
+                    },
+                    "annotations": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object",
+                        "title": "Annotations",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "title": "V1Alpha1ResourceMetadata"
+            },
+            "V1Alpha1SystemStatus": {
+                "properties": {
+                    "version": {
+                        "type": "string",
+                        "title": "Version"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "system": {
+                        "$ref": "#/components/schemas/V1Alpha1SystemStatusSystemInfo"
+                    },
+                    "os": {
+                        "$ref": "#/components/schemas/V1Alpha1SystemStatusOSInfo"
+                    },
+                    "python": {
+                        "type": "string",
+                        "title": "Python"
+                    },
+                    "hostname": {
+                        "type": "string",
+                        "title": "Hostname"
+                    },
+                    "services": {
+                        "type": "object",
+                        "title": "Services"
+                    },
+                    "database": {
+                        "type": "string",
+                        "title": "Database"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "version",
+                    "name",
+                    "system",
+                    "os",
+                    "python",
+                    "hostname",
+                    "services",
+                    "database"
+                ],
+                "title": "V1Alpha1SystemStatus"
+            },
+            "V1Alpha1SystemStatusOSInfo": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "version": {
+                        "type": "string",
+                        "title": "Version"
+                    },
+                    "release": {
+                        "type": "string",
+                        "title": "Release"
+                    },
+                    "machine": {
+                        "type": "string",
+                        "title": "Machine"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "version",
+                    "release",
+                    "machine"
+                ],
+                "title": "V1Alpha1SystemStatusOSInfo"
+            },
+            "V1Alpha1SystemStatusSystemInfo": {
+                "properties": {
+                    "time": {
+                        "type": "string",
+                        "title": "Time"
+                    },
+                    "cpu_pct": {
+                        "type": "number",
+                        "title": "Cpu Pct"
+                    },
+                    "memory": {
+                        "type": "integer",
+                        "title": "Memory"
+                    },
+                    "disk_pct": {
+                        "type": "number",
+                        "title": "Disk Pct"
+                    },
+                    "network_io_sent": {
+                        "type": "integer",
+                        "title": "Network Io Sent"
+                    },
+                    "network_io_recv": {
+                        "type": "integer",
+                        "title": "Network Io Recv"
+                    },
+                    "threads": {
+                        "type": "integer",
+                        "title": "Threads"
+                    },
+                    "fds": {
+                        "type": "integer",
+                        "title": "Fds"
+                    },
+                    "pid": {
+                        "type": "integer",
+                        "title": "Pid"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "time",
+                    "cpu_pct",
+                    "memory",
+                    "disk_pct",
+                    "network_io_sent",
+                    "network_io_recv",
+                    "threads",
+                    "fds",
+                    "pid"
+                ],
+                "title": "V1Alpha1SystemStatusSystemInfo"
+            },
+            "V1Alpha1TriggerRuleAction": {
+                "properties": {
+                    "target": {
+                        "type": "string",
+                        "title": "Target"
+                    },
+                    "parameters": {
+                        "type": "object",
+                        "title": "Parameters",
+                        "default": {}
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "target"
+                ],
+                "title": "V1Alpha1TriggerRuleAction"
+            },
+            "V1Alpha1TriggerRuleResourceCreateResponse": {
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind",
+                        "default": "trigger_rule"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceSpec"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1TriggerRuleResourceCreateResponse"
+            },
+            "V1Alpha1TriggerRuleResourceReadResponse": {
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind",
+                        "default": "trigger_rule"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceSpec"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1TriggerRuleResourceReadResponse"
+            },
+            "V1Alpha1TriggerRuleResourceSpec": {
+                "properties": {
+                    "type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/V1Alpha1TriggerRuleType"
+                            }
+                        ],
+                        "default": "condition"
+                    },
+                    "rule": {
+                        "anyOf": [
+                            {
+                                "type": "object"
+                            },
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            }
+                        ],
+                        "title": "Rule"
+                    },
+                    "action": {
+                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleAction"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "rule",
+                    "action"
+                ],
+                "title": "V1Alpha1TriggerRuleResourceSpec"
+            },
+            "V1Alpha1TriggerRuleResourceUpdateResponse": {
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind",
+                        "default": "trigger_rule"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceSpec"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1TriggerRuleResourceUpdateResponse"
+            },
+            "V1Alpha1TriggerRuleType": {
+                "type": "string",
+                "enum": [
+                    "schedule",
+                    "condition"
+                ],
+                "title": "V1Alpha1TriggerRuleType"
+            },
+            "V1Alpha1WorkflowResourceCreateResponse": {
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind",
+                        "default": "workflow"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1WorkflowResourceSpec"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1WorkflowResourceCreateResponse"
+            },
+            "V1Alpha1WorkflowResourceReadResponse": {
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind",
+                        "default": "workflow"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1WorkflowResourceSpec"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1WorkflowResourceReadResponse"
+            },
+            "V1Alpha1WorkflowResourceSpec": {
+                "properties": {
+                    "stages": {
+                        "items": {
+                            "$ref": "#/components/schemas/V1Alpha1WorkflowStage"
+                        },
+                        "type": "array",
+                        "title": "Stages"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "stages"
+                ],
+                "title": "V1Alpha1WorkflowResourceSpec"
+            },
+            "V1Alpha1WorkflowResourceUpdateResponse": {
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind",
+                        "default": "workflow"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1WorkflowResourceSpec"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1WorkflowResourceUpdateResponse"
+            },
+            "V1Alpha1WorkflowRunReadResponse": {
+                "properties": {
+                    "uid": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Uid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "workflow": {
+                        "type": "string",
+                        "title": "Workflow"
+                    },
+                    "started_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Started At"
+                    },
+                    "finished_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Finished At"
+                    },
+                    "result": {
+                        "anyOf": [
+                            {},
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Result"
+                    },
+                    "state": {
+                        "type": "string",
+                        "title": "State"
+                    },
+                    "source": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Source"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "uid",
+                    "name",
+                    "workflow",
+                    "started_at",
+                    "finished_at",
+                    "result",
+                    "state",
+                    "source"
+                ],
+                "title": "V1Alpha1WorkflowRunReadResponse"
+            },
+            "V1Alpha1WorkflowStage": {
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "title": "Type",
+                        "default": "simple"
+                    },
+                    "target": {
+                        "type": "string",
+                        "title": "Target"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "description": {
+                        "type": "string",
+                        "title": "Description",
+                        "default": ""
+                    },
+                    "version": {
+                        "type": "string",
+                        "title": "Version",
+                        "default": ""
+                    },
+                    "depends_on": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Depends On",
+                        "default": []
+                    },
+                    "options": {
+                        "type": "object",
+                        "title": "Options",
+                        "default": {}
+                    },
+                    "resources": {
+                        "type": "object",
+                        "title": "Resources",
+                        "default": {}
+                    },
+                    "priority": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Priority"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "target",
+                    "name"
+                ],
+                "title": "V1Alpha1WorkflowStage"
+            },
+            "V1Alpha2ConfigResourceCreateResponse": {
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "title": "Kind",
+                        "default": "config"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha2ConfigResourceSpec"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha2ConfigResourceCreateResponse"
+            },
+            "V1Alpha2ConfigResourceSpec": {
+                "properties": {
+                    "selector": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/V1Alpha2ConfigSelector"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "data": {
+                        "type": "object",
+                        "title": "Data"
+                    },
+                    "new": {
+                        "type": "boolean",
+                        "title": "New",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "data"
+                ],
+                "title": "V1Alpha2ConfigResourceSpec"
+            },
+            "V1Alpha2ConfigSelector": {
+                "properties": {
+                    "kind": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Kind"
+                    },
+                    "type": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/V1Alpha1ConfigSelectorType"
+                            }
+                        ],
+                        "default": "name"
+                    },
+                    "value": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Value"
+                    }
+                },
+                "type": "object",
+                "title": "V1Alpha2ConfigSelector"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            },
+            "V1Alpha1WorkflowResourceCreateRequest": {
+                "$defs": {
+                    "V1Alpha1ResourceMetadata": {
+                        "properties": {
+                            "uid": {
+                                "format": "uuid",
+                                "title": "Uid",
+                                "type": "string"
+                            },
+                            "name": {
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "created_at": {
+                                "format": "date-time",
+                                "title": "Created At",
+                                "type": "string"
+                            },
+                            "updated_at": {
+                                "format": "date-time",
+                                "title": "Updated At",
+                                "type": "string"
+                            },
+                            "annotations": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "default": {},
+                                "title": "Annotations",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "title": "V1Alpha1ResourceMetadata",
+                        "type": "object"
+                    },
+                    "V1Alpha1WorkflowResourceSpec": {
+                        "properties": {
+                            "stages": {
+                                "items": {
+                                    "$ref": "#/components/schemas/V1Alpha1WorkflowStage"
+                                },
+                                "title": "Stages",
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "stages"
+                        ],
+                        "title": "V1Alpha1WorkflowResourceSpec",
+                        "type": "object"
+                    },
+                    "V1Alpha1WorkflowStage": {
+                        "properties": {
+                            "type": {
+                                "default": "simple",
+                                "title": "Type",
+                                "type": "string"
+                            },
+                            "target": {
+                                "title": "Target",
+                                "type": "string"
+                            },
+                            "name": {
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "description": {
+                                "default": "",
+                                "title": "Description",
+                                "type": "string"
+                            },
+                            "version": {
+                                "default": "",
+                                "title": "Version",
+                                "type": "string"
+                            },
+                            "depends_on": {
+                                "default": [],
+                                "items": {
+                                    "type": "string"
+                                },
+                                "title": "Depends On",
+                                "type": "array"
+                            },
+                            "options": {
+                                "default": {},
+                                "title": "Options",
+                                "type": "object"
+                            },
+                            "resources": {
+                                "default": {},
+                                "title": "Resources",
+                                "type": "object"
+                            },
+                            "priority": {
+                                "anyOf": [
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "title": "Priority"
+                            }
+                        },
+                        "required": [
+                            "target",
+                            "name"
+                        ],
+                        "title": "V1Alpha1WorkflowStage",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "kind": {
+                        "default": "workflow",
+                        "title": "Kind",
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1WorkflowResourceSpec"
+                    }
+                },
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1WorkflowResourceCreateRequest",
+                "type": "object"
+            },
+            "V1Alpha1WorkflowResourceUpdateRequest": {
+                "$defs": {
+                    "V1Alpha1ResourceMetadata": {
+                        "properties": {
+                            "uid": {
+                                "format": "uuid",
+                                "title": "Uid",
+                                "type": "string"
+                            },
+                            "name": {
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "created_at": {
+                                "format": "date-time",
+                                "title": "Created At",
+                                "type": "string"
+                            },
+                            "updated_at": {
+                                "format": "date-time",
+                                "title": "Updated At",
+                                "type": "string"
+                            },
+                            "annotations": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "default": {},
+                                "title": "Annotations",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "title": "V1Alpha1ResourceMetadata",
+                        "type": "object"
+                    },
+                    "V1Alpha1WorkflowResourceSpec": {
+                        "properties": {
+                            "stages": {
+                                "items": {
+                                    "$ref": "#/components/schemas/V1Alpha1WorkflowStage"
+                                },
+                                "title": "Stages",
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "stages"
+                        ],
+                        "title": "V1Alpha1WorkflowResourceSpec",
+                        "type": "object"
+                    },
+                    "V1Alpha1WorkflowStage": {
+                        "properties": {
+                            "type": {
+                                "default": "simple",
+                                "title": "Type",
+                                "type": "string"
+                            },
+                            "target": {
+                                "title": "Target",
+                                "type": "string"
+                            },
+                            "name": {
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "description": {
+                                "default": "",
+                                "title": "Description",
+                                "type": "string"
+                            },
+                            "version": {
+                                "default": "",
+                                "title": "Version",
+                                "type": "string"
+                            },
+                            "depends_on": {
+                                "default": [],
+                                "items": {
+                                    "type": "string"
+                                },
+                                "title": "Depends On",
+                                "type": "array"
+                            },
+                            "options": {
+                                "default": {},
+                                "title": "Options",
+                                "type": "object"
+                            },
+                            "resources": {
+                                "default": {},
+                                "title": "Resources",
+                                "type": "object"
+                            },
+                            "priority": {
+                                "anyOf": [
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "title": "Priority"
+                            }
+                        },
+                        "required": [
+                            "target",
+                            "name"
+                        ],
+                        "title": "V1Alpha1WorkflowStage",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "kind": {
+                        "default": "workflow",
+                        "title": "Kind",
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1WorkflowResourceSpec"
+                    }
+                },
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1WorkflowResourceUpdateRequest",
+                "type": "object"
+            },
+            "V1Alpha1ConfigResourceCreateRequest": {
+                "$defs": {
+                    "V1Alpha1ConfigResourceSpec": {
+                        "properties": {
+                            "selector": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1ConfigSelector"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null
+                            },
+                            "data": {
+                                "title": "Data",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "data"
+                        ],
+                        "title": "V1Alpha1ConfigResourceSpec",
+                        "type": "object"
+                    },
+                    "V1Alpha1ConfigSelector": {
+                        "properties": {
+                            "kind": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "title": "Kind"
+                            },
+                            "type": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1ConfigSelectorType"
+                                    }
+                                ],
+                                "default": "name"
+                            },
+                            "value": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "additionalProperties": {
+                                            "type": "string"
+                                        },
+                                        "type": "object"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "title": "Value"
+                            }
+                        },
+                        "title": "V1Alpha1ConfigSelector",
+                        "type": "object"
+                    },
+                    "V1Alpha1ConfigSelectorType": {
+                        "enum": [
+                            "name",
+                            "annotation"
+                        ],
+                        "title": "V1Alpha1ConfigSelectorType",
+                        "type": "string"
+                    },
+                    "V1Alpha1ResourceMetadata": {
+                        "properties": {
+                            "uid": {
+                                "format": "uuid",
+                                "title": "Uid",
+                                "type": "string"
+                            },
+                            "name": {
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "created_at": {
+                                "format": "date-time",
+                                "title": "Created At",
+                                "type": "string"
+                            },
+                            "updated_at": {
+                                "format": "date-time",
+                                "title": "Updated At",
+                                "type": "string"
+                            },
+                            "annotations": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "default": {},
+                                "title": "Annotations",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "title": "V1Alpha1ResourceMetadata",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "kind": {
+                        "default": "config",
+                        "title": "Kind",
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1ConfigResourceSpec"
+                    }
+                },
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1ConfigResourceCreateRequest",
+                "type": "object"
+            },
+            "V1Alpha2ConfigResourceCreateRequest": {
+                "$defs": {
+                    "V1Alpha1ConfigSelectorType": {
+                        "enum": [
+                            "name",
+                            "annotation"
+                        ],
+                        "title": "V1Alpha1ConfigSelectorType",
+                        "type": "string"
+                    },
+                    "V1Alpha1ResourceMetadata": {
+                        "properties": {
+                            "uid": {
+                                "format": "uuid",
+                                "title": "Uid",
+                                "type": "string"
+                            },
+                            "name": {
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "created_at": {
+                                "format": "date-time",
+                                "title": "Created At",
+                                "type": "string"
+                            },
+                            "updated_at": {
+                                "format": "date-time",
+                                "title": "Updated At",
+                                "type": "string"
+                            },
+                            "annotations": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "default": {},
+                                "title": "Annotations",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "title": "V1Alpha1ResourceMetadata",
+                        "type": "object"
+                    },
+                    "V1Alpha2ConfigResourceSpec": {
+                        "properties": {
+                            "selector": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha2ConfigSelector"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null
+                            },
+                            "data": {
+                                "title": "Data",
+                                "type": "object"
+                            },
+                            "new": {
+                                "default": false,
+                                "title": "New",
+                                "type": "boolean"
+                            }
+                        },
+                        "required": [
+                            "data"
+                        ],
+                        "title": "V1Alpha2ConfigResourceSpec",
+                        "type": "object"
+                    },
+                    "V1Alpha2ConfigSelector": {
+                        "properties": {
+                            "kind": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "title": "Kind"
+                            },
+                            "type": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1ConfigSelectorType"
+                                    }
+                                ],
+                                "default": "name"
+                            },
+                            "value": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "additionalProperties": {
+                                            "type": "string"
+                                        },
+                                        "type": "object"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "title": "Value"
+                            }
+                        },
+                        "title": "V1Alpha2ConfigSelector",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "kind": {
+                        "default": "config",
+                        "title": "Kind",
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha2ConfigResourceSpec"
+                    }
+                },
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha2ConfigResourceCreateRequest",
+                "type": "object"
+            },
+            "V1Alpha1ConfigResourceUpdateRequest": {
+                "$defs": {
+                    "V1Alpha1ConfigResourceSpec": {
+                        "properties": {
+                            "selector": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1ConfigSelector"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null
+                            },
+                            "data": {
+                                "title": "Data",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "data"
+                        ],
+                        "title": "V1Alpha1ConfigResourceSpec",
+                        "type": "object"
+                    },
+                    "V1Alpha1ConfigSelector": {
+                        "properties": {
+                            "kind": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "title": "Kind"
+                            },
+                            "type": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1ConfigSelectorType"
+                                    }
+                                ],
+                                "default": "name"
+                            },
+                            "value": {
+                                "anyOf": [
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "additionalProperties": {
+                                            "type": "string"
+                                        },
+                                        "type": "object"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "default": null,
+                                "title": "Value"
+                            }
+                        },
+                        "title": "V1Alpha1ConfigSelector",
+                        "type": "object"
+                    },
+                    "V1Alpha1ConfigSelectorType": {
+                        "enum": [
+                            "name",
+                            "annotation"
+                        ],
+                        "title": "V1Alpha1ConfigSelectorType",
+                        "type": "string"
+                    },
+                    "V1Alpha1ResourceMetadata": {
+                        "properties": {
+                            "uid": {
+                                "format": "uuid",
+                                "title": "Uid",
+                                "type": "string"
+                            },
+                            "name": {
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "created_at": {
+                                "format": "date-time",
+                                "title": "Created At",
+                                "type": "string"
+                            },
+                            "updated_at": {
+                                "format": "date-time",
+                                "title": "Updated At",
+                                "type": "string"
+                            },
+                            "annotations": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "default": {},
+                                "title": "Annotations",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "title": "V1Alpha1ResourceMetadata",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "kind": {
+                        "default": "config",
+                        "title": "Kind",
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1ConfigResourceSpec"
+                    }
+                },
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1ConfigResourceUpdateRequest",
+                "type": "object"
+            },
+            "V1Alpha1TriggerRuleResourceCreateRequest": {
+                "$defs": {
+                    "V1Alpha1ResourceMetadata": {
+                        "properties": {
+                            "uid": {
+                                "format": "uuid",
+                                "title": "Uid",
+                                "type": "string"
+                            },
+                            "name": {
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "created_at": {
+                                "format": "date-time",
+                                "title": "Created At",
+                                "type": "string"
+                            },
+                            "updated_at": {
+                                "format": "date-time",
+                                "title": "Updated At",
+                                "type": "string"
+                            },
+                            "annotations": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "default": {},
+                                "title": "Annotations",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "title": "V1Alpha1ResourceMetadata",
+                        "type": "object"
+                    },
+                    "V1Alpha1TriggerRuleAction": {
+                        "properties": {
+                            "target": {
+                                "title": "Target",
+                                "type": "string"
+                            },
+                            "parameters": {
+                                "default": {},
+                                "title": "Parameters",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "target"
+                        ],
+                        "title": "V1Alpha1TriggerRuleAction",
+                        "type": "object"
+                    },
+                    "V1Alpha1TriggerRuleResourceSpec": {
+                        "properties": {
+                            "type": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleType"
+                                    }
+                                ],
+                                "default": "condition"
+                            },
+                            "rule": {
+                                "anyOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "type": "array"
+                                    }
+                                ],
+                                "title": "Rule"
+                            },
+                            "action": {
+                                "$ref": "#/components/schemas/V1Alpha1TriggerRuleAction"
+                            }
+                        },
+                        "required": [
+                            "rule",
+                            "action"
+                        ],
+                        "title": "V1Alpha1TriggerRuleResourceSpec",
+                        "type": "object"
+                    },
+                    "V1Alpha1TriggerRuleType": {
+                        "enum": [
+                            "schedule",
+                            "condition"
+                        ],
+                        "title": "V1Alpha1TriggerRuleType",
+                        "type": "string"
+                    }
+                },
+                "properties": {
+                    "kind": {
+                        "default": "trigger_rule",
+                        "title": "Kind",
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceSpec"
+                    }
+                },
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1TriggerRuleResourceCreateRequest",
+                "type": "object"
+            },
+            "V1Alpha1TriggerRuleResourceUpdateRequest": {
+                "$defs": {
+                    "V1Alpha1ResourceMetadata": {
+                        "properties": {
+                            "uid": {
+                                "format": "uuid",
+                                "title": "Uid",
+                                "type": "string"
+                            },
+                            "name": {
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "created_at": {
+                                "format": "date-time",
+                                "title": "Created At",
+                                "type": "string"
+                            },
+                            "updated_at": {
+                                "format": "date-time",
+                                "title": "Updated At",
+                                "type": "string"
+                            },
+                            "annotations": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "default": {},
+                                "title": "Annotations",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "name"
+                        ],
+                        "title": "V1Alpha1ResourceMetadata",
+                        "type": "object"
+                    },
+                    "V1Alpha1TriggerRuleAction": {
+                        "properties": {
+                            "target": {
+                                "title": "Target",
+                                "type": "string"
+                            },
+                            "parameters": {
+                                "default": {},
+                                "title": "Parameters",
+                                "type": "object"
+                            }
+                        },
+                        "required": [
+                            "target"
+                        ],
+                        "title": "V1Alpha1TriggerRuleAction",
+                        "type": "object"
+                    },
+                    "V1Alpha1TriggerRuleResourceSpec": {
+                        "properties": {
+                            "type": {
+                                "allOf": [
+                                    {
+                                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleType"
+                                    }
+                                ],
+                                "default": "condition"
+                            },
+                            "rule": {
+                                "anyOf": [
+                                    {
+                                        "type": "object"
+                                    },
+                                    {
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "type": "array"
+                                    }
+                                ],
+                                "title": "Rule"
+                            },
+                            "action": {
+                                "$ref": "#/components/schemas/V1Alpha1TriggerRuleAction"
+                            }
+                        },
+                        "required": [
+                            "rule",
+                            "action"
+                        ],
+                        "title": "V1Alpha1TriggerRuleResourceSpec",
+                        "type": "object"
+                    },
+                    "V1Alpha1TriggerRuleType": {
+                        "enum": [
+                            "schedule",
+                            "condition"
+                        ],
+                        "title": "V1Alpha1TriggerRuleType",
+                        "type": "string"
+                    }
+                },
+                "properties": {
+                    "kind": {
+                        "default": "trigger_rule",
+                        "title": "Kind",
+                        "type": "string"
+                    },
+                    "metadata": {
+                        "$ref": "#/components/schemas/V1Alpha1ResourceMetadata"
+                    },
+                    "spec": {
+                        "$ref": "#/components/schemas/V1Alpha1TriggerRuleResourceSpec"
+                    }
+                },
+                "required": [
+                    "metadata",
+                    "spec"
+                ],
+                "title": "V1Alpha1TriggerRuleResourceUpdateRequest",
+                "type": "object"
+            }
+        }
+    }
+}

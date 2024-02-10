@@ -1,0 +1,144 @@
+version: "3.9"
+
+networks:
+  flowdapt:
+
+volumes:
+  db-data:
+  tempo-data:
+  flowdapt-data:
+
+
+configs:
+  prometheus-config:
+    file: ./shared/prometheus.yaml
+  otel-config:
+    file: ./shared/otelcol.yaml
+  grafana-datasource:
+    file: ./shared/grafana-datasources.yaml
+  tempo-config:
+    file: ./shared/tempo.yaml
+  # flowdapt-config:
+  #   file: ~/.flowdapt/flowdapt.yaml
+
+services:
+
+  # --------------------------- TELEMETRY ---------------------------
+
+  # Traces
+  tempo:
+    image: grafana/tempo:latest
+    command:
+      - "-config.file=/etc/tempo.yaml"
+    networks:
+      - flowdapt
+    configs:
+      - source: tempo-config
+        target: /etc/tempo.yaml
+    volumes:
+      - tempo-data:/tmp/tempo
+
+  # Metrics
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    configs:
+      - source: prometheus-config
+        target: /etc/prometheus/prometheus.yml
+    networks:
+      - flowdapt
+
+  # Telemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector:0.67.0
+    command: 
+      "--config=/etc/otel-collector-config.yaml"
+    configs:
+      - source: otel-config
+        target: /etc/otel-collector-config.yaml
+    networks:
+      - flowdapt
+    depends_on:
+      - tempo
+      - prometheus
+
+  # Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: grafana
+    configs:
+      - source: grafana-datasource
+        target: /etc/grafana/provisioning/datasources/datasource.yaml
+    ports:
+      - "3000:3000"
+    networks:
+      - flowdapt
+    depends_on:
+      - prometheus
+      - tempo
+
+  # --------------------------- FLOWDAPT ---------------------------
+
+  # Flowdapt
+  flowdapt:
+    # Use the latest built image. For GPU support add `-gpu` to the tag
+    # image: ghcr.io/emergentmethods/flowdapt:0.5.0
+    # To use the local tag, build locally via `task build-docker-base` first
+    image: ghcr.io/emergentmethods/flowdapt:local
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    pull_policy: never  # This is needed to ensure we aren't trying to pull instead of reusing the local image
+    restart: on-failure:3
+    # Mount the config file to the container's config directory
+    # configs:
+    #   - source: flowdapt-config
+    #     target: /data/configs/flowdapt.yaml
+    # Set the size of the tmpfs to 1GB and mount it to the container's /dev/shm directory
+    # for Ray to use as shared memory, otherwise it will default to the /tmp directory
+    # and harm performance.
+    # tmpfs:
+    #   - /tmp:size=3G
+    volumes:
+      # Mount the data volume to the container's data directory
+      - flowdapt-data:/data
+      # OR
+      # Mount the local data directory to the container
+      # - ~/.flowdapt:/data
+      # Mount the tmpfs to the container's /dev/shm directory
+      # (THIS IS FOR RAY ONLY)
+      # - type: tmpfs
+      #   target: /dev/shm
+    environment:
+      # Normally the container will not read any config files and will
+      # just use the default values. However if we have a config to use and we have mounted
+      # the local data dir, or we have injected a docker config we can set the name here like so:
+      # FLOWDAPT__CONFIG_FILE: flowdapt.yaml
+      FLOWDAPT__LOGGING__FORMAT: json
+      # Set the telemetry to enabled
+      # FLOWDAPT__TELEMETRY__ENABLED: false
+      # FLOWDAPT__TELEMETRY__ENDPOINT: http://otel-collector:4317
+      # When running in docker we need to set the host to
+      # allow external connections from outside docker or
+      # from other containers. Port defaults to 8080.
+      FLOWDAPT__RPC__API__HOST: 0.0.0.0
+      FLOWDAPT__RPC__API__PORT: 8080
+      # If using Ray, set the dashboard host so it's accessible from outside the container.
+      # If you are not using Ray then comment the following line out.
+      # FLOWDAPT__SERVICES__COMPUTE__EXECUTOR__DASHBOARD_HOST: 0.0.0.0
+      FLOWDAPT__SERVICES__COMPUTE__EXECUTOR__TARGET: flowdapt.compute.executor.local.LocalExecutor
+    ports:
+      # Expose the port you want to use for the API, defaults to 8080
+      - "8080:8080"
+      # Expose any dashboard ports if using an Executor that supports it
+      # This port is for the Ray dashboard, if you aren't using Ray then
+      # comment the following line out.
+      # - "9969:9969"
+    networks:
+      - flowdapt
+    depends_on:
+      - database
+      - otel-collector
+      - grafana

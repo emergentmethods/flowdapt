@@ -1,0 +1,29 @@
+version: "3.9"
+
+networks:
+  flowdapt:
+
+volumes:
+  drive-one:
+
+
+services:
+  minio:
+    image: quay.io/minio/minio:RELEASE.2023-06-23T20-26-00Z
+    command: server --console-address ":9090" data
+    networks:
+      - flowdapt
+    ports:
+      - "9000:9000"
+      - "9090:9090"
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniokey
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    hostname: minio
+    volumes:
+      - drive-one:/data

@@ -1,0 +1,26 @@
+replicas: 1
+
+image:
+  repository: ghcr.io/emergentmethods/flowdapt
+  tag: docs-latest
+  port: 80
+  pullPolicy: Always
+
+env: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+middleware: []
+
+ingress:
+  enabled: true
+  hosts:
+    - docs.flowdapt.ai
+  tlsSecretName: docs-flowdapt-ai-tls
+  clusterIssuer: cf-cert-issuer
+  middlewares:
+    - kube-system/https-only
+
+configMaps: []

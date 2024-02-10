@@ -1,0 +1,32 @@
+[data-md-color-scheme="default"] {
+
+    /* Primary color shades */
+    --md-primary-fg-color: rgb(83, 3, 115);
+    --md-primary-bg-color--light: hsla(0, 0%, 100%, 0.7);
+    --md-text-link-color: hsla(231, 48%, 48%, 1);
+
+    /* Accent color shades */
+    --md-accent-fg-color: #e18d3dff;
+    --md-accent-fg-color--transparent: hsla(189, 100%, 37%, 0.1);
+    --md-accent-bg-color: hsla(0, 0%, 100%, 1);
+    --md-accent-bg-color--light: #fdb913ff;
+    --md-code-bg-color: hsla(0, 0%, 96%, 1);
+    --md-code-fg-color: hsla(200, 18%, 26%, 1);
+    --md-footer-bg-color: #a52e95ff;
+  }
+
+  [data-md-color-scheme="slate"] {
+
+    /* Primary color shades */
+    --md-primary-fg-color: #e18d3dff;
+    --md-primary-bg-color: hsla(0, 0%, 100%, 0.7);
+    --md-text-link-color: #fdb913ff;
+
+    /* Accent color shades */
+    --md-accent-fg-color: #a52e95ff;
+    --md-accent-fg-color--transparent: hsla(0, 0%, 76%, 0.1);
+    --md-accent-bg-color: hsla(0, 0%, 100%, 1);
+    --md-accent-bg-color: #a52e95ff;
+    --md-footer-bg-color: hsla(0, 0%, 0%, 0.32);
+    --md-code-fg-color: rgb(161, 128, 182);
+  }

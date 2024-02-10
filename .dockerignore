@@ -1,0 +1,36 @@
+# Ignore common development files
+.git
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+
+# Ignore Docker build context files
+*Dockerfile*
+.dockerignore
+
+# Ignore environment files
+*.env
+*.env.*
+
+# Ignore local data files
+data/
+logs/
+*.log
+
+# Dev
+.coverage*
+.vscode
+.venv
+.mypy_cache
+.pytest_cache
+
+tests/
+docs/
+docker/
+.flake8
+.gitignore
+Makefile
+mkdocs.yml
+README.md

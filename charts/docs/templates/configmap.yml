@@ -1,0 +1,12 @@
+{{- range .Values.configMaps }}
+{{- if .data }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .name }}
+data: 
+  {{- if .data }}
+  {{- toYaml .data | nindent 2 }}
+  {{- end }}
+{{- end }}
+{{- end }}

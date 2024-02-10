@@ -1,0 +1,118 @@
+site_name: flowdapt
+site_author: Emergent Methods, LLC
+copyright: Emergent Methods, LLC
+site_url: http://docs.flowdapt.ai/
+repo_url: https://gitlab.com/emergentmethods/flowdapt
+repo_name: flowdapt
+
+nav:
+  - Flowdapt:
+    - index.md
+    - Getting Started: getting_started.md
+    - Concepts:
+      - Workflows:
+        - concepts/workflows/index.md
+        - Stages: concepts/workflows/stages.md
+        - Context: concepts/workflows/context.md
+        - Object Storage: concepts/workflows/object_storage.md
+      - Configs:
+        - concepts/configs/index.md
+      - Triggers:
+        - concepts/triggers/index.md
+      - Executors:
+        - concepts/executor/index.md
+        - Ray: concepts/executor/ray.md
+        - Dask: concepts/executor/dask.md
+        - Local: concepts/executor/local.md
+      - Plugins:
+        - concepts/plugins/index.md
+        - Testing: concepts/plugins/testing.md
+        - User Modules: concepts/plugins/user_modules.md
+    - Advanced Topics:
+      - Visualization:
+        - Workflow Dashboard: advanced/visualize/dashboard.md
+        - Tensorboard: advanced/visualize/tensorboard.md
+    - Examples:
+      - Paperboy: examples/paperboy.md
+      - Nowcast: examples/nowcast.md
+      - Ray vs Dask: examples/rayvsdask.md
+    - Development:
+      - Contributor Guide: development/contributor_guide.md
+      - Debugging: development/debugging.md
+      - Architecture: development/architecture.md
+    - Reference:
+      - Configuration: reference/configuration.md
+      - CLI: reference/cli.md
+      - Rest API: reference/api/index.html
+      - Database:
+        - InMemory: reference/database/memory.md
+        - TinyDB (Disk): reference/database/tinydb.md
+        - MongoDB: reference/database/mongodb.md
+  - FlowML:
+    - flowml/index.md
+    - Data Processing:
+      - Pipefill: flowml/pipefill.md
+      - Pipeline: flowml/pipeline.md
+  - Flowctl:
+      - flowctl/index.md
+      - CLI Reference: flowctl/cli.md
+extra_css:
+  - stylesheets/extra.css
+
+theme: 
+  name: material
+  logo: assets/logo-flame_300dpi.png
+  favicon: assets/favicon_32px.png
+  icon:
+    repo: fontawesome/brands/gitlab
+  features:
+    - content.code.annotate
+    - content.tabs.link
+    - search.share
+    - content.code.copy
+    - navigation.top
+    - navigation.footer
+    - navigation.sections
+    - navigation.indexes
+    - navigation.path
+    - navigation.tabs
+  icon:
+    repo: fontawesome/brands/gitlab
+  highlightjs: true
+  hljs_languages:
+    - yaml
+    - python
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: sphinx
+            allow_inspection: false
+            show_object_full_path: true
+            show_root_heading: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.snippets
+  - pymdownx.caret
+  - mkdocs-click
+  - attr_list
+  - docdantic
+  - pymdownx.tabbed:
+      alternate_style: true 
+  - toc:
+      permalink: true

@@ -1,0 +1,78 @@
+version: "3.9"
+
+networks:
+  flowdapt:
+
+volumes:
+  db-data:
+  tempo-data:
+
+
+configs:
+  prometheus-config:
+    file: ./shared/prometheus.yaml
+  otel-config:
+    file: ./shared/otelcol.yaml
+  grafana-datasource:
+    file: ./shared/grafana-datasources.yaml
+  tempo-config:
+    file: ./shared/tempo.yaml
+
+services:
+  # --------------------------- TELEMETRY ---------------------------
+
+  # Traces
+  tempo:
+    image: grafana/tempo:latest
+    command:
+      - "-config.file=/etc/tempo.yaml"
+    networks:
+      - flowdapt
+    configs:
+      - source: tempo-config
+        target: /etc/tempo.yaml
+    volumes:
+      - tempo-data:/tmp/tempo
+
+  # Metrics
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    configs:
+      - source: prometheus-config
+        target: /etc/prometheus/prometheus.yml
+    networks:
+      - flowdapt
+
+  # Telemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector:0.67.0
+    command: 
+      "--config=/etc/otel-collector-config.yaml"
+    configs:
+      - source: otel-config
+        target: /etc/otel-collector-config.yaml
+    ports:
+      - "4318:4318"
+    networks:
+      - flowdapt
+    depends_on:
+      - tempo
+      - prometheus
+
+  # Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: grafana
+    configs:
+      - source: grafana-datasource
+        target: /etc/grafana/provisioning/datasources/datasource.yaml
+    ports:
+      - "3000:3000"
+    networks:
+      - flowdapt
+    depends_on:
+      - prometheus
+      - tempo

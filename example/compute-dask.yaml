@@ -1,0 +1,41 @@
+version: "3.9"
+
+
+networks:
+  flowdapt:
+
+
+services:
+  dask_scheduler:
+    # This needs to be built locally via `task build-docker-base` first
+    image: ghcr.io/emergentmethods/flowdapt:local
+    networks:
+      - flowdapt
+    ports:
+      - "8786:8786"
+    command: >
+      dask scheduler
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+
+  dask_worker_cpu:
+    # This needs to be built locally via `task build-docker-base` first
+    image: ghcr.io/emergentmethods/flowdapt:local
+    networks:
+      - flowdapt
+    command: >
+      dask
+      worker
+      tcp://dask_scheduler:8786
+      --nthreads 12
+      --nworkers 1
+      --resources "cpus=2 gpus=0 threads=12"
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G

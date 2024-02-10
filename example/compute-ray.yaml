@@ -1,0 +1,61 @@
+version: "3.9"
+
+
+networks:
+  flowdapt:
+
+
+services:
+  ray_head:
+    # This needs to be built locally via `task build-docker-base` first
+    image: ghcr.io/emergentmethods/flowdapt:local
+    networks:
+      - flowdapt
+    volumes:
+      - "/dev/shm:/dev/shm"
+    ports:
+      - "10001:10001"
+      - "8265:8265"
+    command: ray start --head --node-ip-address 0.0.0.0 --port=6379 --num-cpus=0 --num-gpus=0 --block
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  ray_worker_cpu:
+    # This needs to be built locally via `task build-docker-base` first
+    image: ghcr.io/emergentmethods/flowdapt:local
+    networks:
+      - flowdapt
+    depends_on:
+      - ray_head
+    volumes:
+      - "/dev/shm:/dev/shm"
+    command: ray start --address=ray_head:6379 --num-cpus=4 --num-gpus=0 --block
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 3G
+
+  # ray_worker_gpu:
+  #   # This needs to be built locally via `task build-docker-base` first
+  #   image: ghcr.io/emergentmethods/flowdapt:local-gpu
+  #   networks:
+  #     - flowdapt
+  #   depends_on:
+  #     - ray_head
+  #   volumes:
+  #     - "/dev/shm:/dev/shm"
+  #   command: ray start --address=ray_head:6379 --num-cpus=1 --num-gpus=1 --block
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '1.0'
+  #         memory: 3G
+  #       reservations:
+  #         devices:
+  #           - capabilities: ["gpu"]
+  #             device_ids: ["0"]

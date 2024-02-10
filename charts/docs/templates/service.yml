@@ -1,0 +1,15 @@
+# Service exposes the deployment by creating a load balancer
+# that points to the pods
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace}}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ .Release.Name }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.service.port}}
+      targetPort: {{ .Values.image.port }}
