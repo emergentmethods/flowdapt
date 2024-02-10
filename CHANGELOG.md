@@ -1,3 +1,9 @@
+## 0.1.2 (2024-02-10)
+
+### Fix
+
+- **ci**: Ensure latest tags are built on tag pipelines
+
 ## 0.1.1 (2024-02-10)
 
 ### Fix
