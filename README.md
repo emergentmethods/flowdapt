@@ -4,7 +4,7 @@
 
 ---
 ![Gitlab code coverage (specific job)](https://img.shields.io/gitlab/pipeline-coverage/emergentmethods/flowdapt?branch=main&job_name=unit-tests&style=flat-square)
-![GitLab Release (latest by SemVer)](https://img.shields.io/gitlab/v/release/emergentmethods/python-flowdapt?style=flat-square)
+![GitLab Release (latest by SemVer)](https://img.shields.io/gitlab/v/release/emergentmethods/flowdapt?style=flat-square)
 ![GitLab](https://img.shields.io/gitlab/license/emergentmethods/flowdapt?style=flat-square)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/flowdapt?style=flat-square)
 [![Discord](https://dcbadge.vercel.app/api/server/P59QhpknEh)](https://discord.gg/P59QhpknEh)    

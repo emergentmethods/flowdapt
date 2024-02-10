@@ -19,10 +19,10 @@ pip install flowdapt flowctl
 If you prefer to use Docker, you can use the example Docker Compose files provided in our repository. The Docker images available include:
 
 - `flowdapt:latest`: Contains only Flowdapt for a lightweight installation using the latest version.
-- `flowdapt:0.4.9`: A specific version tag to use.
-- `flowdapt:0.4.9-full`: Includes all the necessary components for a full installation, including FlowML.
-- `flowdapt:0.4.9-gpu`: Includes GPU support for running workloads with CUDA.
-- `flowdapt:0.4.9-gpu-full`: Includes GPU support and all the necessary components for a full installation.
+- `flowdapt:0.1.0`: A specific version tag to use.
+- `flowdapt:0.1.0-full`: Includes all the necessary components for a full installation, including FlowML.
+- `flowdapt:0.1.0-gpu`: Includes GPU support for running workloads with CUDA.
+- `flowdapt:0.1.0-gpu-full`: Includes GPU support and all the necessary components for a full installation.
 
 The images are hosted on the Github Container Registry, and you can pull them using the following command:
 

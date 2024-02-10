@@ -17,7 +17,7 @@ WORKDIR /srv/flowdapt
 
 ADD flowdapt ./flowdapt
 # Copy the project files and install dependencies
-COPY pyproject.toml poetry.lock ./
+COPY pyproject.toml poetry.lock README.md ./
 
 # Createa virtual env
 RUN python -m venv /opt/venv

@@ -84,4 +84,4 @@ tasks:
       ]
     cmds:
       - docker build -f docker/gpu.Dockerfile {{.DOCKER_BUILD_ARGS}} --build-arg PYTHON_VERSION={{.PYTHON_VERSION}} --build-arg BASE_IMAGE={{.IMAGE_NAME}}:{{.IMAGE_TAG}} -t {{.IMAGE_NAME}}:{{.IMAGE_TAG}}-gpu .
-      # - docker build -f docker/gpu.Dockerfile {{.DOCKER_BUILD_ARGS}} --build-arg PYTHON_VERSION={{.PYTHON_VERSION}} --build-arg BASE_IMAGE={{.IMAGE_NAME}}:{{.IMAGE_TAG}}-full -t {{.IMAGE_NAME}}:{{.IMAGE_TAG}}-full-gpu .
+      - docker build -f docker/gpu.Dockerfile {{.DOCKER_BUILD_ARGS}} --build-arg PYTHON_VERSION={{.PYTHON_VERSION}} --build-arg BASE_IMAGE={{.IMAGE_NAME}}:{{.IMAGE_TAG}}-full -t {{.IMAGE_NAME}}:{{.IMAGE_TAG}}-full-gpu .
