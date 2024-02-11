@@ -117,4 +117,4 @@ stages:
 ```
 
 ???+ note "Template"
-    As quality of life to plugin developers, we offer a [cookiecutter](https://github.com/cookiecutter/cookiecutter) template to quickly bootstrap your plugin structure. You can find it [here](https://github.com/emergentmethods/cookiecutter-flowdapt-plugin).
+    As quality of life to plugin developers, we offer a [cookiecutter](https://github.com/cookiecutter/cookiecutter) template to quickly bootstrap your plugin structure. You can find it [here](https://gitlab.com/emergentmethods/cookiecutter-flowdapt-plugin).
