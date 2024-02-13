@@ -1,3 +1,9 @@
+## 0.1.3 (2024-02-13)
+
+### Fix
+
+- improve the paperboy example, add comments for how scaling up could be considered
+
 ## 0.1.2 (2024-02-10)
 
 ### Fix
