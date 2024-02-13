@@ -71,7 +71,7 @@ from flowdapt_paperboy_plugin import prompts
 from flowdapt_paperboy_plugin import utils
 from langchain.schema import Document
 
-def summarize_and_embed(article: dict):
+def summarize_article(article: dict):
     """
     This stage is parameterized by the preceding function called `get_all_articles`. The list of article dicts
     returned from `get_all_articles()` defines the parameterization of this function. This function
@@ -115,14 +115,14 @@ source: {article['source']['domain']}
         }
     )
 
-    update_vectorstore_documents([document])
-
-    return
+    return document
 ```
 
 
-Here we see that `update_vectorstore_documents()` is defined as:
+Here we see that the following stage is also parameterized on the output of `summarize_article`. `update_vectorstore_documents()` is defined as:
 
+!!! danger
+    We use the langchain qdrant wrapper here for simplicity, but it is generally preferable to use the Qdrant client directly as it provides more flexibility.
 
 ```py
 from qdrant_client import QdrantClient
@@ -172,22 +172,31 @@ metadata:
     group: paperboy
 spec:
     stages:
+        - name: get_all_articles
+          target: flowdapt_paperboy_plugin.newsapi.get_all_articles
+          resources:
+          cpus: 0.5
 
-    - name: get_all_articles
-        target: flowdapt_paperboy_plugin.newsapi.get_all_articles
-        resources:
-            cpus: 0.5
+        - name: summarize_article
+          target: flowdapt_paperboy_plugin.newsapi.summarize_article
+          # use type: parameterized to indicate that this stage will be parameterized
+          # across the output of the depends_on stage
+          type: parameterized
+          depends_on:
+              - get_all_articles
+          resources:
+              embedders: 1
+              vllm: 1
 
-    - name: summarize_and_embed
-        target: flowdapt_paperboy_plugin.newsapi.summarize_and_embed
-        # use type: parameterized to indicate that this stage will be parameterized
-        # across the output of the depends_on stage
-        type: parameterized
-        depends_on:
-            - get_all_articles
-        resources:
-            embedders: 1
-            vllm: 1
+        - name: upsert_vectorstore
+          target: flowdapt_paperboy_plugin.utils.update_vectorstore_documents
+          # use type: parameterized to indicate that this stage will be parameterized
+          # across the output of the depends_on stage
+          type: parameterized
+          depends_on:
+              - summarize_article
+          resources:
+              embedders: 1
 ```
 
 Define your config with:
@@ -252,7 +261,13 @@ flowctl apply -p path/to/trigger.yaml
 
 ## Build context workflow
 
-The build context workflow is defined by a single function `build_context()` that is called each time a user calls the /chat endpoint on paperboy. This function is defined as:
+The build context workflow is defined by a single function `build_context()` that is called each time a user calls the /chat endpoint on paperboy.
+
+
+!!! danger
+    While this following example is interesting, technically to scale this properly you would want to use an `async` stage and ensure your embedding is performed by an external server (we use Text Embedding Inference in production). In that case, you would use an asynchronous Qdrant client directly and await your calls to each service, 1. the embedding server, 2. the vector store, and 3. the vLLM server. This would allow the single python process to service many users asynchronously. However, here we stick to the same objects and functions as above for simplicity.
+
+  This function is defined as:
 
 ```py
 def build_context(prompt):
@@ -302,17 +317,17 @@ def build_context(prompt):
 The build context workflow is then defined as:
 
 ```yaml
-name: "build_context"
-description: "Query the vectorstore for similar documents to the user's query"
-
-
-config: $ref{main_paperboy.yaml|config}
-
-stages:
-  - name: build_context
-    target: flowdapt_paperboy_plugin.paperboy.build_context
-    resources:
-      vllm: 1
+kind: workflow
+metadata:
+  name: build_context
+  annotations:
+    group: paperboy
+spec:
+    stages:
+    - name: build_context
+        target: flowdapt_paperboy_plugin.paperboy.build_context
+        resources:
+        vllm: 1
 ```
 
 This workflow can be tested with:
