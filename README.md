@@ -7,6 +7,7 @@
 ![GitLab Release (latest by SemVer)](https://img.shields.io/gitlab/v/release/emergentmethods/flowdapt?style=flat-square)
 ![GitLab](https://img.shields.io/gitlab/license/emergentmethods/flowdapt?style=flat-square)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/flowdapt?style=flat-square)
+[![GitHub flowdapt](https://shields.io/badge/GitHub-flowdapt-green?style=flat-square&logo=github)](https://github.com/emergentmethods/flowdapt)
 [![Discord](https://dcbadge.vercel.app/api/server/P59QhpknEh)](https://discord.gg/P59QhpknEh)    
 
 Documentation: [https://docs.flowdapt.ai](https://docs.flowdapt.ai)<br>
