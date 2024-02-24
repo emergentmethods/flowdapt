@@ -80,6 +80,9 @@ class RayExecutor(Executor):
     :param conda: A dictionary of conda packages to install on the worker.
     :param env_vars: A dictionary of environment variables to pass to the worker.
     :param container: A container image to use for the worker.
+    :param cluster_memory_actor: A dictionary of options to use for the cluster memory actor.
+    Requires a "name" key to be set. The rest of the options are passed to Ray. Defaults
+    to a RayClusterMemoryActor with 1 CPU and a max concurrency of 1000.
     :param upload_plugins: Whether to upload plugins to the worker or not.
     """
     kind: str = "ray"
