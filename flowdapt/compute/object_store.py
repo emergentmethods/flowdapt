@@ -76,6 +76,7 @@ def put(
     value: Any,
     *,
     namespace: str = "",
+    artifact_only: bool = False,
     strategy: Strategy | None = None,
     executor: str | None = None,
     save_artifact_hook: Callable[[Artifact, Any], Any] = default_save_hook(),
@@ -92,8 +93,9 @@ def put(
     :param value: The object to store.
     :param namespace: The namespace to store the object under, defaults to the namespace
     of the current WorkflowRunContext.
-    :param artifact_only: If True, will only store the object in an Artifact and not attempt to
-    store it in cluster memory.
+    :param artifact_only: If True, the strategy will be set to Artifact. *Deprecated* Use
+    the `strategy` parameter instead.
+    :param strategy: The strategy to use for storing the object, defaults to the Fallback strategy.
     :param executor: The executor kind for cluster memory, defaults to the executor of
     the current WorkflowRunContext.
     :param save_artifact_hook: A callable that takes an Artifact and a value and saves
@@ -103,6 +105,16 @@ def put(
     """
     if not strategy:
         strategy = get_configuration().services.compute.default_os_strategy
+
+    if artifact_only:
+        logger.warning(
+            "DeprecationWarning",
+            message=(
+                "The `artifact_only` parameter is deprecated and will be removed in a "
+                "future version. Use the `strategy` parameter instead."
+            )
+        )
+        strategy = Strategy.ARTIFACT
 
     if strategy != Strategy.ARTIFACT:
         try:
@@ -134,6 +146,7 @@ def get(
     key: str,
     *,
     namespace: str = "",
+    artifact_only: bool = False,
     strategy: Strategy | None = None,
     executor: str | None = None,
     load_artifact_hook: Callable[[Artifact], Any] = default_load_hook(),
@@ -149,8 +162,9 @@ def get(
     :param key: The key to get the object from.
     :param namespace: The namespace to get the object from, defaults to the namespace
     of the current WorkflowRunContext.
-    :param artifact_only: If True, will only get the object from an Artifact and not attempt to
-    get it from cluster memory.
+    :param artifact_only: If True, the strategy will be set to Artifact. *Deprecated* Use
+    the `strategy` parameter instead.
+    :param strategy: The strategy to use for storing the object, defaults to the Fallback strategy.
     :param executor: The executor kind for cluster memory, defaults to the executor of
     the current WorkflowRunContext.
     :param load_artifact_hook: A callable that takes an Artifact and returns the value
@@ -160,6 +174,16 @@ def get(
     """
     if not strategy:
         strategy = get_configuration().services.compute.default_os_strategy
+
+    if artifact_only:
+        logger.warning(
+            "DeprecationWarning",
+            message=(
+                "The `artifact_only` parameter is deprecated and will be removed in a "
+                "future version. Use the `strategy` parameter instead."
+            )
+        )
+        strategy = Strategy.ARTIFACT
 
     if strategy != Strategy.ARTIFACT:
         try:
@@ -188,6 +212,7 @@ def delete(
     key: str,
     *,
     namespace: str = "",
+    artifact_only: bool = False,
     strategy: Strategy | None = None,
     executor: str | None = None,
     cluster_memory_params: dict = {},
@@ -202,6 +227,9 @@ def delete(
     :param key: The key to get the object from.
     :param namespace: The namespace to get the object from, defaults to the namespace
     of the current WorkflowRunContext.
+    :param artifact_only: If True, the strategy will be set to Artifact. *Deprecated* Use
+    the `strategy` parameter instead.
+    :param strategy: The strategy to use for storing the object, defaults to the Fallback strategy.
     :param executor: The executor kind for cluster memory, defaults to the executor of
     the current WorkflowRunContext.
     :param load_artifact_hook: A callable that takes an Artifact and returns the value
@@ -211,6 +239,16 @@ def delete(
     """
     if not strategy:
         strategy = get_configuration().services.compute.default_os_strategy
+
+    if artifact_only:
+        logger.warning(
+            "DeprecationWarning",
+            message=(
+                "The `artifact_only` parameter is deprecated and will be removed in a "
+                "future version. Use the `strategy` parameter instead."
+            )
+        )
+        strategy = Strategy.ARTIFACT
 
     if strategy != Strategy.ARTIFACT:
         try:
