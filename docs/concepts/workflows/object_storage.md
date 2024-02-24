@@ -27,7 +27,8 @@ def prepare_dataframe():
     # If "fallback" is chosen, the object will be stored/retrieved from Cluster Memory if possible, and
     # from distributed storage (Artifacts) if not.
 
-    # The default strategy is "fallback".
+    # The default strategy is "fallback", however this can be configured via the
+    # `services.compute.default_os_strategy` config option.
     put("my_dataframe", df)
 
     # "artifact" strategy
