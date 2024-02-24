@@ -149,6 +149,7 @@ class ComputeSettings(BaseServiceSettings):
 
     executor: Instantiable = DefaultComputeExecutor()
     default_namespace: str = "default"
+    default_os_strategy: Literal["fallback", "artifact", "cluster_memory"] = "fallback"
     run_retention_duration: Annotated[
         timedelta | int | str,
         PlainSerializer(lambda v: str(v), return_type=str, when_used='always')

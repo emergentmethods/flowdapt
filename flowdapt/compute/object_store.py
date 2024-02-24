@@ -1,4 +1,5 @@
 from typing import Any, Type, Callable
+from enum import Enum
 
 from flowdapt.compute.artifacts import get_artifact, Artifact
 from flowdapt.compute.cluster_memory import (
@@ -8,8 +9,21 @@ from flowdapt.compute.cluster_memory import (
 )
 from flowdapt.lib.serializers import Serializer, CloudPickleSerializer
 from flowdapt.lib.logger import get_logger
+from flowdapt.lib.config import get_configuration
 
 logger = get_logger(__name__)
+
+class Strategy(str, Enum):
+    """
+    The strategy to use for storing/retrieving objects in the object store.
+    """
+    # Fallback first attempts cluster memory, and if it fails, falls back to
+    # storing the object in an Artifact.
+    FALLBACK = "fallback"
+    # Only store the object in an Artifact.
+    ARTIFACT = "artifact"
+    # Only store the object in cluster memory.
+    CLUSTER_MEMORY = "cluster_memory"
 
 
 def default_save_hook(serializer: Type[Serializer] | Serializer = CloudPickleSerializer):
@@ -62,7 +76,7 @@ def put(
     value: Any,
     *,
     namespace: str = "",
-    artifact_only: bool = False,
+    strategy: Strategy | None = None,
     executor: str | None = None,
     save_artifact_hook: Callable[[Artifact, Any], Any] = default_save_hook(),
     cluster_memory_params: dict = {},
@@ -87,7 +101,10 @@ def put(
     :param cluster_memory_params: Additional parameters to pass to the cluster memory backend.
     :param artifact_params: Additional parameters to pass to the Artifact.
     """
-    if not artifact_only:
+    if not strategy:
+        strategy = get_configuration().services.compute.default_os_strategy
+
+    if strategy != Strategy.ARTIFACT:
         try:
             return put_in_cluster_memory(
                 key=key,
@@ -96,11 +113,12 @@ def put(
                 backend=executor,
                 **cluster_memory_params
             )
-        except KeyError:
-            pass
-        except BaseException as e:
-            # We log as debug not to spam the logs
-            logger.debug("ClusterMemoryObjectPutFailed", key=key, error=str(e))
+        except Exception as e:
+            if not isinstance(e, KeyError):
+                logger.debug("ClusterMemoryObjectPutFailed", key=key, error=str(e))
+
+            if strategy == Strategy.CLUSTER_MEMORY:
+                raise
 
     _artifact = get_artifact(
         name=key,
@@ -116,7 +134,7 @@ def get(
     key: str,
     *,
     namespace: str = "",
-    artifact_only: bool = False,
+    strategy: Strategy | None = None,
     executor: str | None = None,
     load_artifact_hook: Callable[[Artifact], Any] = default_load_hook(),
     cluster_memory_params: dict = {},
@@ -140,7 +158,10 @@ def get(
     :param cluster_memory_params: Additional parameters to pass to the cluster memory backend.
     :param artifact_params: Additional parameters to pass to the Artifact.
     """
-    if not artifact_only:
+    if not strategy:
+        strategy = get_configuration().services.compute.default_os_strategy
+
+    if strategy != Strategy.ARTIFACT:
         try:
             return get_from_cluster_memory(
                 key=key,
@@ -148,11 +169,12 @@ def get(
                 backend=executor,
                 **cluster_memory_params
             )
-        except KeyError:
-            pass
-        except BaseException as e:
-            # We log as debug not to spam the logs
-            logger.debug("ClusterMemoryObjectGetFailed", key=key, error=str(e))
+        except Exception as e:
+            if not isinstance(e, KeyError):
+                logger.debug("ClusterMemoryObjectGetFailed", key=key, error=str(e))
+
+            if strategy == Strategy.CLUSTER_MEMORY:
+                raise
 
     _artifact = get_artifact(
         name=key,
@@ -166,7 +188,7 @@ def delete(
     key: str,
     *,
     namespace: str = "",
-    artifact_only: bool = False,
+    strategy: Strategy | None = None,
     executor: str | None = None,
     cluster_memory_params: dict = {},
     artifact_params: dict = {},
@@ -187,7 +209,10 @@ def delete(
     :param cluster_memory_params: Additional parameters to pass to the cluster memory backend.
     :param artifact_params: Additional parameters to pass to the Artifact.
     """
-    if not artifact_only:
+    if not strategy:
+        strategy = get_configuration().services.compute.default_os_strategy
+
+    if strategy != Strategy.ARTIFACT:
         try:
             return delete_from_cluster_memory(
                 key=key,
@@ -195,11 +220,12 @@ def delete(
                 backend=executor,
                 **cluster_memory_params
             )
-        except KeyError:
-            pass
-        except BaseException as e:
-            # We log as debug not to spam the logs
-            logger.debug("ClusterMemoryObjectDeleteFailed", key=key, error=str(e))
+        except Exception as e:
+            if not isinstance(e, KeyError):
+                logger.debug("ClusterMemoryObjectDeleteFailed", key=key, error=str(e))
+
+            if strategy == Strategy.CLUSTER_MEMORY:
+                raise
 
     _artifact = get_artifact(
         name=key,
