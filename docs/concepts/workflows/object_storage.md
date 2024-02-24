@@ -53,6 +53,10 @@ def clear_memory(use_dataframe):
     delete("my_dataframe", strategy="artifact")
 ```
 
+???+ warning "Deprecated"
+    The `artifact_only` parameter is deprecated in favor of the `strategy` parameter. The `artifact_only` parameter will be removed in a future release.
+
+
 ### Details
 
 The Object Store is particularly beneficial when dealing with workflows that require data persistence between executions. It prioritizes saving data to Cluster Memory due to its speed and efficiency, but when unable, it defaults to Artifacts. This approach optimizes resource utilization and simplifies data management in workflows.
