@@ -1,10 +1,9 @@
+import os
 from typing import Any
 from collections import defaultdict
 from ray import remote, put, get, get_actor
 
 from flowdapt.compute.cluster_memory.base import ClusterMemory
-
-CLUSTER_MEMORY_ACTOR_NAME = "cluster_memory"
 
 
 @remote
@@ -32,22 +31,21 @@ class RayClusterMemoryActor:
         self._store = {}
 
     @classmethod
-    def start(cls):
+    def start(cls, actor_name: str, **options):
         try:
-            get_actor(CLUSTER_MEMORY_ACTOR_NAME, namespace="flowdapt")
+            get_actor(actor_name, namespace="flowdapt")
         except ValueError:
             RayClusterMemoryActor.options(
-                name=CLUSTER_MEMORY_ACTOR_NAME,
+                name=actor_name,
                 lifetime="detached",
                 namespace="flowdapt",
-                max_concurrency=10000,
-                num_cpus=1
+                **options
             ).remote()
 
 
 class RayClusterMemory(ClusterMemory):
     def __init__(self):
-        self.actor = get_actor(CLUSTER_MEMORY_ACTOR_NAME, namespace="flowdapt")
+        self.actor = get_actor(os.environ["CM_ACTOR_NAME"], namespace="flowdapt")
 
     def put(self, key: str, value: Any, *, namespace: str = "default"):
         object_ref = put(value, _owner=self.actor)

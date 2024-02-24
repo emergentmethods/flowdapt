@@ -1,7 +1,6 @@
 import asyncio
 import sys
 import subprocess
-import atexit
 from typing import (
     Callable,
     Awaitable,
@@ -17,7 +16,6 @@ from typing import (
     runtime_checkable,
     cast
 )
-from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from functools import wraps, partial, cache
 from pathlib import Path
@@ -29,21 +27,6 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 CallableType = Callable[..., R] | Callable[..., Awaitable[R]]  # type: ignore
-_runner_instance = None
-
-class SyncRunner:
-    def __init__(self):
-        self.loop = asyncio.new_event_loop()
-        self.executor = ThreadPoolExecutor(max_workers=1)
-
-    def run(self, coro: Awaitable[T]) -> T:
-        return self.executor.submit(self.loop.run_until_complete, coro).result()
-
-    def close(self):
-        if self.loop.is_running():
-            self.loop.call_soon_threadsafe(self.loop.stop)
-            self.executor.shutdown(wait=True)
-            self.loop.close()
 
 @runtime_checkable
 class AsyncFileLikeObject(Protocol):
@@ -94,10 +77,7 @@ async def run_in_thread(callable: Callable, *args, **kwargs):
     )
 
 
-def to_sync(
-    func: Callable[P, Coroutine[Any, Any, R]],
-    loop: asyncio.AbstractEventLoop | None = None
-) -> Callable[P, R]:
+def to_sync(func: Callable[P, Coroutine[Any, Any, R]]) -> Callable[P, R]:
     """
     Convert an async function to a sync function.
 
@@ -109,14 +89,14 @@ def to_sync(
 
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        global _runner_instance
-        if loop is None:
-            if _runner_instance is None:
-                _runner_instance = SyncRunner()
-                atexit.register(_runner_instance.close)
-            return _runner_instance.run(func(*args, **kwargs))
-        else:
-            return asyncio.run_coroutine_threadsafe(func(*args, **kwargs), loop).result()
+        try:
+            asyncio.get_running_loop()
+            # Already running in an event loop, run the function
+            # and leave it up to the caller to actually await the result
+            return func(*args, **kwargs)
+        except RuntimeError:
+            pass
+        return asyncio.run(func(*args, **kwargs))
     return wrapper
 
 
