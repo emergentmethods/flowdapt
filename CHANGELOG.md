@@ -1,3 +1,12 @@
+## 0.1.4 (2024-03-22)
+
+### Fix
+
+- ensure we document how to configure the Cluster Memory Actor, bump Ray to 2.10.0, push poetry.lock
+- Fix unit tests for ray cluster memory
+- Add support for controlling ray cluster memory actor placement
+- Fix bug in local executor cluster memory and add object store strategy
+
 ## 0.1.3 (2024-02-13)
 
 ### Fix
