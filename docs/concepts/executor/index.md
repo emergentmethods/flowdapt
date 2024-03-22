@@ -33,6 +33,15 @@ services:
       # Extra logical resources to use when scheduling
       resources:
         hamster_wheels: 6
+      # Define the cluster memory actor
+      cluster_memory_actor:
+        name: actor_name # <---- REQUIRED
+        num_cpus: 1
+        max_concurrency: 1000
+        # if you want to control where the cluster memory actor is placed
+        # you can also define the custom resource here (optional)
+        resources:
+          hamster_wheel: 1
 ```
 
 By providing a choice of Executors, Flowdapt ensures users can tailor their compute environment to their specific needs. Whether it's the RayExecutor for its flexibility and performance in both local and distributed computing, the DaskExecutor for larger-than-memory workloads, or the LocalExecutor for its convenience in testing, Flowdapt offers solutions to cater to a wide range of computational demands.

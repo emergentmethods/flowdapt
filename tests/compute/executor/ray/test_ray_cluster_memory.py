@@ -1,5 +1,6 @@
 import pytest
 import ray
+import os
 
 from flowdapt.compute.executor.ray.cluster_memory import (
     RayClusterMemory,
@@ -10,9 +11,10 @@ import time
 
 @pytest.fixture(scope='module', autouse=True)
 def ray_local_cluster():
+    os.environ["CM_ACTOR_NAME"] = "RayClusterMemoryActor"
     # Initializing Ray with local mode
     ray.init(namespace="flowdapt")
-    RayClusterMemoryActor.start()
+    RayClusterMemoryActor.start(actor_name=os.environ["CM_ACTOR_NAME"])
     # somehow a delay is needed or else the tests cant find the actor
     time.sleep(1)
     yield

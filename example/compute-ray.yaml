@@ -34,7 +34,7 @@ services:
       - "/dev/shm:/dev/shm"
     command: ray start --address=ray_head:6379 --num-cpus=4 --num-gpus=0 --block
     deploy:
-      replicas: 2
+      replicas: 1
       resources:
         limits:
           cpus: '4.0'

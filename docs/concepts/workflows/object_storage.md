@@ -20,30 +20,43 @@ def prepare_dataframe():
     # Create the dataframe
     df = pd.Dataframe(np.random.rand(10,100))
 
-    # Put the object in the Object Store (Cluster Memory, high performance) and name it "my_dataframe"
-    # to be retrieved in any subsequent stage/workflow
+    # You can choose the strategy for persisting objects. The available options
+    # are "artifact", "cluster_memory" and "fallback".
+    # If "artifact" is chosen, the object will be stored/retrieved from distributed storage (Artifacts).
+    # If "cluster_memory" is chosen, the object will be stored/retrieved from Cluster Memory.
+    # If "fallback" is chosen, the object will be stored/retrieved from Cluster Memory if possible, and
+    # from distributed storage (Artifacts) if not.
+
+    # The default strategy is "fallback", however this can be configured via the
+    # `services.compute.default_os_strategy` config option.
     put("my_dataframe", df)
 
-    # Persist the object to distributed storage (Artifacts) for full persistence
-    put("my_dataframe", df, artifact_only=True)
+    # "artifact" strategy
+    put("my_dataframe", df, strategy="artifact")
+
+    # "cluster_memory" strategy
+    put("my_dataframe", df, strategy="cluster_memory")
 
 def use_dataframe(prepare_dataframe):
-    # Get the object from the Object Store (Cluster Memory, high performance) using the
-    # name "my_dataframe"
+    # Get the object using the default strategy "fallback"
     df = get("my_dataframe")
 
     # Get the object from distributed storage (Artifacts)
-    df = get("my_dataframe", artifact_only=True)
+    df = get("my_dataframe", strategy="artifact")
 
     # Do some calculations
 
 def clear_memory(use_dataframe):
-    # Delete the object, if desired, from the Object Store (Cluster Memory)
+    # Delete the object, if desired, using the default strategy "fallback"
     delete("my_dataframe")
 
     # Delete the object, if desired, from distributed storage (Artifacts)
-    delete("my_dataframe", artifact_only=True)
+    delete("my_dataframe", strategy="artifact")
 ```
+
+???+ warning "Deprecated"
+    The `artifact_only` parameter is deprecated in favor of the `strategy` parameter. The `artifact_only` parameter will be removed in a future release.
+
 
 ### Details
 

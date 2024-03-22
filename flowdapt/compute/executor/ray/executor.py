@@ -80,6 +80,9 @@ class RayExecutor(Executor):
     :param conda: A dictionary of conda packages to install on the worker.
     :param env_vars: A dictionary of environment variables to pass to the worker.
     :param container: A container image to use for the worker.
+    :param cluster_memory_actor: A dictionary of options to use for the cluster memory actor.
+    Requires a "name" key to be set. The rest of the options are passed to Ray. Defaults
+    to a RayClusterMemoryActor with 1 CPU and a max concurrency of 1000.
     :param upload_plugins: Whether to upload plugins to the worker or not.
     """
     kind: str = "ray"
@@ -104,6 +107,7 @@ class RayExecutor(Executor):
         env_vars: dict[str, str] | None = None,
         container: dict[str, str] | None = None,
         upload_plugins: bool = True,
+        cluster_memory_actor: dict[str, Any] | None = None,
         **kwargs
     ):
         _app_config = get_configuration()
@@ -137,8 +141,18 @@ class RayExecutor(Executor):
             },
             "container": container,
             "upload_plugins": upload_plugins,
-            "kwargs": kwargs
+            "cluster_memory_actor": cluster_memory_actor or {
+                "name": "RayClusterMemoryActor",
+                "num_cpus": 1,
+                "max_concurrency": 1000,
+            },
+            "kwargs": kwargs,
         }
+
+        # Set the cluster memory actor name as env var to propagate
+        # to the workflows
+        assert self._config["cluster_memory_actor"]["name"], "Cluster memory actor name is required"
+        self._config["env_vars"]["CM_ACTOR_NAME"] = self._config["cluster_memory_actor"]["name"]
 
         if not self._config["cluster_address"] or self._config["cluster_address"] == "local":
             # Set default storage dir to the app dir if not already specified
@@ -234,27 +248,21 @@ class RayExecutor(Executor):
     async def start(self):
         global logger
         logger = logger.bind(
-            kind=self.kind
-        )
-
-        await logger.ainfo(
-            "InitializingDriver",
+            kind=self.kind,
             is_local=self._is_local,
+            cluster_address=self._config["cluster_address"],
             strategy=self._config["strategy"]
         )
+
+        await logger.ainfo("InitializingDriver")
         self._ray_context = await self._init_ray()
 
-        await logger.ainfo(
-            "StartingClusterMemory",
-            is_local=self._is_local,
-            cluster_address=self._config["cluster_address"]
+        await logger.ainfo("StartingClusterMemory")
+        RayClusterMemoryActor.start(
+            self._config["cluster_memory_actor"].pop("name"),
+            **self._config["cluster_memory_actor"]
         )
-        RayClusterMemoryActor.start()
-        await logger.ainfo(
-            "StartedClusterMemory",
-            is_local=self._is_local,
-            cluster_address=self._config["cluster_address"]
-        )
+        await logger.ainfo("StartedClusterMemory")
 
         dashboard_url = self._ray_context.dashboard_url or None
         self.running = True

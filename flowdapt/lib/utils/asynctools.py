@@ -28,7 +28,6 @@ R = TypeVar("R")
 
 CallableType = Callable[..., R] | Callable[..., Awaitable[R]]  # type: ignore
 
-
 @runtime_checkable
 class AsyncFileLikeObject(Protocol):
     async def read(self, n: int = -1) -> bytes:
@@ -78,7 +77,7 @@ async def run_in_thread(callable: Callable, *args, **kwargs):
     )
 
 
-def to_sync(func: Callable[P, Coroutine[Any, Any, R]], use_loop: bool = False) -> Callable[P, R]:
+def to_sync(func: Callable[P, Coroutine[Any, Any, R]]) -> Callable[P, R]:
     """
     Convert an async function to a sync function.
 
@@ -91,15 +90,13 @@ def to_sync(func: Callable[P, Coroutine[Any, Any, R]], use_loop: bool = False) -
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         try:
-            loop = asyncio.get_running_loop()
-
-            if loop.is_running() and use_loop:
-                future = asyncio.run_coroutine_threadsafe(func(*args, **kwargs), loop)
-                return future.result()
-
+            asyncio.get_running_loop()
+            # Already running in an event loop, run the function
+            # and leave it up to the caller to actually await the result
             return func(*args, **kwargs)
         except RuntimeError:
-            return asyncio.run(func(*args, **kwargs))
+            pass
+        return asyncio.run(func(*args, **kwargs))
     return wrapper
 
 
@@ -126,7 +123,8 @@ def syncify(func: Callable[P, Coroutine[Any, Any, R]]) -> Callable[P, R]:
     :param func: async function to convert
     :return: sync function
     """
-    return to_sync(func, use_loop=False)
+    # return async_to_sync(func)
+    return to_sync(func)
 
 
 async def cancel_task(task: asyncio.Task):
