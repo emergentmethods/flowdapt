@@ -152,7 +152,11 @@ class ComputeSettings(BaseServiceSettings):
     default_os_strategy: Literal["fallback", "artifact", "cluster_memory"] = "fallback"
     run_retention_duration: Annotated[
         timedelta | int | str,
-        PlainSerializer(lambda v: str(v), return_type=str, when_used='always')
+        PlainSerializer(
+            lambda v: str(v) if v != -1 else v,
+            return_type=str | int,
+            when_used='always'
+        )
     ] = -1
 
     @pre_validator()
