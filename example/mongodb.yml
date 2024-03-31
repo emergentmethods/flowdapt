@@ -7,5 +7,5 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGODB_INITDB_ROOT_USERNAME: root
-      MONGODB_INITDB_ROOT_PASSWORD: root
+      MONGODB_INITDB_ROOT_USERNAME: flowdapt
+      MONGODB_INITDB_ROOT_PASSWORD: flowdapt
