@@ -1,3 +1,9 @@
+## 0.1.5 (2024-03-31)
+
+### Fix
+
+- Fix bug with default configuration and run_retention_duration
+
 ## 0.1.4 (2024-03-22)
 
 ### Fix
