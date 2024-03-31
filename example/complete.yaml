@@ -79,6 +79,21 @@ services:
       - prometheus
       - tempo
 
+  # --------------------------- DATABASE ---------------------------
+
+  database:
+    image: mongodb/mongodb-community-server:latest
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - db-data:/data/db
+    networks:
+      - flowdapt
+    environment:
+      MONGODB_INITDB_ROOT_USERNAME: flowdapt
+      MONGODB_INITDB_ROOT_PASSWORD: flowdapt
+
   # --------------------------- FLOWDAPT ---------------------------
 
   # Flowdapt
@@ -129,6 +144,10 @@ services:
       # If you are not using Ray then comment the following line out.
       # FLOWDAPT__SERVICES__COMPUTE__EXECUTOR__DASHBOARD_HOST: 0.0.0.0
       FLOWDAPT__SERVICES__COMPUTE__EXECUTOR__TARGET: flowdapt.compute.executor.local.LocalExecutor
+      # Set the database connection string
+      FLOWDAPT__DATABASE__TARGET: flowdapt.lib.database.storage.mdb.MongoDBStorage
+      FLOWDAPT__DATABASE__URI: mongodb://flowdapt:flowdapt@database:27017
+      FLOWDAPT__DATABASE__DB_NAME: flowdapt
     ports:
       # Expose the port you want to use for the API, defaults to 8080
       - "8080:8080"
