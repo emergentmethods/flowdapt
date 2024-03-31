@@ -216,6 +216,9 @@ class RayExecutor(Executor):
             logging.basicConfig(level=logging.INFO)
 
         if self._is_local:
+            if "mappers" not in self._config["resources"]:
+                self._config["resources"]["mappers"] = 4
+
             context = ray.init(
                 storage=self._config["storage_dir"],
                 num_cpus=self._config["cpus"] if self._config["cpus"] != "auto" else None,
