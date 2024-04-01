@@ -1,3 +1,9 @@
+## 0.1.6 (2024-04-01)
+
+### Fix
+
+- Ensure mappers resource is included in local executor if not specified
+
 ## 0.1.5 (2024-03-31)
 
 ### Fix
