@@ -16,31 +16,15 @@ class V1Alpha1ConfigSelector(BaseModel):
     value: str | dict[str, str] | None = None
 
 
-class V1Alpha2ConfigSelector(V1Alpha1ConfigSelector):
-    ...
-
-
 class V1Alpha1ConfigResourceSpec(BaseModel):
     selector: V1Alpha1ConfigSelector | None = None
     data: dict
-
-class V1Alpha2ConfigResourceSpec(BaseModel):
-    selector: V1Alpha2ConfigSelector | None = None
-    data: dict
-    new: bool = False
 
 
 class V1Alpha1ConfigResourceBase(BaseModel):
     kind: str = CONFIG_RESOURCE_KIND
     metadata: V1Alpha1ResourceMetadata
     spec: V1Alpha1ConfigResourceSpec
-
-
-class V1Alpha2ConfigResourceBase(BaseModel):
-    kind: str = CONFIG_RESOURCE_KIND
-    metadata: V1Alpha1ResourceMetadata
-    spec: V1Alpha2ConfigResourceSpec
-
 
 class V1Alpha1ConfigResourceCreateRequest(V1Alpha1ConfigResourceBase):
     def to_model(self) -> ConfigResource:
@@ -49,29 +33,10 @@ class V1Alpha1ConfigResourceCreateRequest(V1Alpha1ConfigResourceBase):
             **model_dump(self, exclude={"metadata": {"uid", "created_at", "updated_at"}}),
         )
 
-
-class V1Alpha2ConfigResourceCreateRequest(V1Alpha2ConfigResourceBase):
-    def to_model(self) -> ConfigResource:
-        data = model_dump(
-            self,
-            exclude={
-                "metadata": {"uid", "created_at", "updated_at"},
-                "new": True
-            }
-        )
-        return ConfigResource(**data)
-
-
 class V1Alpha1ConfigResourceCreateResponse(V1Alpha1ConfigResourceBase):
     @classmethod
     def from_model(cls, model: ConfigResource):
         return cls(**model_dump(model))
-
-
-class V1Alpha2ConfigResourceCreateResponse(V1Alpha2ConfigResourceBase):
-    @classmethod
-    def from_model(cls, model: ConfigResource):
-        return cls(**{**model_dump(model), "new": True})
 
 
 class V1Alpha1ConfigResourceUpdateRequest(V1Alpha1ConfigResourceBase):

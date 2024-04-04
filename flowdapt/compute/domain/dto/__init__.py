@@ -1,5 +1,3 @@
-from typing import Union
-
 from flowdapt.compute.domain.dto.v1.workflow import (
     V1Alpha1WorkflowResourceCreateRequest,
     V1Alpha1WorkflowResourceCreateResponse,
@@ -12,9 +10,7 @@ from flowdapt.compute.domain.dto.v1.workflowrun import (
 )
 from flowdapt.compute.domain.dto.v1.config import (
     V1Alpha1ConfigResourceCreateRequest,
-    V1Alpha2ConfigResourceCreateRequest,
     V1Alpha1ConfigResourceCreateResponse,
-    V1Alpha2ConfigResourceCreateResponse,
     V1Alpha1ConfigResourceUpdateRequest,
     V1Alpha1ConfigResourceUpdateResponse,
     V1Alpha1ConfigResourceReadResponse,
@@ -26,14 +22,8 @@ WorkflowResourceUpdateRequest = V1Alpha1WorkflowResourceUpdateRequest
 WorkflowResourceUpdateResponse = V1Alpha1WorkflowResourceUpdateResponse
 WorkflowResourceReadResponse = V1Alpha1WorkflowResourceReadResponse
 WorkflowRunReadResponse = V1Alpha1WorkflowRunReadResponse
-ConfigResourceCreateRequest = Union[
-    V1Alpha1ConfigResourceCreateRequest,
-    V1Alpha2ConfigResourceCreateRequest,
-]
-ConfigResourceCreateResponse = Union[
-    V1Alpha1ConfigResourceCreateResponse,
-    V1Alpha2ConfigResourceCreateResponse,
-]
+ConfigResourceCreateRequest = V1Alpha1ConfigResourceCreateRequest
+ConfigResourceCreateResponse = V1Alpha1ConfigResourceCreateResponse
 ConfigResourceUpdateRequest = V1Alpha1ConfigResourceUpdateRequest
 ConfigResourceUpdateResponse = V1Alpha1ConfigResourceUpdateResponse
 ConfigResourceReadResponse = V1Alpha1ConfigResourceReadResponse
@@ -70,10 +60,6 @@ ConfigResourceCreateDTOs = {
     "v1alpha1": (
         V1Alpha1ConfigResourceCreateRequest,
         V1Alpha1ConfigResourceCreateResponse
-    ),
-    "v1alpha2": (
-        V1Alpha2ConfigResourceCreateRequest,
-        V1Alpha2ConfigResourceCreateResponse
     ),
 }
 
