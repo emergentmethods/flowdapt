@@ -1,3 +1,9 @@
+## 0.1.7 (2024-04-04)
+
+### Fix
+
+- Remove excess dtos in configs api
+
 ## 0.1.6 (2024-04-01)
 
 ### Fix
