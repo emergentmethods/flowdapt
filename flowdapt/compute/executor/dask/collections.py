@@ -211,3 +211,5 @@ register_handler("dask", "dask.dataframe.core.DataFrame", "from_artifact", dask_
 register_handler("dask", "dask.dataframe.core.Series", "from_artifact", dask_dataframe_from_artifact)  # noqa: E501
 register_handler("dask", "dask.array.core.Array", "to_artifact", dask_array_to_artifact)
 register_handler("dask", "dask.array.core.Array", "from_artifact", dask_array_from_artifact)
+register_handler("dask", "dask_expr._collection.DataFrame", "to_artifact", dask_dataframe_to_artifact)  # noqa: E501
+register_handler("dask", "dask_expr._collection.DataFrame", "from_artifact", dask_dataframe_from_artifact)  # noqa: E501
