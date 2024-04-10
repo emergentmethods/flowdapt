@@ -81,7 +81,11 @@ def dask_dataframe_from_artifact(
     :param num_points: The number of points to read from the dataframe.
     :return: A dask dataframe.
     """
-    _valid_types = ["dask.dataframe.core.DataFrame", "dask.dataframe.core.Series"]
+    _valid_types = [
+        "dask.dataframe.core.DataFrame",
+        "dask.dataframe.core.Series",
+        "dask_expr._collection.DataFrame",
+    ]
     assert artifact["value_type"] in _valid_types, f"Artifact must be of type {_valid_types}"
 
     partition_files = artifact.list_files()

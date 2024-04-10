@@ -63,6 +63,8 @@ def test_handlers_are_registered():
     assert get_handler_func("dask", "dask.dataframe.core.DataFrame", "from_artifact") is not None
     assert get_handler_func("dask", "dask.array.core.Array", "to_artifact") is not None
     assert get_handler_func("dask", "dask.array.core.Array", "from_artifact") is not None
+    assert get_handler_func("dask", "dask_expr._collection.DataFrame", "to_artifact") is not None
+    assert get_handler_func("dask", "dask_expr._collection.DataFrame", "from_artifact") is not None
 
 
 def test_dask_array_to_artifact(artifact: Artifact, dask_local_cluster):
