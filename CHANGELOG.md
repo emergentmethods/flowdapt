@@ -1,3 +1,11 @@
+## 0.1.9 (2024-04-10)
+
+### Fix
+
+- Add new dask expr as valid types in dask collection methods
+- Ensure new dask dataframes are registered in collections logic
+- bump dask
+
 ## 0.1.8 (2024-04-04)
 
 ### Fix
