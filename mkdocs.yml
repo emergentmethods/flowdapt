@@ -2,7 +2,7 @@ site_name: flowdapt
 site_author: Emergent Methods, LLC
 copyright: Emergent Methods, LLC
 site_url: http://docs.flowdapt.ai/
-repo_url: https://gitlab.com/emergentmethods/flowdapt
+repo_url: https://github.com/emergentmethods/flowdapt
 repo_name: flowdapt
 
 nav:
