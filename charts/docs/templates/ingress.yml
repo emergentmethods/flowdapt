@@ -6,7 +6,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   annotations:
     traefik.ingress.kubernetes.io/router.tls: "true"
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure,web
     {{- if .Values.ingress.middlewares }}
     traefik.ingress.kubernetes.io/router.middlewares: {{ include "middleware-annotation" . | quote }}
     {{- end }}
