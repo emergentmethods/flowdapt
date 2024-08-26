@@ -1,3 +1,10 @@
+## 0.1.11 (2024-08-26)
+
+### Fix
+
+- pin numpy
+- bump Ray and llvmlite
+
 ## 0.1.10 (2024-04-17)
 
 ### Fix
