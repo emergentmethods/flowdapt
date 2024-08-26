@@ -5,7 +5,7 @@ FROM python:${PYTHON_VERSION}-slim-buster AS builder
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install -y build-essential && \
+    apt-get install -y build-essential libz-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -32,7 +32,7 @@ FROM python:${PYTHON_VERSION}-slim-buster AS production
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install -y build-essential && \
+    apt-get install -y build-essential libz-dev && \
     apt-get install -y python3-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
