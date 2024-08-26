@@ -1,3 +1,9 @@
+## 0.1.13 (2024-08-26)
+
+### Fix
+
+- add libz-dev to apt-get install
+
 ## 0.1.12 (2024-08-26)
 
 ### Fix
