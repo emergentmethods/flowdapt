@@ -28,7 +28,7 @@ RUN . /opt/venv/bin/activate && \
     poetry install --without dev --all-extras
 
 # Second stage: production environment
-FROM python:${PYTHON_VERSION}-slim-buster AS production
+FROM python:${PYTHON_VERSION}-slim-bookworm AS production
 
 # Install system dependencies
 RUN apt-get update && \

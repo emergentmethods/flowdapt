@@ -69,7 +69,7 @@ mkdocs-material = "^9.1.0"
 pytest-mock = "^3.10.0"
 mkdocs-click = "^0.8.0"
 types-pyyaml = "^6.0.12.9"
-mkdocstrings = { version = "0.22.0", extras = ["python"] }
+mkdocstrings-python = { version = "1.10.8", extras = ["python"] }
 docdantic = "0.3.1"
 
 [tool.mypy]
