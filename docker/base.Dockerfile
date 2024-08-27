@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG PYTHON_VERSION=3.11
 # First stage: build environment
-FROM python:${PYTHON_VERSION}-slim-buster AS builder
+FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
 
 # Install system dependencies
 RUN apt-get update && \
