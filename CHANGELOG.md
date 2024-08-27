@@ -1,3 +1,9 @@
+## 0.1.15 (2024-08-27)
+
+### Fix
+
+- Bump mkdocstrings and ensure runtime image uses bookworm
+
 ## 0.1.14 (2024-08-27)
 
 ### Fix
