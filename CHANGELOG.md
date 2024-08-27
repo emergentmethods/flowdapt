@@ -1,3 +1,9 @@
+## 0.1.14 (2024-08-27)
+
+### Fix
+
+- Update to bookworm base docker image
+
 ## 0.1.13 (2024-08-26)
 
 ### Fix
