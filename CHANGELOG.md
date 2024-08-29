@@ -1,3 +1,9 @@
+## 0.1.16 (2024-08-29)
+
+### Fix
+
+- if user is skipping DB, then user also doesnt care about the response cap
+
 ## 0.1.15 (2024-08-27)
 
 ### Fix
