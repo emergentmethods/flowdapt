@@ -301,7 +301,10 @@ async def _run_workflow(
     finally:
         # Verify size of the result field in the run object
         run_result_bytes = asizeof(run.result)
-        if run_result_bytes > WORKFLOW_RUN_RESULT_CAP:
+        if (
+            config.services.compute.run_retention_duration != 0 and
+            run_result_bytes > WORKFLOW_RUN_RESULT_CAP
+        ):
             run.result = ""
             await _logger.awarning("LargeWorkflowResult", size=run_result_bytes)
 
