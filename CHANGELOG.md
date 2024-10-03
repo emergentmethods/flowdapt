@@ -1,3 +1,9 @@
+## 0.1.17 (2024-10-03)
+
+### Fix
+
+- Support passing runtime env config for ray executor
+
 ## 0.1.16 (2024-08-29)
 
 ### Fix
