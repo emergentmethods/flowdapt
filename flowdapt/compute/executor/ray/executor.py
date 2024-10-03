@@ -84,6 +84,9 @@ class RayExecutor(Executor):
     Requires a "name" key to be set. The rest of the options are passed to Ray. Defaults
     to a RayClusterMemoryActor with 1 CPU and a max concurrency of 1000.
     :param upload_plugins: Whether to upload plugins to the worker or not.
+    :param runtime_env_config: A dictionary of options to use for the runtime environment config.
+    For available options, see
+    https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_env.RuntimeEnvConfig.html.
     """
     kind: str = "ray"
 
@@ -108,6 +111,7 @@ class RayExecutor(Executor):
         container: dict[str, str] | None = None,
         upload_plugins: bool = True,
         cluster_memory_actor: dict[str, Any] | None = None,
+        runtime_env_config: dict[str, Any] | None = None,
         **kwargs
     ):
         _app_config = get_configuration()
@@ -146,6 +150,7 @@ class RayExecutor(Executor):
                 "num_cpus": 1,
                 "max_concurrency": 1000,
             },
+            "runtime_env_config": runtime_env_config,
             "kwargs": kwargs,
         }
 
@@ -206,6 +211,9 @@ class RayExecutor(Executor):
             env["py_modules"] = py_modules
         if pip:
             env["pip"] = {"packages": pip, "pip_check": False}
+
+        if self._config["runtime_env_config"]:
+            env["config"] = self._config["runtime_env_config"]
 
         return env
 
