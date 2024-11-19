@@ -1,5 +1,6 @@
 import os
 import grpc
+# from datetime import datetime
 from collections import defaultdict
 from opentelemetry import trace, metrics
 from opentelemetry.trace import Tracer, Span, Status, StatusCode
@@ -257,7 +258,11 @@ class MetricsContainer:
         :type data_points: list
         """
         # Add new data points to the buffer
-        self._metrics[metric].extend(data_points)
+        self._metrics[metric] = sorted(
+            data_points + self._metrics[metric],
+            key=lambda x: x['time_unix_nano'],
+            reverse=True
+        )
 
         # Get the latest time_unix_nano across all data points
         latest_time = max(

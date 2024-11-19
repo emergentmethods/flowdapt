@@ -2,7 +2,7 @@ import asyncio
 from typing import Any, Type
 from uuid import UUID
 from time import process_time_ns
-from pympler.asizeof import asizeof
+# from pympler.asizeof import asizeof
 
 from flowdapt.lib.rpc import RPC
 from flowdapt.lib.logger import get_logger
@@ -300,13 +300,13 @@ async def _run_workflow(
         workflows_failed_count.add(1, metrics_attributes)
     finally:
         # Verify size of the result field in the run object
-        run_result_bytes = asizeof(run.result)
-        if (
-            config.services.compute.run_retention_duration != 0 and
-            run_result_bytes > WORKFLOW_RUN_RESULT_CAP
-        ):
-            run.result = ""
-            await _logger.awarning("LargeWorkflowResult", size=run_result_bytes)
+        # run_result_bytes = asizeof(run.result)
+        # if (
+        #     config.services.compute.run_retention_duration != 0 and
+        #     run_result_bytes > WORKFLOW_RUN_RESULT_CAP
+        # ):
+        #     run.result = ""
+        #     await _logger.awarning("LargeWorkflowResult", size=run_result_bytes)
 
         # Save the WorkflowRun and fire the finished event
         if config.services.compute.run_retention_duration != 0:
