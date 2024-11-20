@@ -1,3 +1,10 @@
+## 0.1.18 (2024-11-20)
+
+### Fix
+
+- Remove result size check
+- Ensure metrics data points sorted by timestamp
+
 ## 0.1.17 (2024-10-03)
 
 ### Fix
