@@ -1,3 +1,9 @@
+## 0.1.19 (2025-01-25)
+
+### Fix
+
+- Update crontab dependency
+
 ## 0.1.18 (2024-11-20)
 
 ### Fix
