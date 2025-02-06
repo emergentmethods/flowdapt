@@ -1,3 +1,9 @@
+## 0.1.20 (2025-02-06)
+
+### Fix
+
+- Bump some dependencies for CVE fixes and pin anyio
+
 ## 0.1.19 (2025-01-25)
 
 ### Fix
