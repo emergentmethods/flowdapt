@@ -1,14 +1,12 @@
 from enum import Enum
 
-from flowdapt.lib.utils.model import (
-    BaseModel,
-    model_dump
-)
 from flowdapt.lib.domain.dto.v1.base import V1Alpha1ResourceMetadata
+from flowdapt.lib.utils.model import BaseModel, model_dump
 from flowdapt.triggers.domain.models.triggerrule import (
     TRIGGER_RESOURCE_KIND,
     TriggerRuleResource,
 )
+
 
 class V1Alpha1TriggerRuleType(str, Enum):
     schedule = "schedule"
@@ -54,8 +52,7 @@ class V1Alpha1TriggerRuleResourceUpdateRequest(V1Alpha1TriggerRuleResourceBase):
         )
 
 
-class V1Alpha1TriggerRuleResourceUpdateResponse(V1Alpha1TriggerRuleResourceCreateResponse):
-    ...
+class V1Alpha1TriggerRuleResourceUpdateResponse(V1Alpha1TriggerRuleResourceCreateResponse): ...
 
 
 class V1Alpha1TriggerRuleResourceReadResponse(V1Alpha1TriggerRuleResourceBase):
@@ -82,12 +79,7 @@ if __name__ == "__main__":
             },
             spec={
                 "condition": condition,
-                "action": {
-                    "target": "print_event",
-                    "parameters": {
-                        "test": "test"
-                    }
-                }
-            }
+                "action": {"target": "print_event", "parameters": {"test": "test"}},
+            },
         )
     )

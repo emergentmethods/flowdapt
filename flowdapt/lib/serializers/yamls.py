@@ -1,5 +1,6 @@
-import yaml
 from typing import Any
+
+import yaml
 
 from flowdapt.lib.serializers.base import Serializer
 
@@ -8,6 +9,7 @@ class YAMLSerializer(Serializer):
     """
     Serializer for YAML data.
     """
+
     @staticmethod
     def loads(data: bytes) -> Any:
         if isinstance(data, str):

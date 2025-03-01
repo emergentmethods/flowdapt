@@ -1,13 +1,14 @@
-from uuid import UUID
 from functools import reduce
+from uuid import UUID
 
+from flowdapt.compute.domain.models.config import ConfigResource
 from flowdapt.lib.context import inject_context
 from flowdapt.lib.database.base import BaseStorage
 from flowdapt.lib.domain.models.base import Resource
 from flowdapt.lib.errors import ResourceNotFoundError
 from flowdapt.lib.telemetry import get_tracer
 from flowdapt.lib.utils.model import model_dump
-from flowdapt.compute.domain.models.config import ConfigResource
+
 
 tracer = get_tracer(__name__)
 
@@ -54,10 +55,7 @@ async def get_config(identifier: str | UUID, database: BaseStorage) -> ConfigRes
 
 @tracer.start_as_current_span("create_config")
 @inject_context
-async def create_config(
-    payload: ConfigResource,
-    database: BaseStorage
-) -> ConfigResource:
+async def create_config(payload: ConfigResource, database: BaseStorage) -> ConfigResource:
     """
     Create a ConfigResource with the given payload.
 
@@ -89,9 +87,7 @@ async def delete_config(identifier: str | UUID, database: BaseStorage) -> Config
 @tracer.start_as_current_span("update_config")
 @inject_context
 async def update_config(
-    identifier: str | UUID,
-    payload: ConfigResource,
-    database: BaseStorage
+    identifier: str | UUID, payload: ConfigResource, database: BaseStorage
 ) -> ConfigResource:
     """
     Update a ConfigResource with the given payload.

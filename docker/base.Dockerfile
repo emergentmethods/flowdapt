@@ -9,23 +9,21 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Poetry
-RUN pip install poetry
+# Install uv
+RUN pip install uv
 
 # Set up the working directory
 WORKDIR /srv/flowdapt
 
 ADD flowdapt ./flowdapt
 # Copy the project files and install dependencies
-COPY pyproject.toml poetry.lock README.md ./
+COPY pyproject.toml uv.lock README.md ./
 
-# Createa virtual env
+# Create a virtual env
 RUN python -m venv /opt/venv
 
 # Install the project and dependencies
-RUN . /opt/venv/bin/activate && \
-    poetry config installer.max-workers 4 && \
-    poetry install --without dev --all-extras
+RUN UV_PROJECT_ENVIRONMENT="/opt/venv" uv sync --frozen
 
 # Second stage: production environment
 FROM python:${PYTHON_VERSION}-slim-bookworm AS production

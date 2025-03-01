@@ -1,9 +1,10 @@
 import asyncio
-from typing import Callable, TypeVar, ParamSpec, Generic, Type, Any, Awaitable
 from functools import partial
+from typing import Any, Awaitable, Callable, Generic, ParamSpec, Type, TypeVar
 
 from flowdapt.lib.rpc.eventbus.event import BaseEvent, Event
 from flowdapt.lib.utils.asynctools import is_async_callable
+
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -17,7 +18,7 @@ class EventCallback(Generic[P, R]):
         _fn: CallbackType,
         channel: str,
         event_type: str = "event",
-        event_model: Type[BaseEvent] = Event
+        event_model: Type[BaseEvent] = Event,
     ):
         if not callable(_fn):
             raise TypeError("`_fn` must be callable.")
@@ -52,21 +53,13 @@ class EventCallback(Generic[P, R]):
     async def __call__(self, *args: P.args, **kwargs: P.kwargs):
         if not self.is_async:
             loop = asyncio.get_running_loop()
-            return loop.run_in_executor(
-                None,
-                partial(self._fn, *args, **kwargs)
-            )
+            return loop.run_in_executor(None, partial(self._fn, *args, **kwargs))
         else:
             return await self._fn(*args, **kwargs)
 
 
 class CallbackGroup:
-    def __init__(
-        self,
-        callback_cls: Type[EventCallback] = EventCallback,
-        *args,
-        **kwargs
-    ) -> None:
+    def __init__(self, callback_cls: Type[EventCallback] = EventCallback, *args, **kwargs) -> None:
         self._callback_cls = callback_cls
         self._callbacks: dict[str, list[EventCallback]] = {}
 
@@ -101,17 +94,13 @@ class CallbackGroup:
         else:
             self._callbacks[callback.channel] = [callback]
 
-    def add_callback(
-        self,
-        callback: CallbackType,
-        event: Type[BaseEvent] = Event
-    ):
+    def add_callback(self, callback: CallbackType, event: Type[BaseEvent] = Event):
         self.register_callback(
             self._callback_cls(
                 callback,
                 event.__fields__["channel"].default,
                 event.__fields__["type"].default,
-                event
+                event,
             )
         )
 
@@ -119,24 +108,14 @@ class CallbackGroup:
         self,
         callback: CallbackType,
     ):
-        self.register_callback(
-            self._callback_cls(callback, "$ALL", "$ALL", Event)
-        )
+        self.register_callback(self._callback_cls(callback, "$ALL", "$ALL", Event))
 
-    def callback(
-        self,
-        event: Type[Event],
-        all: bool = False
-    ) -> Callable[..., Any]:
+    def callback(self, event: Type[Event], all: bool = False) -> Callable[..., Any]:
         def decorator(func: CallbackType) -> CallbackType:
             if all:
-                self.add_wildcard_callback(
-                    callback=func
-                )
+                self.add_wildcard_callback(callback=func)
             else:
-                self.add_callback(
-                    callback=func,
-                    event=event
-                )
+                self.add_callback(callback=func, event=event)
             return func
+
         return decorator

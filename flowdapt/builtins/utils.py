@@ -1,17 +1,18 @@
-import psutil
-import pandas as pd
-import dask.dataframe as dd
-import numpy as np
-from typing import Dict, Union, Any, Tuple
-from pathlib import Path
-from datetime import timedelta, timezone, datetime
-from flowdapt.lib.logger import get_logger
 import re
+import uuid
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any, Dict, Tuple, Union
 from urllib.parse import quote
 
-import uuid
+import dask.dataframe as dd
+import numpy as np
+import pandas as pd
+import psutil
 
+from flowdapt.lib.logger import get_logger
 from flowdapt.lib.utils.misc import dict_to_list_string
+
 
 logger = get_logger(__name__)
 
@@ -29,14 +30,13 @@ def find_features(dataframe: pd.DataFrame) -> list:
 
 
 def dummy_pandas_df(rows: int, cols: int, withnans: bool = True) -> pd.DataFrame:
-
     df = pd.DataFrame(np.random.rand(rows, cols)) * 35
 
     # fake features
     df.columns = [f"%-{col}" for col in df.columns]
 
     # fake label
-    df = df.set_axis([*df.columns[:-1], '&-a'], axis=1)
+    df = df.set_axis([*df.columns[:-1], "&-a"], axis=1)
 
     # fake nans
     if withnans:
@@ -45,10 +45,9 @@ def dummy_pandas_df(rows: int, cols: int, withnans: bool = True) -> pd.DataFrame
     return df
 
 
-def save_historical_data_to_feather(data: pd.DataFrame,
-                                    metadata: Dict[str, Any],
-                                    save_path: str
-                                    ) -> bool:
+def save_historical_data_to_feather(
+    data: pd.DataFrame, metadata: Dict[str, Any], save_path: str
+) -> bool:
     """
     Save the provided dataframe to feather in user_data/
     """
@@ -62,10 +61,11 @@ def save_historical_data_to_feather(data: pd.DataFrame,
     return data_path.is_file()
 
 
-def load_historical_data_from_feather(metadata: Dict[str, Any],
-                                      save_path: str,
-                                      num_points: int = -1,
-                                      ) -> Union[pd.DataFrame, None]:
+def load_historical_data_from_feather(
+    metadata: Dict[str, Any],
+    save_path: str,
+    num_points: int = -1,
+) -> Union[pd.DataFrame, None]:
     """
     Given metadata, look for saved feather file and load it to dataframe
     if available. Else, log exception and return None
@@ -81,16 +81,12 @@ def load_historical_data_from_feather(metadata: Dict[str, Any],
             # return only the latest num_points
             return df.tail(num_points)
     except Exception as e:
-        logger.warning(
-            f"Unable to load feather from {Path(save_path, *md_list)}."
-            f" {e}")
+        logger.warning(f"Unable to load feather from {Path(save_path, *md_list)}. {e}")
         return None
 
 
 def update_historic_data(
-        metadata: Dict[str, Any],
-        incoming_df: pd.DataFrame,
-        save_path: str
+    metadata: Dict[str, Any], incoming_df: pd.DataFrame, save_path: str
 ) -> Tuple[bool, int]:
     """
     Append datapoint to the existing historic data. The incoming dataframe
@@ -123,8 +119,7 @@ def update_historic_data(
 
     saved = save_historical_data_to_feather(existing_df, metadata, save_path)
     if not saved:
-        logger.warning("Unable to save dataframe to feather at ",
-                       f"{save_path}, {metadata}")
+        logger.warning("Unable to save dataframe to feather at ", f"{save_path}, {metadata}")
 
     return (True, candle_difference)
 
@@ -153,8 +148,9 @@ def path_from_string(s: str) -> Path:
     return Path(s.replace("_", "/"))
 
 
-def merge_dataframes(df: pd.DataFrame, df_inc: pd.DataFrame,
-                     prefer_new: bool = True) -> pd.DataFrame:
+def merge_dataframes(
+    df: pd.DataFrame, df_inc: pd.DataFrame, prefer_new: bool = True
+) -> pd.DataFrame:
     if len(df_inc.index) == 0:
         # The incoming dataframe must have at least 1 candle
         return (False, 0)
@@ -179,7 +175,6 @@ def merge_dataframes(df: pd.DataFrame, df_inc: pd.DataFrame,
 
 
 def get_data_gap(df: Union[pd.DataFrame, dd.DataFrame], tz: timezone | None = None) -> int:
-
     local_last = df.iloc[-1]["date"].tz_localize(tz)
     current_date = datetime.now(tz=tz)
 
@@ -189,16 +184,17 @@ def get_data_gap(df: Union[pd.DataFrame, dd.DataFrame], tz: timezone | None = No
 
     if int(row_difference) > 0:
         logger.info(f"Gap in data, downloading {int(row_difference)} points.")
-        logger.info(f"Last data point: {local_last}, current time: {current_date} "
-                    f"tf_delta: {tf_delta}, row_difference: {row_difference}")
+        logger.info(
+            f"Last data point: {local_last}, current time: {current_date} "
+            f"tf_delta: {tf_delta}, row_difference: {row_difference}"
+        )
     else:
         logger.info("No gap in data, pulling from memory/storage.")
 
     return int(row_difference)
 
 
-def extract_features_and_labels(df: pd.DataFrame) -> Tuple[pd.DataFrame,
-                                                           pd.DataFrame]:
+def extract_features_and_labels(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Extract features and labels assuming feature columns
     are prepended with "%" and label columns are
@@ -216,13 +212,13 @@ def extract_features_and_labels(df: pd.DataFrame) -> Tuple[pd.DataFrame,
 
 
 def remove_rows_with_nans(df: pd.DataFrame) -> pd.DataFrame:
-
     drop_rows = pd.isnull(df).any(axis=1)
     df = df[~drop_rows]
     if len(df) < len(drop_rows):
         logger.warning(f"Dropped {len(drop_rows) - len(df.index)} from dataset due to NaNs")
 
     return df
+
 
 def remove_none_columns(df: pd.DataFrame, threshold: int = 40) -> pd.DataFrame:
     """
@@ -232,18 +228,14 @@ def remove_none_columns(df: pd.DataFrame, threshold: int = 40) -> pd.DataFrame:
 
     incoming_cols = len(df.columns)
     total_num = len(df.index)
-    df = df.dropna(axis=1, thresh=total_num-threshold)
+    df = df.dropna(axis=1, thresh=total_num - threshold)
     df = df.dropna(axis=1, how="all")
     outgoing_cols = len(df.columns)
     logger.info(f"Removed {incoming_cols - outgoing_cols} columns due to NaNs")
     return df
 
 
-def shift_and_add_features(
-    df: pd.DataFrame,
-    shifts: int,
-    cols: list
-) -> pd.DataFrame:
+def shift_and_add_features(df: pd.DataFrame, shifts: int, cols: list) -> pd.DataFrame:
     """
     Automatically shifts entire dataframe `shifts` times and adds points
     to
@@ -290,8 +282,8 @@ def get_total_system_threads():
     logger.info(f"Total number of processes in the system: {len(psutil.pids())}")
     logger.info(f"Total number of threads consumed by processes in the system: {total_threads}")
 
-    with open('user_data/total_threads.txt', 'a') as f:
-        f.write(str(total_threads) + '\n')
+    with open("user_data/total_threads.txt", "a") as f:
+        f.write(str(total_threads) + "\n")
 
 
 def artifact_name_from_dict(d: dict) -> str:
@@ -303,10 +295,10 @@ def artifact_name_from_dict(d: dict) -> str:
     l, s = dict_to_list_string(d)
     s = quote(s)
     # Remove any characters that are not allowed in file names using regex
-    s = re.sub(r'[\\/:*?"<>|]', '', s)
+    s = re.sub(r'[\\/:*?"<>|]', "", s)
 
     # Replace any spaces or special characters with an underscore or hyphen using regex
-    s = re.sub(r'\s+', '-', s)
+    s = re.sub(r"\s+", "-", s)
     s = s.replace("%", "")
     s = s.replace(" ", "_")
     s = s.replace(".", "_")

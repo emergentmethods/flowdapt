@@ -1,6 +1,6 @@
 import asyncio
-from typing import Coroutine
 from contextlib import suppress
+from typing import Coroutine
 
 from flowdapt.lib.logger import LoggerType
 
@@ -14,7 +14,7 @@ class TaskSet:
         self,
         tasks: set[Coroutine] | None = None,
         return_exceptions: bool = False,
-        logger: LoggerType | None = None
+        logger: LoggerType | None = None,
     ):
         self._set: set[asyncio.Task] = set()
         self._return_exceptions = return_exceptions
@@ -61,7 +61,4 @@ class TaskSet:
         """
         Run and gather all tasks in this `TaskSet`
         """
-        return asyncio.gather(
-            *self._set,
-            return_exceptions=self._return_exceptions
-        ).__await__()
+        return asyncio.gather(*self._set, return_exceptions=self._return_exceptions).__await__()

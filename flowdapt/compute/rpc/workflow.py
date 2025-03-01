@@ -1,50 +1,46 @@
-from fastapi import status, Response, Request, Depends, Body
+from fastapi import Body, Depends, Request, Response, status
 
-from flowdapt.lib.errors import APIErrorModel, ResourceNotFoundError
-from flowdapt.lib.rpc import RPCRouter, RPC
-from flowdapt.lib.rpc.api.utils import (
-    build_responses_dict,
-    responses_from_dtos,
-    requests_from_dtos,
-    get_versioned_dto,
-    build_response,
-    parse_request_body,
+from flowdapt.compute.domain.dto import (
+    WorkflowResourceCreateDTOs,
+    WorkflowResourceCreateResponse,
+    WorkflowResourceReadDTOs,
+    WorkflowResourceReadResponse,
+    WorkflowResourceUpdateDTOs,
+    WorkflowResourceUpdateResponse,
+    WorkflowRunReadDTOs,
+    WorkflowRunReadResponse,
 )
-from flowdapt.lib.context import inject_context
-from flowdapt.lib.domain.dto.protocol import DTOPair
-from flowdapt.lib.domain.dto.utils import to_model
-from flowdapt.compute.service import logger
 from flowdapt.compute.domain.events.workflow import RunWorkflowEvent
 from flowdapt.compute.domain.models.workflow import WORKFLOW_RESOURCE_KIND
 from flowdapt.compute.domain.models.workflowrun import WORKFLOW_RUN_RESOURCE_KIND
-
-from flowdapt.compute.domain.dto import (
-    WorkflowResourceReadDTOs,
-    WorkflowResourceCreateDTOs,
-    WorkflowResourceUpdateDTOs,
-    WorkflowRunReadDTOs,
-    WorkflowResourceCreateResponse,
-    WorkflowResourceUpdateResponse,
-    WorkflowResourceReadResponse,
-    WorkflowRunReadResponse,
-)
 from flowdapt.compute.resources.workflow.methods import (
-    list_workflows,
-    get_workflow,
-    delete_workflow,
     create_workflow,
-    update_workflow,
-    run_workflow,
-    get_recent_workflow_runs,
-    get_workflow_run,
+    delete_workflow,
     delete_workflow_run,
+    get_recent_workflow_runs,
+    get_workflow,
+    get_workflow_run,
+    list_workflows,
+    run_workflow,
+    update_workflow,
+)
+from flowdapt.compute.service import logger
+from flowdapt.lib.context import inject_context
+from flowdapt.lib.domain.dto.protocol import DTOPair
+from flowdapt.lib.domain.dto.utils import to_model
+from flowdapt.lib.errors import APIErrorModel, ResourceNotFoundError
+from flowdapt.lib.rpc import RPC, RPCRouter
+from flowdapt.lib.rpc.api.utils import (
+    build_response,
+    build_responses_dict,
+    get_versioned_dto,
+    parse_request_body,
+    requests_from_dtos,
+    responses_from_dtos,
 )
 
 
-router = RPCRouter(
-    prefix="/workflows",
-    tags=["workflows"]
-)
+router = RPCRouter(prefix="/workflows", tags=["workflows"])
 
 
 # API GET @ /api/workflows/
@@ -59,7 +55,7 @@ router = RPCRouter(
     ),
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    name="list_workflows"
+    name="list_workflows",
 )
 async def list_workflows_api(
     versioned_dto: tuple[DTOPair, str] = Depends(
@@ -67,7 +63,7 @@ async def list_workflows_api(
             WorkflowResourceReadDTOs,
             resource_type=WORKFLOW_RESOURCE_KIND,
         )
-    )
+    ),
 ):
     (_, response_dto), version = versioned_dto
     models = await list_workflows()
@@ -81,26 +77,21 @@ async def list_workflows_api(
     response_model=WorkflowResourceReadResponse,
     summary="Get a Workflow",
     response_description="The Workflow Definition",
-    responses=build_responses_dict({
-        **responses_from_dtos(WorkflowResourceReadDTOs, WORKFLOW_RESOURCE_KIND),
-        **{
-            404: {
-                "model": APIErrorModel
-            }
+    responses=build_responses_dict(
+        {
+            **responses_from_dtos(WorkflowResourceReadDTOs, WORKFLOW_RESOURCE_KIND),
+            **{404: {"model": APIErrorModel}},
         }
-    }),
+    ),
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    name="get_workflow"
+    name="get_workflow",
 )
 async def get_workflow_api(
     identifier: str,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            WorkflowResourceReadDTOs,
-            resource_type=WORKFLOW_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(WorkflowResourceReadDTOs, resource_type=WORKFLOW_RESOURCE_KIND)
+    ),
 ):
     (_, response_dto), version = versioned_dto
     model = await get_workflow(identifier)
@@ -119,21 +110,16 @@ async def get_workflow_api(
     ),
     response_class=Response,
     openapi_extra={
-        "requestBody": {
-            **requests_from_dtos(WorkflowResourceCreateDTOs, WORKFLOW_RESOURCE_KIND)
-        }
+        "requestBody": {**requests_from_dtos(WorkflowResourceCreateDTOs, WORKFLOW_RESOURCE_KIND)}
     },
     status_code=status.HTTP_200_OK,
-    name="create_workflow"
+    name="create_workflow",
 )
 async def create_workflow_api(
     request: Request,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            WorkflowResourceCreateDTOs,
-            resource_type=WORKFLOW_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(WorkflowResourceCreateDTOs, resource_type=WORKFLOW_RESOURCE_KIND)
+    ),
 ):
     (request_dto, response_dto), version = versioned_dto
     parsed_request = await parse_request_body(request, request_dto)
@@ -148,26 +134,21 @@ async def create_workflow_api(
     response_model=WorkflowResourceReadResponse,
     summary="Delete Workflow",
     response_description="The Workflow that was deleted",
-    responses=build_responses_dict({
-        **responses_from_dtos(WorkflowResourceReadDTOs, WORKFLOW_RESOURCE_KIND),
-        **{
-            404: {
-                "model": APIErrorModel
-            }
+    responses=build_responses_dict(
+        {
+            **responses_from_dtos(WorkflowResourceReadDTOs, WORKFLOW_RESOURCE_KIND),
+            **{404: {"model": APIErrorModel}},
         }
-    }),
+    ),
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    name="delete_workflow"
+    name="delete_workflow",
 )
 async def delete_workflow_api(
     identifier: str,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            WorkflowResourceReadDTOs,
-            resource_type=WORKFLOW_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(WorkflowResourceReadDTOs, resource_type=WORKFLOW_RESOURCE_KIND)
+    ),
 ):
     (_, response_dto), version = versioned_dto
     model = await delete_workflow(identifier)
@@ -186,22 +167,17 @@ async def delete_workflow_api(
     ),
     response_class=Response,
     openapi_extra={
-        "requestBody": {
-            **requests_from_dtos(WorkflowResourceUpdateDTOs, WORKFLOW_RESOURCE_KIND)
-        }
+        "requestBody": {**requests_from_dtos(WorkflowResourceUpdateDTOs, WORKFLOW_RESOURCE_KIND)}
     },
     status_code=status.HTTP_200_OK,
-    name="update_workflow"
+    name="update_workflow",
 )
 async def update_workflow_api(
     identifier: str,
     request: Request,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            WorkflowResourceUpdateDTOs,
-            resource_type=WORKFLOW_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(WorkflowResourceUpdateDTOs, resource_type=WORKFLOW_RESOURCE_KIND)
+    ),
 ):
     (request_dto, response_dto), version = versioned_dto
     parsed_request = await parse_request_body(request, request_dto)
@@ -217,17 +193,15 @@ async def update_workflow_api(
     response_model=WorkflowRunReadResponse,
     summary="Run a Workflow",
     response_description="The WorkflowRun that was created",
-    responses=build_responses_dict({
-        **responses_from_dtos(WorkflowRunReadDTOs, WORKFLOW_RUN_RESOURCE_KIND),
-        **{
-            404: {
-                "model": APIErrorModel
-            }
+    responses=build_responses_dict(
+        {
+            **responses_from_dtos(WorkflowRunReadDTOs, WORKFLOW_RUN_RESOURCE_KIND),
+            **{404: {"model": APIErrorModel}},
         }
-    }),
+    ),
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    name="run_workflow"
+    name="run_workflow",
 )
 async def run_workflow_api(
     identifier: str,
@@ -235,19 +209,12 @@ async def run_workflow_api(
     payload: dict = Body({}),
     wait: bool = True,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            WorkflowRunReadDTOs,
-            resource_type=WORKFLOW_RUN_RESOURCE_KIND
-        )
+        get_versioned_dto(WorkflowRunReadDTOs, resource_type=WORKFLOW_RUN_RESOURCE_KIND)
     ),
 ):
     (_, response_dto), version = versioned_dto
     model = await run_workflow(
-        identifier=identifier,
-        input=payload,
-        wait=wait,
-        namespace=namespace,
-        source="api"
+        identifier=identifier, input=payload, wait=wait, namespace=namespace, source="api"
     )
     return build_response(response_dto, model, WORKFLOW_RUN_RESOURCE_KIND, version)
 
@@ -264,7 +231,7 @@ async def run_workflow_api(
     ),
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    name="list_workflow_runs"
+    name="list_workflow_runs",
 )
 async def list_workflow_runs_api(
     identifier: str,
@@ -274,13 +241,10 @@ async def list_workflow_runs_api(
             WorkflowRunReadDTOs,
             resource_type=WORKFLOW_RUN_RESOURCE_KIND,
         )
-    )
+    ),
 ):
     (_, response_dto), version = versioned_dto
-    models = await get_recent_workflow_runs(
-        workflow=identifier,
-        limit=limit
-    )
+    models = await get_recent_workflow_runs(workflow=identifier, limit=limit)
     return build_response(response_dto, models, WORKFLOW_RUN_RESOURCE_KIND, version, recursive=True)
 
 
@@ -291,26 +255,21 @@ async def list_workflow_runs_api(
     response_model=WorkflowRunReadResponse,
     summary="Get a Workflow Run",
     response_description="The Workflow Run",
-    responses=build_responses_dict({
-        **responses_from_dtos(WorkflowRunReadDTOs, WORKFLOW_RUN_RESOURCE_KIND),
-        **{
-            404: {
-                "model": APIErrorModel
-            }
+    responses=build_responses_dict(
+        {
+            **responses_from_dtos(WorkflowRunReadDTOs, WORKFLOW_RUN_RESOURCE_KIND),
+            **{404: {"model": APIErrorModel}},
         }
-    }),
+    ),
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    name="get_workflow_run"
+    name="get_workflow_run",
 )
 async def get_workflow_run_api(
     identifier: str,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            WorkflowRunReadDTOs,
-            resource_type=WORKFLOW_RUN_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(WorkflowRunReadDTOs, resource_type=WORKFLOW_RUN_RESOURCE_KIND)
+    ),
 ):
     (_, response_dto), version = versioned_dto
     model = await get_workflow_run(identifier)
@@ -324,26 +283,21 @@ async def get_workflow_run_api(
     response_model=WorkflowRunReadResponse,
     summary="Delete a Workflow Run",
     response_description="The deleted Workflow Run",
-    responses=build_responses_dict({
-        **responses_from_dtos(WorkflowRunReadDTOs, WORKFLOW_RUN_RESOURCE_KIND),
-        **{
-            404: {
-                "model": APIErrorModel
-            }
+    responses=build_responses_dict(
+        {
+            **responses_from_dtos(WorkflowRunReadDTOs, WORKFLOW_RUN_RESOURCE_KIND),
+            **{404: {"model": APIErrorModel}},
         }
-    }),
+    ),
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    name="delete_workflow_run"
+    name="delete_workflow_run",
 )
 async def delete_workflow_run_api(
     identifier: str,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            WorkflowRunReadDTOs,
-            resource_type=WORKFLOW_RUN_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(WorkflowRunReadDTOs, resource_type=WORKFLOW_RUN_RESOURCE_KIND)
+    ),
 ):
     (_, response_dto), version = versioned_dto
     model = await delete_workflow_run(identifier)
@@ -362,15 +316,12 @@ async def run_workflow_callback(event: RunWorkflowEvent, rpc: RPC):
             source=event.source,
         )
     except ResourceNotFoundError:
-        await logger.aexception(
-            "ResourceNotFound",
-            identifier=event.data.identifier
-        )
+        await logger.aexception("ResourceNotFound", identifier=event.data.identifier)
         response = ("ResourceNotFoundError", event.data.identifier)
 
     if event.reply_channel and event.correlation_id:
         await rpc.event_bus.publish_response(
             response=response,
             reply_channel=event.reply_channel,
-            correlation_id=event.correlation_id
+            correlation_id=event.correlation_id,
         )

@@ -1,23 +1,23 @@
-
 import asyncio
+from contextlib import asynccontextmanager, suppress
 from time import process_time_ns
-from contextlib import suppress, asynccontextmanager
-from typing import AsyncIterator, Type, TypeVar, Any, Literal
+from typing import Any, AsyncIterator, Literal, Type, TypeVar
 
-from flowdapt.lib.utils.model import model_dump, validate_model
 from flowdapt.lib.logger import get_logger
-from flowdapt.lib.rpc.eventbus.event import BaseEvent, Event, ResponseEvent
 from flowdapt.lib.rpc.eventbus.brokers import Broker, MemoryBroker
-from flowdapt.lib.rpc.eventbus.stream import EventStream
 from flowdapt.lib.rpc.eventbus.callback import CallbackGroup, EventCallback
-from flowdapt.lib.utils.misc import generate_uuid
+from flowdapt.lib.rpc.eventbus.event import BaseEvent, Event, ResponseEvent
+from flowdapt.lib.rpc.eventbus.stream import EventStream
 from flowdapt.lib.telemetry import (
-    get_tracer,
+    ctx_from_parent,
+    get_current_span,
     get_meter,
     get_trace_parent,
-    get_current_span,
-    ctx_from_parent
+    get_tracer,
 )
+from flowdapt.lib.utils.misc import generate_uuid
+from flowdapt.lib.utils.model import model_dump, validate_model
+
 
 logger = get_logger(__name__)
 tracer = get_tracer(__name__)
@@ -28,11 +28,7 @@ TEventBus = TypeVar("TEventBus", bound="EventBus")
 
 class EventBus:
     def __init__(
-        self,
-        broker: Type[Broker] = MemoryBroker,
-        *args,
-        concurrency_limit: int = 100,
-        **kwargs
+        self, broker: Type[Broker] = MemoryBroker, *args, concurrency_limit: int = 100, **kwargs
     ):
         assert asyncio.get_running_loop(), "EventBus must be instantiated with an active loop"
 
@@ -50,19 +46,13 @@ class EventBus:
         self._callback_group: CallbackGroup = CallbackGroup()
 
         self._events_published = meter.create_counter(
-            name="events_published",
-            description="The number of events published",
-            unit="1"
+            name="events_published", description="The number of events published", unit="1"
         )
         self._events_received = meter.create_counter(
-            name="events_received",
-            description="The number of events received",
-            unit="1"
+            name="events_received", description="The number of events received", unit="1"
         )
         self._event_callback_latency = meter.create_histogram(
-            name="event_callback_latency",
-            description="The latency of event callbacks",
-            unit="ms"
+            name="event_callback_latency", description="The latency of event callbacks", unit="ms"
         )
 
     @property
@@ -84,7 +74,7 @@ class EventBus:
                     "channel": channel,
                     "event_type": event.get("type"),
                     "event_source": event.get("source"),
-                }
+                },
             )
             streams = self._streams.get(channel, set()) | self._streams.get("$ALL", set())
 
@@ -93,9 +83,7 @@ class EventBus:
 
     async def _create_callback_reader(self, channel):
         # Create callback reader task
-        self._callback_tasks[channel] = asyncio.create_task(
-            self._read_stream(channel)
-        )
+        self._callback_tasks[channel] = asyncio.create_task(self._read_stream(channel))
 
     async def create_callback_reader(self, channel):
         async with self.lock:
@@ -108,8 +96,7 @@ class EventBus:
         async with self.subscribe(channel) as stream:
             async for event in stream:
                 await self._fire_callbacks(
-                    self._callback_group.get_callbacks(channel, event.type),
-                    event
+                    self._callback_group.get_callbacks(channel, event.type), event
                 )
 
     async def _fire_callbacks(self, callbacks: list[EventCallback], event: BaseEvent):
@@ -144,9 +131,7 @@ class EventBus:
                 }
 
                 with tracer.start_as_current_span(
-                    f"event_bus_callback_{callback.name}",
-                    context=ctx,
-                    attributes=event_attributes
+                    f"event_bus_callback_{callback.name}", context=ctx, attributes=event_attributes
                 ):
                     start_time = process_time_ns()
                     await callback(event)
@@ -158,7 +143,7 @@ class EventBus:
                     "Exception occurred",
                     callback=callback.name,
                     event_type=event.type,
-                    error=str(e)
+                    error=str(e),
                 )
 
     def add_group(self, group: CallbackGroup):
@@ -186,9 +171,7 @@ class EventBus:
                     await self._create_callback_reader(channel)
 
                 # Create our reader task
-                self._consumer_task = asyncio.create_task(
-                    self._consumer()
-                )
+                self._consumer_task = asyncio.create_task(self._consumer())
 
                 # Set connected flag
                 self._disconnected.clear()
@@ -233,7 +216,9 @@ class EventBus:
         if not self._streams.get(channel):
             # If no existing subscriber, add one and subscribe on the broker
             await self._subscribe_channel(channel)
-            self._streams[channel] = {stream, }
+            self._streams[channel] = {
+                stream,
+            }
         else:
             # If there is, simply add it
             self._streams[channel].add(stream)
@@ -285,10 +270,7 @@ class EventBus:
             "event_source": event["source"],
         }
 
-        with tracer.start_as_current_span(
-            "event_bus_publish",
-            attributes=event_attributes
-        ):
+        with tracer.start_as_current_span("event_bus_publish", attributes=event_attributes):
             if not event["trace_parent"]:
                 event["trace_parent"] = get_trace_parent()
 
@@ -298,10 +280,7 @@ class EventBus:
             self._events_published.add(1, event_attributes)
 
     async def publish_request_response(
-        self,
-        event: BaseEvent | dict,
-        return_event: bool = False,
-        **kwargs
+        self, event: BaseEvent | dict, return_event: bool = False, **kwargs
     ) -> BaseEvent | None:
         """
         Send a Request style Event and wait for the
@@ -323,10 +302,8 @@ class EventBus:
         response_task = asyncio.create_task(
             self.watch_for_event(
                 event["reply_channel"],
-                {
-                    "correlation_id": event["correlation_id"]
-                },
-                event_type=ResponseEvent
+                {"correlation_id": event["correlation_id"]},
+                event_type=ResponseEvent,
             )
         )
 
@@ -351,11 +328,7 @@ class EventBus:
         :type correlation_id: str
         """
         await self.publish(
-            ResponseEvent(
-                correlation_id=correlation_id,
-                channel=reply_channel,
-                data=response
-            )
+            ResponseEvent(correlation_id=correlation_id, channel=reply_channel, data=response)
         )
 
     @asynccontextmanager
@@ -403,10 +376,12 @@ class EventBus:
             async for event in stream:
                 # For each event we see, if it's the correct type
                 # and has all of the matching fields, then return it
-                if all([
-                    True if getattr(event, key) == value else False
-                    for key, value in conditions.items()
-                ]) and isinstance(event, event_type):
+                if all(
+                    [
+                        True if getattr(event, key) == value else False
+                        for key, value in conditions.items()
+                    ]
+                ) and isinstance(event, event_type):
                     return event
         # Return None if for some reason the Event isn't found
         return None

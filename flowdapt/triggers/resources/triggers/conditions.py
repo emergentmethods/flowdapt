@@ -1,5 +1,5 @@
-from typing import Callable, Any
 from functools import reduce
+from typing import Any, Callable
 
 
 operations: dict[str, Callable[..., Any]] = {
@@ -73,19 +73,8 @@ def check_condition(conditions: dict | None, data: dict):
 
 
 if __name__ == "__main__":
-    test_data = {
-        "t": {
-            "v": 5
-        }
-    }
+    test_data = {"t": {"v": 5}}
 
-    conditions = {
-        "==": [
-            {
-                "$": "t.v"
-            },
-            5
-        ]
-    }
+    conditions = {"==": [{"$": "t.v"}, 5]}
 
     print(check_condition(conditions, test_data))

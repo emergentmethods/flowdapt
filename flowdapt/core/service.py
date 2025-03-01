@@ -1,9 +1,9 @@
-from flowdapt.lib.logger import get_logger
-from flowdapt.lib.service import Service
-from flowdapt.lib.config import Configuration
-from flowdapt.lib.rpc import RPC
-
 from flowdapt.core.rpc import register_rpc
+from flowdapt.lib.config import Configuration
+from flowdapt.lib.logger import get_logger
+from flowdapt.lib.rpc import RPC
+from flowdapt.lib.service import Service
+
 
 logger = get_logger(__name__, service="core")
 

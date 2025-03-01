@@ -1,22 +1,25 @@
-import sys
 import asyncio
+import sys
+from inspect import Parameter as InspectParameter
+from inspect import signature
 from typing import (
     Any,
+    Awaitable,
     Callable,
+    ForwardRef,
     NewType,
+    ParamSpec,
     Tuple,
     TypeVar,
     Union,
-    ForwardRef,
-    Awaitable,
-    ParamSpec,
 )
-from inspect import Parameter as InspectParameter, signature
+
 
 P = ParamSpec("P")
 R = TypeVar("R", Awaitable, Any)
 
 Undefined = NewType("Undefined", int)
+
 
 def _resolve_forward_reference(module: Any, ref: Union[str, ForwardRef]) -> Any:
     if isinstance(ref, str):
@@ -48,7 +51,6 @@ def _inspect_function_arguments(
     parameters = {}
 
     for name, parameter in signature(function).parameters.items():
-
         if isinstance(parameter.annotation, (str, ForwardRef)) and hasattr(function, "__module__"):
             annotation = _resolve_forward_reference(function.__module__, parameter.annotation)
         else:
@@ -128,8 +130,8 @@ def inject(injectable: Callable[P, R], container: dict) -> Callable[P, R]:
         all_kwargs = _resolve_kwargs(args, kwargs)
         return await injectable(**all_kwargs)
 
-    setattr(_wrapper, "__wrapped__", injectable)
-    setattr(_async_wrapper, "__wrapped__", injectable)
+    _wrapper.__wrapped__ = injectable
+    _async_wrapper.__wrapped__ = injectable
 
     if asyncio.iscoroutinefunction(injectable):
         return _async_wrapper

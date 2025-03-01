@@ -1,17 +1,18 @@
 from typing import Any
 from uuid import UUID
+
 from flowdapt.lib.database.base import (
-    Query,
+    BaseStorage,
+    BinaryExpression,
+    Document,
     ExpressionVisitor,
     FieldExpression,
     LiteralExpression,
-    UnaryExpression,
-    BinaryExpression,
-    VariadicExpression,
     Operator,
-    BaseStorage,
-    Document,
+    Query,
     SortDirection,
+    UnaryExpression,
+    VariadicExpression,
 )
 from flowdapt.lib.database.utils import get_nested_field
 
@@ -22,9 +23,7 @@ class InMemoryExpressionVisitor(ExpressionVisitor):
         if expression.operator == Operator.NOT:
             return lambda doc: not operand(doc)
         elif expression.operator == Operator.EXISTS:
-            return lambda doc: self._evaluate_condition(
-                operand(doc), expression.operator, None
-            )
+            return lambda doc: self._evaluate_condition(operand(doc), expression.operator, None)
         else:
             raise ValueError(f"Unsupported unary operator: {expression.operator}")
 
@@ -34,19 +33,17 @@ class InMemoryExpressionVisitor(ExpressionVisitor):
 
         match expression.operator:
             case (
-                Operator.EQ |
-                Operator.NE |
-                Operator.GT |
-                Operator.LT |
-                Operator.GE |
-                Operator.LE |
-                Operator.IN |
-                Operator.MATCHES |
-                Operator.EXISTS
+                Operator.EQ
+                | Operator.NE
+                | Operator.GT
+                | Operator.LT
+                | Operator.GE
+                | Operator.LE
+                | Operator.IN
+                | Operator.MATCHES
+                | Operator.EXISTS
             ):
-                return lambda doc: self._evaluate_condition(
-                    left(doc), expression.operator, right
-                )
+                return lambda doc: self._evaluate_condition(left(doc), expression.operator, right)
             case Operator.AND:
                 return lambda doc: left(doc) and right(doc)
             case Operator.OR:
@@ -62,14 +59,12 @@ class InMemoryExpressionVisitor(ExpressionVisitor):
         if expression.operator == Operator.ANY:
             # If any of the subqueries match all of the items in the field return True
             return lambda doc: any(
-                any(subquery(item) for item in field_getter(doc))
-                for subquery in subqueries
+                any(subquery(item) for item in field_getter(doc)) for subquery in subqueries
             )
         elif expression.operator == Operator.ALL:
             # If all of the subqueries match all of the items in the field return True
             return lambda doc: all(
-                any(subquery(item) for item in field_getter(doc))
-                for subquery in subqueries
+                any(subquery(item) for item in field_getter(doc)) for subquery in subqueries
             )
         else:
             raise ValueError(f"Unsupported variadic operator: {expression.operator}")
@@ -114,6 +109,7 @@ class InMemoryStorage(BaseStorage):
     Must not be used unless you know what you are doing. Data
     is not persisted between sessions.
     """
+
     def __init__(self):
         super().__init__()
 
@@ -148,9 +144,7 @@ class InMemoryStorage(BaseStorage):
             if collection_name not in self._storage:
                 self._storage[collection_name] = {}
 
-            self._storage[collection_name][doc._doc_id_] = self._serialize_document(
-                doc
-            )
+            self._storage[collection_name][doc._doc_id_] = self._serialize_document(doc)
 
     async def _delete(self, documents: list[Document]) -> None:
         for doc in documents:
@@ -185,7 +179,7 @@ class InMemoryStorage(BaseStorage):
                 reverse=(direction == SortDirection.DESC),
             )
 
-        documents = documents[skip:skip + limit if limit > 0 else None]
+        documents = documents[skip : skip + limit if limit > 0 else None]
 
         if project:
             documents = [
@@ -198,9 +192,7 @@ class InMemoryStorage(BaseStorage):
             for doc_id, doc in documents
         ]
 
-    async def _get(
-        self, document_type: type[Document], document_uid: UUID
-    ) -> Document | None:
+    async def _get(self, document_type: type[Document], document_uid: UUID) -> Document | None:
         collection = self._storage.get(self._get_collection_name(document_type), {})
         result = collection.get(document_uid, None)
 

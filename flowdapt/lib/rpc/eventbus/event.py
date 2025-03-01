@@ -1,7 +1,9 @@
-from pydantic import ConfigDict, BaseModel, Field
-from typing import Any, Literal
-from uuid import uuid4, UUID
 from datetime import datetime
+from typing import Any, Literal
+from uuid import UUID, uuid4
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class SentinelMeta(type):
     def __init__(cls, name, bases, dict):

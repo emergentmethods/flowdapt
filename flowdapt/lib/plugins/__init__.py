@@ -1,16 +1,17 @@
 from pathlib import Path
 
-from flowdapt.lib.plugins.interface import Plugin, PluginManifest, PLUGIN_RESOURCE_KIND
+from flowdapt.lib.errors import ResourceNotFoundError
+from flowdapt.lib.logger import get_logger
+from flowdapt.lib.plugins.interface import PLUGIN_RESOURCE_KIND, Plugin, PluginManifest
 from flowdapt.lib.plugins.utils import (
-    get_user_modules_dir,
+    add_auth_to_url,
     call_pip,
     format_extras_for_pip,
-    add_auth_to_url
+    get_user_modules_dir,
 )
-from flowdapt.lib.logger import get_logger
-from flowdapt.lib.telemetry import get_tracer, get_current_span
+from flowdapt.lib.telemetry import get_current_span, get_tracer
 from flowdapt.lib.utils.asynctools import run_in_thread
-from flowdapt.lib.errors import ResourceNotFoundError
+
 
 logger = get_logger(__name__)
 tracer = get_tracer(__name__)
@@ -84,13 +85,10 @@ async def install_plugin(
         any(
             [
                 prefix in plugin
-                for prefix in (
-                    "http://", "https://",
-                    "git+", "svn+", "hg+",
-                    "file://"
-                )
+                for prefix in ("http://", "https://", "git+", "svn+", "hg+", "file://")
             ]
-        ) or await run_in_thread(Path(plugin).exists)
+        )
+        or await run_in_thread(Path(plugin).exists)
     ):
         if version_constraints != "latest":
             plugin = f"{plugin}{version_constraints}"
@@ -123,16 +121,11 @@ async def uninstall_plugin(plugin: str) -> None:
     plugin = get_plugin(plugin)
 
     span = get_current_span()
-    span.set_attributes(
-        {"plugin": plugin}
-    )
+    span.set_attributes({"plugin": plugin})
 
     await logger.adebug("PluginUninstallInitiated", plugin=plugin.name)
     try:
-        await call_pip(
-            ["uninstall", "-y", plugin.name],
-            logger=logger.bind(installer="pip")
-        )
+        await call_pip(["uninstall", "-y", plugin.name], logger=logger.bind(installer="pip"))
     except BaseException as e:
         await logger.aexception("PluginUninstallFailed", error=str(e))
     else:
@@ -148,5 +141,5 @@ __all__ = (
     "install_plugin",
     "uninstall_plugin",
     "get_user_modules_dir",
-    "PLUGIN_RESOURCE_KIND"
+    "PLUGIN_RESOURCE_KIND",
 )

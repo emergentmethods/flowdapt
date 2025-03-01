@@ -1,12 +1,14 @@
 import platform
-import psutil
-from typing import Any
 from datetime import datetime
+from typing import Any
 
-from flowdapt.lib.utils.misc import get_full_path_type
-from flowdapt.lib.context import get_context
+import psutil
+
 from flowdapt.lib.config import get_configuration
+from flowdapt.lib.context import get_context
+from flowdapt.lib.utils.misc import get_full_path_type
 from flowdapt.lib.utils.model import BaseModel
+
 
 SYSTEM_STATUS_RESOURCE_KIND = "system"
 
@@ -47,28 +49,30 @@ class SystemStatus(BaseModel):
         context = get_context()
         config = get_configuration()
 
-        return cls(**{
-            "version": __version__,
-            "name": config.name,
-            "system": {
-                "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "cpu_pct": psutil.cpu_percent(interval=1),
-                "memory": psutil.Process().memory_info().rss,
-                "disk_pct": psutil.disk_usage("/").percent,
-                "network_io_sent": psutil.net_io_counters().bytes_sent,
-                "network_io_recv": psutil.net_io_counters().bytes_recv,
-                "threads": psutil.Process().num_threads(),
-                "fds": psutil.Process().num_fds(),
-                "pid": psutil.Process().pid,
-            },
-            "os": {
-                "name": platform.system(),
-                "version": platform.version(),
-                "release": platform.release(),
-                "machine": platform.machine(),
-            },
-            "python": platform.python_version(),
-            "hostname": platform.node(),
-            "services": await context.controller.get_service_status(),
-            "database": get_full_path_type(context.database),
-        })
+        return cls(
+            **{
+                "version": __version__,
+                "name": config.name,
+                "system": {
+                    "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "cpu_pct": psutil.cpu_percent(interval=1),
+                    "memory": psutil.Process().memory_info().rss,
+                    "disk_pct": psutil.disk_usage("/").percent,
+                    "network_io_sent": psutil.net_io_counters().bytes_sent,
+                    "network_io_recv": psutil.net_io_counters().bytes_recv,
+                    "threads": psutil.Process().num_threads(),
+                    "fds": psutil.Process().num_fds(),
+                    "pid": psutil.Process().pid,
+                },
+                "os": {
+                    "name": platform.system(),
+                    "version": platform.version(),
+                    "release": platform.release(),
+                    "machine": platform.machine(),
+                },
+                "python": platform.python_version(),
+                "hostname": platform.node(),
+                "services": await context.controller.get_service_status(),
+                "database": get_full_path_type(context.database),
+            }
+        )

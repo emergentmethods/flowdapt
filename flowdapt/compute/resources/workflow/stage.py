@@ -1,47 +1,42 @@
 from __future__ import annotations
 
 import asyncio
-from inspect import (
-    signature,
-    Signature,
-    getdoc,
-    getsourcefile,
-    iscoroutine
-)
-from typing import Callable, TypeVar, ClassVar
+from inspect import Signature, getdoc, getsourcefile, iscoroutine, signature
+from typing import Callable, ClassVar, TypeVar
 
-from flowdapt.lib.logger import setup_logging
-from flowdapt.lib.utils.misc import (
-    hash_file,
-    import_from_string,
-    update_signature,
-    remove_signature_parameter,
-    filter_args,
-    validate_function_input,
-    parse_bytes,
-)
-from flowdapt.lib.utils.model import (
-    get_model_extras,
-    CallableOrImportString,
-    after_validator,
-    pre_validator,
-    BaseModel,
-    model_dump,
-)
-from flowdapt.lib.utils.asynctools import is_async_callable, to_sync
-from flowdapt.lib.config import config_from_env, set_configuration, get_configuration
 from flowdapt.compute.domain.models.workflow import WorkflowStage
+from flowdapt.compute.executor.base import Executor
 from flowdapt.compute.resources.workflow.context import (
     WorkflowRunContext,
+    reset_run_context,
     set_run_context,
-    reset_run_context
 )
-from flowdapt.compute.executor.base import Executor
+from flowdapt.lib.config import config_from_env, get_configuration, set_configuration
+from flowdapt.lib.logger import setup_logging
+from flowdapt.lib.utils.asynctools import is_async_callable, to_sync
+from flowdapt.lib.utils.misc import (
+    filter_args,
+    hash_file,
+    import_from_string,
+    parse_bytes,
+    remove_signature_parameter,
+    update_signature,
+    validate_function_input,
+)
+from flowdapt.lib.utils.model import (
+    BaseModel,
+    CallableOrImportString,
+    after_validator,
+    get_model_extras,
+    model_dump,
+    pre_validator,
+)
+
 
 R = TypeVar("R")
 
 
-class StageResources(BaseModel, extra='allow'):
+class StageResources(BaseModel, extra="allow"):
     cpus: float | None = None
     gpus: float | None = None
     memory: float | None = None
@@ -59,11 +54,7 @@ class StageResources(BaseModel, extra='allow'):
 
         # Parse extras as floats
         values.update(
-            {
-                k: float(v)
-                for k, v in values.items()
-                if k not in cls.model_fields and v is not None
-            }
+            {k: float(v) for k, v in values.items() if k not in cls.model_fields and v is not None}
         )
 
         return values
@@ -142,27 +133,16 @@ class BaseStage(BaseModel, arbitrary_types_allowed=True):
 
         return get_available_stage_types()[definition.type](
             # Merge together the base information and the options
-            **{
-                **model_dump(definition, exclude={"options"}),
-                **definition.options
-            }
+            **{**model_dump(definition, exclude={"options"}), **definition.options}
         )
 
     def create_lazy(
-        self,
-        executor: Executor,
-        context: WorkflowRunContext,
-        args: list,
-        kwargs: dict
+        self, executor: Executor, context: WorkflowRunContext, args: list, kwargs: dict
     ):
         raise NotImplementedError()
 
     def get_partial(
-        self,
-        executor: Executor,
-        context: WorkflowRunContext,
-        args: list,
-        kwargs: dict
+        self, executor: Executor, context: WorkflowRunContext, args: list, kwargs: dict
     ):
         # Pre-add any optional internal arguments to kwargs if the stage needs them,
         # if not they will get filtered out.
@@ -183,10 +163,9 @@ class BaseStage(BaseModel, arbitrary_types_allowed=True):
                 f" for signature: {self.signature}"
             )
         # Input matches, args are empty, and stage depends on a previous stage
-        elif (valid_input and
-              self.depends_on and
-              len(filtered_args) < 1 and
-              len(filtered_kwargs) < 1):
+        elif (
+            valid_input and self.depends_on and len(filtered_args) < 1 and len(filtered_kwargs) < 1
+        ):
             raise ValueError(
                 f"Stage `{self.name}` takes no arguments but depends on previous stage."
             )
@@ -201,10 +180,7 @@ class BaseStage(BaseModel, arbitrary_types_allowed=True):
 
         # Return the wrapped stage function
         return self.create_lazy(
-            executor=executor,
-            context=context,
-            args=filtered_args,
-            kwargs=filtered_kwargs
+            executor=executor, context=context, args=filtered_args, kwargs=filtered_kwargs
         )
 
 
@@ -212,11 +188,7 @@ class SimpleStage(BaseStage):
     type: ClassVar[str] = "simple"
 
     def create_lazy(
-        self,
-        executor: Executor,
-        context: WorkflowRunContext,
-        args: list,
-        kwargs: dict
+        self, executor: Executor, context: WorkflowRunContext, args: list, kwargs: dict
     ):
         # Nothing special here, just decorate the function with the lazy_func
         return executor.lazy(self)(*args, **kwargs)
@@ -238,16 +210,12 @@ class ParameterizedStage(BaseStage):
             value.signature,
             {
                 "return": list[value.signature.return_annotation],
-            }
+            },
         )
         return value
 
     def create_lazy(
-        self,
-        executor: Executor,
-        context: WorkflowRunContext,
-        args: list,
-        kwargs: dict
+        self, executor: Executor, context: WorkflowRunContext, args: list, kwargs: dict
     ):
         if self.map_on:
             # If we have a map_on, prioritize the iterable from the payload
@@ -264,20 +232,11 @@ class ParameterizedStage(BaseStage):
         # are any.
         iterable = args.pop(0)
 
-        return executor.mapped_lazy(self)(
-            iterable,
-            *args,
-            **kwargs
-        )
+        return executor.mapped_lazy(self)(iterable, *args, **kwargs)
 
 
 def get_available_stage_types() -> dict:
-    return {
-        type_.type: type_ for type_ in [
-            SimpleStage,
-            ParameterizedStage
-        ]
-    }
+    return {type_.type: type_ for type_ in [SimpleStage, ParameterizedStage]}
 
 
 def stage_wrapper(stage_definition: dict):
@@ -291,7 +250,7 @@ def stage_wrapper(stage_definition: dict):
     __executor_imports = {
         "dask": "flowdapt.compute.executor.dask",
         "ray": "flowdapt.compute.executor.ray",
-        "local": "flowdapt.compute.executor.local"
+        "local": "flowdapt.compute.executor.local",
     }
 
     def wrapper(*args, context: WorkflowRunContext, **kwargs):
@@ -323,4 +282,5 @@ def stage_wrapper(stage_definition: dict):
         finally:
             # Reset the WorkflowRunContext ContextVar
             reset_run_context(token)
+
     return wrapper

@@ -1,7 +1,7 @@
 from typing import Any
 
-from flowdapt.lib.utils.model import BaseModel, model_dump
 from flowdapt.core.domain.models.status import SystemStatus
+from flowdapt.lib.utils.model import BaseModel, model_dump
 
 
 class V1Alpha1SystemStatusSystemInfo(BaseModel):

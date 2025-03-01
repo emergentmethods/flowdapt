@@ -1,13 +1,10 @@
-from flowdapt.lib.config import get_configuration
-from flowdapt.compute.resources.workflow.context import get_run_context
 from flowdapt.compute.artifacts.interface import Artifact, ArtifactFile
+from flowdapt.compute.resources.workflow.context import get_run_context
+from flowdapt.lib.config import get_configuration
 
 
 def _get_values_from_context(
-    namespace: str = "",
-    protocol: str = "",
-    base_path: str = "",
-    **params
+    namespace: str = "", protocol: str = "", base_path: str = "", **params
 ) -> tuple[str, str, str, dict]:
     """
     Get default values from the current run context.
@@ -30,86 +27,55 @@ def get_artifact(
     base_path: str = "",
     *,
     create: bool = False,
-    **params
+    **params,
 ) -> Artifact:
     """
     Get an Artifact with the given name and namespace.
     """
     namespace, protocol, base_path, params = _get_values_from_context(
-        namespace=namespace,
-        protocol=protocol,
-        base_path=base_path,
-        **params
+        namespace=namespace, protocol=protocol, base_path=base_path, **params
     )
 
     try:
         return Artifact.get_artifact(
-            name=name,
-            namespace=namespace,
-            protocol=protocol,
-            base_path=base_path,
-            **params
+            name=name, namespace=namespace, protocol=protocol, base_path=base_path, **params
         )
     except FileNotFoundError:
         if create:
             return Artifact.new_artifact(
-                name=name,
-                namespace=namespace,
-                protocol=protocol,
-                base_path=base_path,
-                **params
+                name=name, namespace=namespace, protocol=protocol, base_path=base_path, **params
             )
         else:
             raise
 
 
 def list_artifacts(
-    namespace: str = "",
-    protocol: str = "",
-    base_path: str = "",
-    **params
+    namespace: str = "", protocol: str = "", base_path: str = "", **params
 ) -> list[Artifact]:
     """
     List all artifacts in the given namespace.
     """
     namespace, protocol, base_path, params = _get_values_from_context(
-        namespace=namespace,
-        protocol=protocol,
-        base_path=base_path,
-        **params
+        namespace=namespace, protocol=protocol, base_path=base_path, **params
     )
 
     return Artifact.list_artifacts(
-        namespace=namespace,
-        protocol=protocol,
-        base_path=base_path,
-        **params
+        namespace=namespace, protocol=protocol, base_path=base_path, **params
     )
 
 
 def new_artifact(
-    name: str,
-    namespace: str = "",
-    protocol: str = "",
-    base_path: str = "",
-    **params
+    name: str, namespace: str = "", protocol: str = "", base_path: str = "", **params
 ) -> Artifact:
     """
     Create a new Artifact with the given name and namespace.
     """
     namespace, protocol, base_path, params = _get_values_from_context(
-        namespace=namespace,
-        protocol=protocol,
-        base_path=base_path,
-        **params
+        namespace=namespace, protocol=protocol, base_path=base_path, **params
     )
 
     return Artifact.new_artifact(
-        name=name,
-        namespace=namespace,
-        protocol=protocol,
-        base_path=base_path,
-        **params
+        name=name, namespace=namespace, protocol=protocol, base_path=base_path, **params
     )
 
 

@@ -1,11 +1,14 @@
 from __future__ import annotations
-import re
+
 import os
+import re
 from contextlib import contextmanager
-from typing import Iterator, Any
+from typing import Any, Iterator
+
 from fsspec import AbstractFileSystem, filesystem
 
 from flowdapt.lib.serializers import ORJSONSerializer
+
 
 _ARTIFACT_METADATA_FILENAME = ".artifact.json"
 
@@ -103,18 +106,16 @@ class Artifact:
         base_path: str = "",
         params: dict = {},
         *,
-        _fs: AbstractFileSystem | None = None
+        _fs: AbstractFileSystem | None = None,
     ):
-        if not re.match(r'^[A-Za-z0-9_\-]+$', name):
+        if not re.match(r"^[A-Za-z0-9_\-]+$", name):
             raise ValueError(
                 "Artifact `name` can only contain alphanumeric characters,"
                 f" underscores, and hyphens. Got: `{name}`"
             )
 
         if _fs and protocol and params:
-            raise ValueError(
-                "Cannot specify both `_fs` and `protocol`/`params`."
-            )
+            raise ValueError("Cannot specify both `_fs` and `protocol`/`params`.")
 
         self._name: str = name
         self._namespace: str = namespace or "default"
@@ -132,11 +133,7 @@ class Artifact:
 
     @classmethod
     def list_artifacts(
-        cls,
-        namespace: str,
-        protocol: str = "file",
-        base_path: str = "",
-        **params
+        cls, namespace: str, protocol: str = "file", base_path: str = "", **params
     ) -> list[Artifact]:
         """
         List all artifacts in the given namespace.
@@ -156,12 +153,7 @@ class Artifact:
 
         artifacts = fs.ls(path, detail=False)
         return [
-            cls(
-                name=name.rsplit("/", 1)[-1],
-                namespace=namespace,
-                base_path=base_path,
-                _fs=fs
-            )
+            cls(name=name.rsplit("/", 1)[-1], namespace=namespace, base_path=base_path, _fs=fs)
             for name in artifacts
         ]
 
@@ -172,7 +164,7 @@ class Artifact:
         namespace: str = "default",
         protocol: str = "file",
         base_path: str = "",
-        **params
+        **params,
     ) -> Artifact:
         """
         Create a new artifact in the given namespace.
@@ -203,12 +195,7 @@ class Artifact:
 
     @classmethod
     def get_artifact(
-        cls,
-        name: str,
-        namespace: str = "",
-        protocol: str = "file",
-        base_path: str = "",
-        **params
+        cls, name: str, namespace: str = "", protocol: str = "file", base_path: str = "", **params
     ) -> Artifact:
         """
         Get an existing artifact in the given namespace.
@@ -222,11 +209,7 @@ class Artifact:
         :return: The artifact.
         """
         return cls(
-            name=name,
-            namespace=namespace,
-            protocol=protocol,
-            base_path=base_path,
-            params=params
+            name=name, namespace=namespace, protocol=protocol, base_path=base_path, params=params
         )
 
     @property
@@ -378,11 +361,7 @@ class Artifact:
                 raise
 
     def new_file(
-        self,
-        filename: str,
-        content: Any = None,
-        *,
-        exist_ok: bool = True
+        self, filename: str, content: Any = None, *, exist_ok: bool = True
     ) -> ArtifactFile:
         """
         Create a new file in the Artifact.

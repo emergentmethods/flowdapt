@@ -1,39 +1,37 @@
-from fastapi import status, Response, Request, Depends
+from fastapi import Depends, Request, Response, status
 
-from flowdapt.lib.errors import APIErrorModel
-from flowdapt.lib.rpc import RPCRouter
-from flowdapt.lib.rpc.api.utils import (
-    build_responses_dict,
-    responses_from_dtos,
-    requests_from_dtos,
-    get_versioned_dto,
-    build_response,
-    parse_request_body,
+from flowdapt.compute.domain.dto import (
+    ConfigResourceCreateDTOs,
+    ConfigResourceCreateResponse,
+    ConfigResourceReadDTOs,
+    ConfigResourceReadResponse,
+    ConfigResourceUpdateDTOs,
+    ConfigResourceUpdateResponse,
+)
+from flowdapt.compute.domain.models.config import CONFIG_RESOURCE_KIND
+from flowdapt.compute.resources.config.methods import (
+    create_config,
+    delete_config,
+    get_config,
+    list_configs,
+    update_config,
 )
 from flowdapt.lib.domain.dto.protocol import DTOPair
 from flowdapt.lib.domain.dto.utils import to_model
-from flowdapt.compute.domain.models.config import CONFIG_RESOURCE_KIND
-from flowdapt.compute.domain.dto import (
-    ConfigResourceCreateDTOs,
-    ConfigResourceReadDTOs,
-    ConfigResourceUpdateDTOs,
-    ConfigResourceCreateResponse,
-    ConfigResourceReadResponse,
-    ConfigResourceUpdateResponse,
-)
-from flowdapt.compute.resources.config.methods import (
-    list_configs,
-    get_config,
-    create_config,
-    delete_config,
-    update_config,
+from flowdapt.lib.errors import APIErrorModel
+from flowdapt.lib.rpc import RPCRouter
+from flowdapt.lib.rpc.api.utils import (
+    build_response,
+    build_responses_dict,
+    get_versioned_dto,
+    parse_request_body,
+    requests_from_dtos,
+    responses_from_dtos,
 )
 
 
-router = RPCRouter(
-    prefix="/configs",
-    tags=["configs"]
-)
+router = RPCRouter(prefix="/configs", tags=["configs"])
+
 
 # API GET @ /api/configs/
 @router.add_api_route(
@@ -47,15 +45,12 @@ router = RPCRouter(
     ),
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    name="list_configs"
+    name="list_configs",
 )
 async def list_configs_api(
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            ConfigResourceReadDTOs,
-            resource_type=CONFIG_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(ConfigResourceReadDTOs, resource_type=CONFIG_RESOURCE_KIND)
+    ),
 ):
     (_, response_dto), version = versioned_dto
     models = await list_configs()
@@ -74,21 +69,16 @@ async def list_configs_api(
     ),
     response_class=Response,
     openapi_extra={
-        "requestBody": {
-            **requests_from_dtos(ConfigResourceCreateDTOs, CONFIG_RESOURCE_KIND)
-        }
+        "requestBody": {**requests_from_dtos(ConfigResourceCreateDTOs, CONFIG_RESOURCE_KIND)}
     },
     status_code=status.HTTP_201_CREATED,
-    name="create_config"
+    name="create_config",
 )
 async def create_config_api(
     request: Request,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            ConfigResourceCreateDTOs,
-            resource_type=CONFIG_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(ConfigResourceCreateDTOs, resource_type=CONFIG_RESOURCE_KIND)
+    ),
 ):
     (request_dto, response_dto), version = versioned_dto
     payload = await parse_request_body(request, request_dto)
@@ -103,26 +93,21 @@ async def create_config_api(
     response_model=ConfigResourceReadResponse,
     summary="Get a Config",
     response_description="Config",
-    responses=build_responses_dict({
-        **responses_from_dtos(ConfigResourceReadDTOs, CONFIG_RESOURCE_KIND),
-        **{
-            404: {
-                "model": APIErrorModel
-            }
+    responses=build_responses_dict(
+        {
+            **responses_from_dtos(ConfigResourceReadDTOs, CONFIG_RESOURCE_KIND),
+            **{404: {"model": APIErrorModel}},
         }
-    }),
+    ),
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    name="get_config"
+    name="get_config",
 )
 async def get_config_api(
     identifier: str,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            ConfigResourceReadDTOs,
-            resource_type=CONFIG_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(ConfigResourceReadDTOs, resource_type=CONFIG_RESOURCE_KIND)
+    ),
 ):
     (_, response_dto), version = versioned_dto
     model = await get_config(identifier)
@@ -141,16 +126,13 @@ async def get_config_api(
     ),
     response_class=Response,
     status_code=status.HTTP_200_OK,
-    name="delete_config"
+    name="delete_config",
 )
 async def delete_config_api(
     identifier: str,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            ConfigResourceReadDTOs,
-            resource_type=CONFIG_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(ConfigResourceReadDTOs, resource_type=CONFIG_RESOURCE_KIND)
+    ),
 ):
     (_, response_dto), version = versioned_dto
     model = await delete_config(identifier)
@@ -169,22 +151,17 @@ async def delete_config_api(
     ),
     response_class=Response,
     openapi_extra={
-        "requestBody": {
-            **requests_from_dtos(ConfigResourceUpdateDTOs, CONFIG_RESOURCE_KIND)
-        }
+        "requestBody": {**requests_from_dtos(ConfigResourceUpdateDTOs, CONFIG_RESOURCE_KIND)}
     },
     status_code=status.HTTP_200_OK,
-    name="update_config"
+    name="update_config",
 )
 async def update_config_api(
     identifier: str,
     request: Request,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            ConfigResourceUpdateDTOs,
-            resource_type=CONFIG_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(ConfigResourceUpdateDTOs, resource_type=CONFIG_RESOURCE_KIND)
+    ),
 ):
     (request_dto, response_dto), version = versioned_dto
     parsed_request = await parse_request_body(request, request_dto)

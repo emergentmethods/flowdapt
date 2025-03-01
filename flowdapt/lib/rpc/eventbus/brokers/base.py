@@ -1,16 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Type, Tuple
+from typing import Tuple, Type
 
-from flowdapt.lib.serializers import Serializer, ORJSONSerializer
 from flowdapt.lib.rpc.eventbus.event import BaseEvent
+from flowdapt.lib.serializers import ORJSONSerializer, Serializer
+
 
 class Broker(ABC):
-    def __init__(
-        self,
-        _serializer: Type[Serializer] = ORJSONSerializer,
-        *args,
-        **kwargs
-    ):
+    def __init__(self, _serializer: Type[Serializer] = ORJSONSerializer, *args, **kwargs):
         self._serializer = _serializer()
 
     @abstractmethod

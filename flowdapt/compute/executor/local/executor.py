@@ -1,28 +1,22 @@
 import asyncio
 import sys
+from concurrent.futures import Executor as PoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from functools import partial
-from concurrent.futures import (
-    ProcessPoolExecutor,
-    ThreadPoolExecutor,
-    Executor as PoolExecutor
-)
-from typing import Callable, Iterable, Any
+from typing import Any, Callable, Iterable
 
-from flowdapt.lib.utils.asynctools import is_async_callable, run_in_thread
-from flowdapt.lib.serializers import CloudPickleSerializer
-from flowdapt.compute.executor.base import Executor
-from flowdapt.compute.resources.workflow.context import WorkflowRunContext
-from flowdapt.compute.resources.workflow.graph import to_graph
 from flowdapt.compute.domain.models.workflow import WorkflowResource
 from flowdapt.compute.domain.models.workflowrun import WorkflowRun
+from flowdapt.compute.executor.base import Executor
+from flowdapt.compute.executor.local.cluster_memory import SOCKET_PATH, ClusterMemoryServer
+from flowdapt.compute.resources.workflow.context import WorkflowRunContext
+from flowdapt.compute.resources.workflow.graph import to_graph
 from flowdapt.compute.resources.workflow.stage import BaseStage
 from flowdapt.compute.utils import (
     get_available_cores,
 )
-from flowdapt.compute.executor.local.cluster_memory import (
-    ClusterMemoryServer,
-    SOCKET_PATH
-)
+from flowdapt.lib.serializers import CloudPickleSerializer
+from flowdapt.lib.utils.asynctools import is_async_callable, run_in_thread
 
 
 def lazy_func(func: Callable, pool: PoolExecutor):
@@ -31,14 +25,15 @@ def lazy_func(func: Callable, pool: PoolExecutor):
             return await func(*args, **kwargs)
         else:
             return await asyncio.get_running_loop().run_in_executor(
-                pool,
-                partial(func, *args, **kwargs)
+                pool, partial(func, *args, **kwargs)
             )
+
     return _wrapper
 
 
 def run_func_from_cloudpickle(fn, /, *args, **kwargs):
     return CloudPickleSerializer.loads(fn)(*args, **kwargs)
+
 
 # Subclass ProcessPoolExecutor to use cloudpickle to serialize
 # functions before sending them to the worker processes since it's
@@ -46,10 +41,7 @@ def run_func_from_cloudpickle(fn, /, *args, **kwargs):
 class CloudPickleProcessPoolExecutor(ProcessPoolExecutor):
     def submit(self, fn, /, *args, **kwargs):
         return super().submit(
-            run_func_from_cloudpickle,
-            CloudPickleSerializer.dumps(fn),
-            *args,
-            **kwargs
+            run_func_from_cloudpickle, CloudPickleSerializer.dumps(fn), *args, **kwargs
         )
 
 
@@ -79,13 +71,14 @@ class LocalExecutor(Executor):
     :param cluster_memory_socket_path: The path to the socket file for the ClusterMemoryServer,
     defaults to `/tmp/flowdapt-cluster-memory.sock`
     """
+
     kind: str = "local"
 
     def __init__(
         self,
         use_processes: bool = True,
         cpus: int | str = "auto",
-        cluster_memory_socket_path: str = SOCKET_PATH
+        cluster_memory_socket_path: str = SOCKET_PATH,
     ) -> None:
         self._closed = asyncio.Event()
         self._loop = asyncio.get_running_loop()
@@ -95,7 +88,7 @@ class LocalExecutor(Executor):
         self._config = {
             "use_processes": use_processes,
             "cpus": actual_cpus,
-            "cluster_memory_socket_path": cluster_memory_socket_path
+            "cluster_memory_socket_path": cluster_memory_socket_path,
         }
 
         self._pool: PoolExecutor
@@ -136,8 +129,8 @@ class LocalExecutor(Executor):
             "cluster_memory": {
                 "path": self._cm_path,
                 "serializer": self._cm_server._serializer.__name__,
-                "store_size": sys.getsizeof(self._cm_server._store)
-            }
+                "store_size": sys.getsizeof(self._cm_server._store),
+            },
         }
 
     # For support when entered directly in context
@@ -149,10 +142,7 @@ class LocalExecutor(Executor):
         await self.close()
 
     async def __call__(
-        self,
-        definition: WorkflowResource,
-        run: WorkflowRun,
-        context: WorkflowRunContext
+        self, definition: WorkflowResource, run: WorkflowRun, context: WorkflowRunContext
     ) -> Any:
         if not self.running:
             raise RuntimeError("LocalExecutor was not started")
@@ -174,16 +164,13 @@ class LocalExecutor(Executor):
                     kwargs = context.input
 
                 stage_partial = stage.get_partial(
-                    executor=self,
-                    context=context,
-                    args=args,
-                    kwargs=kwargs
+                    executor=self, context=context, args=args, kwargs=kwargs
                 )
 
                 coroutines.append(stage_partial)
 
             outputs = await asyncio.gather(*coroutines)
-            results.update(dict(zip(group, outputs)))
+            results.update(dict(zip(group, outputs, strict=False)))
 
         return results[stage_name]
 

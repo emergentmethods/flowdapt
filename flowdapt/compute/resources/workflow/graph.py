@@ -1,5 +1,5 @@
-from flowdapt.compute.resources.workflow.stage import BaseStage
 from flowdapt.compute.domain.models.workflow import WorkflowResource
+from flowdapt.compute.resources.workflow.stage import BaseStage
 from flowdapt.compute.resources.workflow.utils import topological_sort_grouped
 from flowdapt.lib.utils.misc import OrderedSet
 
@@ -14,7 +14,6 @@ class WorkflowGraph:
         self,
         stages: list[BaseStage],
     ):
-
         self._graph: dict[str, OrderedSet[str]] = {}
         self._stages: dict[str, BaseStage] = {}
 

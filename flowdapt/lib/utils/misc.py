@@ -1,40 +1,29 @@
-import coolname
-import os
-import inspect
-import uuid
-import typer
-import sys
 import asyncio
+import inspect
+import os
 import site
-from urllib.parse import urlparse
-from functools import wraps, cache
-from time import perf_counter
-
+import sys
+import uuid
+from collections.abc import Sequence
+from contextlib import contextmanager
+from datetime import datetime
+from functools import cache, wraps
+from hashlib import blake2b, sha256
 from inspect import (
-    Signature,
     Parameter,
+    Signature,
     _ParameterKind,
 )
-from pydantic import create_model, ValidationError, BaseConfig
-from typing import (
-    Type,
-    Any,
-    Tuple,
-    Callable,
-    TypeVar,
-    Mapping,
-    Generic,
-    Iterator,
-    Iterable,
-    cast
-)
 from pathlib import Path
-from hashlib import blake2b, sha256
+from time import perf_counter
+from typing import Any, Callable, Generic, Iterable, Iterator, Mapping, Tuple, Type, TypeVar, cast
+from urllib.parse import urlparse
 from uuid import uuid4
+
+import coolname
+import typer
 from crontab import CronTab
-from datetime import datetime
-from contextlib import contextmanager
-from collections.abc import Sequence
+from pydantic import BaseConfig, ValidationError, create_model
 
 
 _import_cache: dict = {}
@@ -67,6 +56,7 @@ def timer(iterations: int = 10, precision: int = 6, prefix: str | None = None) -
     :param precision: The number of decimal places to print.
     :type precision: int
     """
+
     def decorator(func: F) -> F:
         is_coroutine = asyncio.iscoroutinefunction(func)
         prefix_str = prefix if prefix is not None else f"{func.__name__}: "
@@ -78,13 +68,14 @@ def timer(iterations: int = 10, precision: int = 6, prefix: str | None = None) -
                 start = perf_counter()
                 result = await func(*args, **kwargs) if is_coroutine else func(*args, **kwargs)
                 end = perf_counter()
-                total_time += (end - start)
+                total_time += end - start
 
             average_time = total_time / iterations
             print(f"{prefix_str} avg time for {iterations} runs: {average_time:.{precision}f}s")
             return result
 
         return cast(F, wrapper)
+
     return decorator
 
 
@@ -98,9 +89,9 @@ def import_from_string(path: str, is_module: bool = False, use_cache: bool = Fal
         module_path = path
     else:
         try:
-            module_path, class_name = path.strip(' ').rsplit('.', 1)
+            module_path, class_name = path.strip(" ").rsplit(".", 1)
         except ValueError:
-            raise ImportError(f"{path} isn\'t a valid module path.")
+            raise ImportError(f"{path} isn't a valid module path.")
 
     # Import the module and reload
     module = import_module(module_path)
@@ -123,7 +114,7 @@ def import_from_string(path: str, is_module: bool = False, use_cache: bool = Fal
 
 
 def import_from_script(path: Path) -> Any:
-    from importlib.util import spec_from_file_location, module_from_spec
+    from importlib.util import module_from_spec, spec_from_file_location
 
     module_name = path.stem
     spec = spec_from_file_location(module_name, path)
@@ -186,7 +177,7 @@ def compute_hash(*args, hash_func: Callable = sha256) -> str:
         if isinstance(item, Path):
             hasher.update(item.read_bytes())
         elif isinstance(item, (str, bytes, int, float)):
-            hasher.update(str(item).encode('utf-8'))
+            hasher.update(str(item).encode("utf-8"))
         else:
             raise TypeError(f"Unsupported type {type(item)} for hashing")
 
@@ -263,8 +254,11 @@ def has_parameter_of_type(func, name, param_type):
     """
     sig = inspect.signature(func)
     for param in sig.parameters.values():
-        if param.name == name and isinstance(param.annotation, type) \
-           and issubclass(param.annotation, param_type):
+        if (
+            param.name == name
+            and isinstance(param.annotation, type)
+            and issubclass(param.annotation, param_type)
+        ):
             return True
     return False
 
@@ -339,14 +333,11 @@ def check_type(t: Type, value: Any) -> Any:
     :type value: Any
     :return: The coerced value if it's valid, otherwise False.
     """
+
     class ValueModelConfig(BaseConfig):
         smart_union = True
 
-    ValueModel = create_model(
-        "ValueModel",
-        __config__=ValueModelConfig,
-        value=(t, ...)
-    )
+    ValueModel = create_model("ValueModel", __config__=ValueModelConfig, value=(t, ...))
 
     try:
         return ValueModel(value=value).value  # type: ignore[attr-defined]
@@ -355,9 +346,7 @@ def check_type(t: Type, value: Any) -> Any:
 
 
 def combine_args_kwargs(
-    signature: Signature,
-    args: list[Any],
-    kwargs: dict[str, Any]
+    signature: Signature, args: list[Any], kwargs: dict[str, Any]
 ) -> dict[str, Any]:
     """
     Combine input positional and keyword arguments into a single dictionary.
@@ -367,7 +356,7 @@ def combine_args_kwargs(
     :param kwargs: Dictionary of input keyword arguments.
     :return: A dictionary containing the combined positional and keyword arguments.
     """
-    combined = dict(zip(signature.parameters.keys(), args))
+    combined = dict(zip(signature.parameters.keys(), args, strict=False))
     combined.update(kwargs)
     return combined
 
@@ -389,30 +378,24 @@ def filter_args(
     """
     # Get the list of parameter names that are not *args or **kwargs
     positional_input_keys = [
-        k for k, v in signature.parameters.items()
+        k
+        for k, v in signature.parameters.items()
         if v.kind not in {Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD}
     ]
 
     # Filter the input arguments based on the parameter names
-    filtered_args = [
-        arg for i, arg in enumerate(args)
-        if i < len(positional_input_keys)
-    ]
+    filtered_args = [arg for i, arg in enumerate(args) if i < len(positional_input_keys)]
 
     # Get any extra positional arguments that are not in the stage signature
-    extra_args = args[
-        len(positional_input_keys):
-    ] if "args" in signature.parameters else []
+    extra_args = args[len(positional_input_keys) :] if "args" in signature.parameters else []
 
     # Filter the input keyword arguments based on the parameter names
-    filtered_kwargs = {
-        k: v for k, v in kwargs.items()
-        if k in signature.parameters
-    }
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k in signature.parameters}
 
     # Get any extra keyword arguments that are not in the stage signature
     extra_kwargs = {
-        k: v for k, v in kwargs.items()
+        k: v
+        for k, v in kwargs.items()
         if k not in signature.parameters and "kwargs" in signature.parameters
     }
 
@@ -420,7 +403,8 @@ def filter_args(
         # Coerce the filtered positional arguments to their specified types
         coerced_args = [
             (signature.parameters[positional_input_keys[i]].annotation)(arg)
-            if isinstance(arg, (int, float, str, bool)) else arg
+            if isinstance(arg, (int, float, str, bool))
+            else arg
             for i, arg in enumerate(filtered_args)
         ]
 
@@ -446,10 +430,7 @@ def filter_args(
 
 
 def validate_function_input(
-    signature: Signature,
-    args: list,
-    kwargs: dict[str, Any],
-    validate_type: bool = True
+    signature: Signature, args: list, kwargs: dict[str, Any], validate_type: bool = True
 ) -> bool:
     """
     Validate input arguments against the stage signature.
@@ -478,11 +459,7 @@ def validate_function_input(
 
     # check that there are no extra arguments
     excess_args = len(args) - len(
-        [
-            p
-            for p in params.values()
-            if p.kind == Parameter.POSITIONAL_OR_KEYWORD
-        ]
+        [p for p in params.values() if p.kind == Parameter.POSITIONAL_OR_KEYWORD]
     )
     if excess_args > 0 and not any(p.kind == Parameter.VAR_POSITIONAL for p in params.values()):
         return False
@@ -524,20 +501,19 @@ def update_signature(signature: Signature, parameters: dict[str, dict[str, Any]]
                 default = param.default
 
             # Coerce the old default into the new type if it changed
-            if (not param.annotation == type_) and \
-                    (default is param.default) and (default is not Parameter.empty):
+            if (
+                (not param.annotation == type_)
+                and (default is param.default)
+                and (default is not Parameter.empty)
+            ):
                 try:
                     default = type_(param.default)
                 except (TypeError, ValueError):
                     raise ValueError(
-                        "Could not coerce old default into new type. "
-                        "Please provide a new default."
+                        "Could not coerce old default into new type. Please provide a new default."
                     )
 
-            param = param.replace(
-                annotation=type_,
-                default=default
-            )
+            param = param.replace(annotation=type_, default=default)
 
         if param.kind == Parameter.VAR_KEYWORD:
             var_keyword_index = i
@@ -550,10 +526,7 @@ def update_signature(signature: Signature, parameters: dict[str, dict[str, Any]]
             type_ = param_info["type"]
             default = param_info.get("default", Parameter.empty)
             param = Parameter(
-                name=name,
-                kind=Parameter.POSITIONAL_OR_KEYWORD,
-                annotation=type_,
-                default=default
+                name=name, kind=Parameter.POSITIONAL_OR_KEYWORD, annotation=type_, default=default
             )
             if var_keyword_index != -1:
                 # Insert the new parameter before the VAR_KEYWORD parameter
@@ -593,7 +566,7 @@ def add_signature_parameter(
     name: str,
     type_: Type,
     default: Any = Parameter.empty,
-    kind: _ParameterKind = Parameter.POSITIONAL_OR_KEYWORD
+    kind: _ParameterKind = Parameter.POSITIONAL_OR_KEYWORD,
 ) -> Signature:
     """
     Add a new parameter to the stage signature.
@@ -620,36 +593,21 @@ def add_signature_parameter(
         try:
             default = type_(default)
         except (TypeError, ValueError):
-            raise ValueError(
-                "Could not coerce default into type. "
-                "Please provide a new default."
-            )
+            raise ValueError("Could not coerce default into type. Please provide a new default.")
 
     existing_params = list(signature.parameters.values())
-    positional_params = [
-        p
-        for p in existing_params
-        if p.kind == Parameter.POSITIONAL_OR_KEYWORD
-    ]
+    positional_params = [p for p in existing_params if p.kind == Parameter.POSITIONAL_OR_KEYWORD]
 
     if kind == Parameter.VAR_POSITIONAL:
         var_positional_index = len(positional_params)
-        new_params = existing_params[:var_positional_index] + [
-            Parameter(
-                name=name,
-                kind=kind,
-                annotation=type_,
-                default=default
-            )
-        ] + existing_params[var_positional_index:]
+        new_params = (
+            existing_params[:var_positional_index]
+            + [Parameter(name=name, kind=kind, annotation=type_, default=default)]
+            + existing_params[var_positional_index:]
+        )
     else:
         new_params = existing_params + [
-            Parameter(
-                name=name,
-                kind=kind,
-                annotation=type_,
-                default=default
-            )
+            Parameter(name=name, kind=kind, annotation=type_, default=default)
         ]
 
     return Signature(new_params, return_annotation=signature.return_annotation)
@@ -682,9 +640,9 @@ def in_virtualenv() -> bool:
     """
     Determine if the current Python interpreter is running in a virtual env.
     """
-    if (hasattr(sys, 'real_prefix') or
-        (hasattr(sys, 'base_prefix') and
-            sys.base_prefix != sys.prefix)):
+    if hasattr(sys, "real_prefix") or (
+        hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
+    ):
         return True
     return False
 
@@ -699,7 +657,7 @@ def get_python_executable() -> Path:
     # Check if a virtual environment is active
     if in_virtualenv():
         # If a virtual environment is active, use its Python interpreter
-        python_executable = Path(sys.prefix) / 'bin' / 'python'
+        python_executable = Path(sys.prefix) / "bin" / "python"
 
     return python_executable
 
@@ -867,9 +825,7 @@ def normalize_env_vars(env_vars: dict[str, Any]) -> dict[str, str]:
     :type env_vars: dict[str, Any]
     :return: The normalized environment variables.
     """
-    return {
-        str(k): str(v) for k, v in env_vars.items()
-    }
+    return {str(k): str(v) for k, v in env_vars.items()}
 
 
 class OrderedSet(Generic[T]):

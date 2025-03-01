@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Callable, Any
-from uuid import uuid4
 from collections import defaultdict
+from pathlib import Path
+from typing import Any, Callable
+from uuid import uuid4
+
 from jinja2 import Environment, FileSystemLoader
 
 from flowdapt.lib.database.base import BaseStorage
@@ -181,9 +182,7 @@ class Revision:
 class RevisionChain:
     def __init__(self, revisions: list[Revision]):
         self.revisions = (
-            {revision.revision_id: revision for revision in revisions}
-            if revisions
-            else {}
+            {revision.revision_id: revision for revision in revisions} if revisions else {}
         )
         self.head_revision = self.get_revision_head()
         self.tail_revision = self.get_revision_tail()
@@ -199,9 +198,7 @@ class RevisionChain:
         Get the head revision id.
         """
         down_revisions = {
-            rev.down_revision_id
-            for rev in self.revisions.values()
-            if rev.down_revision_id
+            rev.down_revision_id for rev in self.revisions.values() if rev.down_revision_id
         }
         heads = set(self.revisions) - down_revisions
         return next(iter(heads), None)
@@ -210,9 +207,7 @@ class RevisionChain:
         """
         Get the tail revision id.
         """
-        up_revisions = {
-            rev.revision_id for rev in self.revisions.values() if rev.down_revision_id
-        }
+        up_revisions = {rev.revision_id for rev in self.revisions.values() if rev.down_revision_id}
         tails = set(self.revisions) - up_revisions
         return next(iter(tails), None)
 
@@ -236,9 +231,7 @@ class RevisionChain:
 
         return cls(revisions=revisions)
 
-    def normalize_range(
-        self, from_revision_id: str, to_revision_id: str
-    ) -> tuple[str, str]:
+    def normalize_range(self, from_revision_id: str, to_revision_id: str) -> tuple[str, str]:
         """
         Normalize the range of revisions to upgrade or downgrade.
 
@@ -278,9 +271,7 @@ class RevisionChain:
 
         return graph
 
-    def _find_path(
-        self, graph: dict[str, list[str]], start_id: str, end_id: str
-    ) -> list[str]:
+    def _find_path(self, graph: dict[str, list[str]], start_id: str, end_id: str) -> list[str]:
         """
         Find a path in the graph from start_id to end_id.
 
@@ -320,9 +311,7 @@ class RevisionChain:
         if not self.revisions:
             return [], None
 
-        from_revision_id, to_revision_id = self.normalize_range(
-            from_revision_id, to_revision_id
-        )
+        from_revision_id, to_revision_id = self.normalize_range(from_revision_id, to_revision_id)
 
         graph = self._build_graph(reverse=reverse)
         path = self._find_path(graph, from_revision_id, to_revision_id)
@@ -353,9 +342,7 @@ class RevisionChain:
         :param to_revision_id: The ending revision id.
         :return: A tuple containing the list of downgrade functions and the target revision id.
         """
-        chain, target_revision = self.get_chain(
-            from_revision_id, to_revision_id, reverse=True
-        )
+        chain, target_revision = self.get_chain(from_revision_id, to_revision_id, reverse=True)
         # Downgrade chain should be non-inclusive of the target revision
         chain = chain[:-1]
         return [revision.downgrade for revision in chain], target_revision

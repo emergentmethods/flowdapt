@@ -1,6 +1,6 @@
+from flowdapt.compute.domain.models.workflowrun import WorkflowRun
 from flowdapt.lib.rpc.eventbus.event import Event
 from flowdapt.lib.utils.model import BaseModel
-from flowdapt.compute.domain.models.workflowrun import WorkflowRun
 
 
 class RunWorkflowEventData(BaseModel):

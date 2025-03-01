@@ -1,11 +1,16 @@
-import time
 import http
-
 import os
+import time
 from typing import TypedDict
 from urllib.parse import quote
-from asgiref.typing import ASGI3Application, ASGIReceiveCallable, ASGISendCallable
-from asgiref.typing import ASGISendEvent, HTTPScope
+
+from asgiref.typing import (
+    ASGI3Application,
+    ASGIReceiveCallable,
+    ASGISendCallable,
+    ASGISendEvent,
+    HTTPScope,
+)
 
 from flowdapt.lib.logger import LoggerType
 
@@ -98,10 +103,7 @@ class AccessLoggerMiddleware:
         self._logger = logger
 
     async def __call__(
-        self,
-        scope: HTTPScope,
-        receive: ASGIReceiveCallable,
-        send: ASGISendCallable
+        self, scope: HTTPScope, receive: ASGIReceiveCallable, send: ASGISendCallable
     ) -> None:
         if scope["type"] != "http":
             return await self._app(scope, receive, send)  # pragma: no cover

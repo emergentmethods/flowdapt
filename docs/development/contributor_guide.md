@@ -1,8 +1,8 @@
 # Contributor Guide
 
-This page is intended for developers of Flowdapt, people who want to contribute to the Flowdapt codebase or documentation, or people who want to understand the source code of the application they're running.
+This guide is intended for developers of Flowdapt, people who want to contribute to the Flowdapt codebase or documentation, or people who want to understand the source code of the application they're running.
 
-There are a few things you can do ensure your environment is ready for development on Flowdapt. First, ensure that you have `poetry` installed on your system. For more details on how to install `poetry`, see the [Poetry documentation](https://python-poetry.org/docs/#installation).
+There are a few things you can do ensure your environment is ready for development on Flowdapt. First, ensure that you have `uv` installed on your system. For more details on how to install `uv`, see the [Poetry documentation](https://docs.astral.sh/uv/getting-started/installation/).
 
 Next, clone the repo and create the virtual environment:
 
@@ -16,16 +16,13 @@ source .venv/bin/activate
 Then, install the dependencies:
 
 ```bash
-poetry install --with dev
+uv sync
 ```
-
-???+ note "Note"
-    The `--with dev` flag is on by default, but it is good to be explicit.
 
 Finally, install the pre-commit hooks:
 
 ```bash
-pre-commit install
+pre-commit install --install-hooks && pre-commit install --hook-type commit-msg
 ```
 
 These are required to ensure that the code is formatted correctly and that the tests pass before committing. If you NEED to skip the pre-commit hooks, you can use the `--no-verify` flag when committing. However CI will still run the hooks and fail if they do not pass.

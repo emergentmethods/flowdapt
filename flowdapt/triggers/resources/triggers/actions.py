@@ -1,12 +1,8 @@
-from flowdapt.lib.rpc import RPC
 from flowdapt.compute.domain.events.workflow import RunWorkflowEvent, RunWorkflowEventData
+from flowdapt.lib.rpc import RPC
 
 
-async def run_workflow(
-    rpc: RPC,
-    workflow: str,
-    input: dict = {}
-):
+async def run_workflow(rpc: RPC, workflow: str, input: dict = {}):
     """
     Trigger action: Run Workflow
 
@@ -15,20 +11,12 @@ async def run_workflow(
     """
     await rpc.event_bus.publish(
         RunWorkflowEvent(
-            source="trigger",
-            data=RunWorkflowEventData(
-                identifier=workflow,
-                payload=input
-            )
+            source="trigger", data=RunWorkflowEventData(identifier=workflow, payload=input)
         )
     )
 
 
-async def print_event(
-    rpc: RPC,
-    workflow: str,
-    input: dict = {}
-):
+async def print_event(rpc: RPC, workflow: str, input: dict = {}):
     """
     Debugging action: Print Event
 

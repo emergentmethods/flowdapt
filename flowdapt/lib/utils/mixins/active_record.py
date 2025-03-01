@@ -1,9 +1,11 @@
-from uuid import UUID
 from typing import TypeVar
+from uuid import UUID
 
 from flowdapt.lib.database.base import BaseStorage
 
+
 T = TypeVar("T")
+
 
 class ActiveRecordMixin:
     async def _insert_before(cls, database: BaseStorage):

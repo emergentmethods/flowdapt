@@ -1,11 +1,12 @@
 import asyncio
+from abc import ABC, abstractmethod
 from signal import SIGINT, SIGTERM
 from typing import Any, Type
-from abc import ABC, abstractmethod
 
-from flowdapt.lib.logger import get_logger, log_once
 from flowdapt.lib.context import ApplicationContext, create_context
+from flowdapt.lib.logger import get_logger, log_once
 from flowdapt.lib.utils.taskset import TaskSet
+
 
 logger = get_logger(__name__)
 
@@ -19,21 +20,16 @@ class Service(ABC):
         pass
 
     async def get_status(self):
-        return {
-            "status": "OK"
-        }
+        return {"status": "OK"}
 
     @abstractmethod
-    async def __startup__(self, *args, **kwargs):
-        ...
+    async def __startup__(self, *args, **kwargs): ...
 
     @abstractmethod
-    async def __shutdown__(self, *args, **kwargs):
-        ...
+    async def __shutdown__(self, *args, **kwargs): ...
 
     @abstractmethod
-    async def __run__(self, *args, **kwargs):
-        ...
+    async def __run__(self, *args, **kwargs): ...
 
 
 def is_service(obj: Any):
@@ -61,9 +57,7 @@ class ServiceController:
         self._context.controller = self
         self._context.service_registry = self._service_registry
         self._context.task_set = self._service_task_set
-        self._context.flags = {
-            "services_ready": False
-        }
+        self._context.flags = {"services_ready": False}
 
         self._register_core_services()
 
@@ -91,6 +85,7 @@ class ServiceController:
         # CoreService holds any RPC mechanisms available for
         # every server process like health and plugin management.
         from flowdapt.core.service import CoreService
+
         self.register_service(CoreService)
 
     def register_service(self, service: Type[Service], **kwargs):
@@ -105,7 +100,7 @@ class ServiceController:
         logger.debug(
             "ServiceRegistered",
             type=type(service_instance).__name__,
-            id=service_instance.__hash__()
+            id=service_instance.__hash__(),
         )
 
     def _handle_signal(self, sig, *args):
@@ -113,12 +108,7 @@ class ServiceController:
         Handle any kill signals. Will cancel all startup and main Service
         tasks. Won't cancel shutdown tasks as those must run.
         """
-        log_once(
-            log_method=logger.debug,
-            event="SignalReceived",
-            interval_seconds=1,
-            signal=sig
-        )
+        log_once(log_method=logger.debug, event="SignalReceived", interval_seconds=1, signal=sig)
 
         if startup := self._task_sets.get("__startup__"):
             startup.cancel()
@@ -136,9 +126,7 @@ class ServiceController:
             self._loop.add_signal_handler(sig, self._handle_signal, sig)
 
     async def _create_and_await_task_set(
-        self,
-        service_method: str = "__run__",
-        return_exceptions: bool = False
+        self, service_method: str = "__run__", return_exceptions: bool = False
     ):
         """
         Create a new `TaskSet` and iterate over every Service, adding the
@@ -147,34 +135,26 @@ class ServiceController:
         Catch any kill errors, and bubble up.
         """
         if not hasattr(Service, service_method):
-            raise ValueError(
-                f"{service_method} is not a valid Service method"
-            )
+            raise ValueError(f"{service_method} is not a valid Service method")
 
         task_results = None
         try:
-            self._task_sets[service_method] = TaskSet(
-                return_exceptions=return_exceptions
-            )
+            self._task_sets[service_method] = TaskSet(return_exceptions=return_exceptions)
 
             for service in self._service_registry:
-                self._task_sets[service_method].add(
-                    getattr(service, service_method)()
-                )
+                self._task_sets[service_method].add(getattr(service, service_method)())
 
             task_results = await self._task_sets[service_method]
         except (KeyboardInterrupt, asyncio.CancelledError):
             await logger.adebug("CancelEventReceived", service_method=service_method)  # noqa
-        except (Exception) as e:
+        except Exception as e:
             await logger.aexception("ExceptionOccurred", error=str(e))
             task_results = e
         finally:
             # Cancel ourselves
             self._task_sets[service_method].cancel()
 
-        if not return_exceptions and isinstance(
-            task_results, Exception
-        ):
+        if not return_exceptions and isinstance(task_results, Exception):
             raise task_results
         return task_results
 
@@ -206,10 +186,7 @@ class ServiceController:
         coroutines.
         """
         _logger = logger.bind(
-            services=[
-                service.__class__.__name__
-                for service in self._service_registry
-            ]
+            services=[service.__class__.__name__ for service in self._service_registry]
         )
         self._install_signal_handlers()
 
@@ -220,7 +197,7 @@ class ServiceController:
             except (asyncio.CancelledError, KeyboardInterrupt):
                 await _logger.adebug("ServicesStartCancelled")
                 self.should_exit = True
-            except (Exception) as e:
+            except Exception as e:
                 await _logger.aexception("ExceptionOccurred", error=str(e))
 
                 self._should_exit = True

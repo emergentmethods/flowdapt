@@ -1,21 +1,15 @@
-import numpy
 from typing import Any, Callable
 
+import numpy
+
 from flowdapt.compute.artifacts import Artifact, ArtifactFile
-from flowdapt.compute.artifacts.dataset.utils import _get_current_executor
 from flowdapt.compute.artifacts.dataset.handler import get_handler_func, register_handler
+from flowdapt.compute.artifacts.dataset.utils import _get_current_executor
 from flowdapt.lib.utils.misc import get_full_path_type
 
 
-def read_array_from_artifact(
-    artifact_file: ArtifactFile,
-    format: str = "npy"
-):
-    read_format_map = {
-        "npy": numpy.load,
-        "npz": numpy.load,
-        "pickle": numpy.load
-    }
+def read_array_from_artifact(artifact_file: ArtifactFile, format: str = "npy"):
+    read_format_map = {"npy": numpy.load, "npz": numpy.load, "pickle": numpy.load}
     read_func = read_format_map[format]
 
     with artifact_file.open(mode="rb") as file:
@@ -24,14 +18,8 @@ def read_array_from_artifact(
     return array
 
 
-def write_array_to_artifact(
-    file: ArtifactFile,
-    array: numpy.ndarray,
-    format: str = "npy"
-):
-    write_format_map = {
-        "npy": numpy.save
-    }
+def write_array_to_artifact(file: ArtifactFile, array: numpy.ndarray, format: str = "npy"):
+    write_format_map = {"npy": numpy.save}
     write_func = write_format_map[format]
 
     with file.open(mode="wb") as f:
@@ -41,10 +29,7 @@ def write_array_to_artifact(
 
 
 def numpy_array_to_artifact(
-    artifact: Artifact,
-    value: Any,
-    format: str = "npy",
-    num_parts: int = 1
+    artifact: Artifact, value: Any, format: str = "npy", num_parts: int = 1
 ) -> None:
     """
     Persist a numpy array to an Artifact.
@@ -66,10 +51,7 @@ def numpy_array_to_artifact(
         write_array_to_artifact(partition_file, partition, format=format)
 
 
-def numpy_array_from_artifact(
-    artifact: Artifact,
-    format: str = "npy"
-) -> numpy.ndarray:
+def numpy_array_from_artifact(artifact: Artifact, format: str = "npy") -> numpy.ndarray:
     """
     Get a numpy array from an Artifact.
 
@@ -77,14 +59,12 @@ def numpy_array_from_artifact(
     :param format: The format to use when getting the array. Defaults to 'npy'.
     :return: The numpy array read from the Artifact.
     """
-    assert artifact["value_type"] == "numpy.ndarray", \
+    assert artifact["value_type"] == "numpy.ndarray", (
         "Artifact must have value_type 'numpy.ndarray'"
+    )
 
     partitions = [
-        read_array_from_artifact(
-            file,
-            format=format
-        )
+        read_array_from_artifact(file, format=format)
         for file in artifact.list_files()
         if file.name.endswith(f".{format}")
     ]
@@ -98,10 +78,7 @@ def numpy_array_from_artifact(
 
 
 def array_to_artifact(
-    format: str = "npy",
-    *,
-    executor: str = "",
-    **kwargs
+    format: str = "npy", *, executor: str = "", **kwargs
 ) -> Callable[[Artifact, Any], None]:
     """
     Persist an array to an Artifact.
@@ -133,14 +110,12 @@ def array_to_artifact(
 
         # Call the handler function with the artifact, value, and any kwargs
         return handler(artifact, value, format=format, **kwargs)
+
     return _
 
 
 def array_from_artifact(
-    format: str = "npy",
-    *,
-    executor: str = "",
-    **kwargs
+    format: str = "npy", *, executor: str = "", **kwargs
 ) -> Callable[[Artifact], numpy.ndarray]:
     """
     Get an array from an Artifact.
@@ -164,6 +139,7 @@ def array_from_artifact(
 
         # Call the handler function with the artifact and any kwargs
         return handler(artifact, format=format, **kwargs)
+
     return _
 
 

@@ -1,8 +1,10 @@
-import psutil
-import pynvml
 import os
 
+import psutil
+import pynvml
+
 from flowdapt.lib.logger import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -67,6 +69,7 @@ def parse_cuda_visible_device(dev):
                 "or strings beginning with 'GPU-' or 'MIG-' prefixes."
             )
 
+
 def cuda_visible_devices(i, visible=None):
     """Cycling values for CUDA_VISIBLE_DEVICES environment variable
     Examples
@@ -78,9 +81,7 @@ def cuda_visible_devices(i, visible=None):
     """
     if visible is None:
         try:
-            visible = map(
-                parse_cuda_visible_device, os.environ["CUDA_VISIBLE_DEVICES"].split(",")
-            )
+            visible = map(parse_cuda_visible_device, os.environ["CUDA_VISIBLE_DEVICES"].split(","))
         except KeyError:
             visible = range(get_available_gpus())
     visible = list(visible)

@@ -1,21 +1,17 @@
-from importlib.metadata import (
-    EntryPoint,
-    files as package_files,
-    distribution,
-    entry_points,
-    version
-)
+from importlib.metadata import EntryPoint, distribution, entry_points, version
+from importlib.metadata import files as package_files
 from pathlib import Path
 from typing import Any
 
-from flowdapt.lib.utils.model import BaseModel, Field
 from flowdapt.lib.plugins.utils import parse_package_manifest
-from flowdapt.lib.utils.misc import in_path
 from flowdapt.lib.utils.asynctools import run_in_thread
+from flowdapt.lib.utils.misc import in_path
+from flowdapt.lib.utils.model import BaseModel, Field
 
 
 _ENTRYPOINT_GROUP = "flowdapt.plugins"
 PLUGIN_RESOURCE_KIND = "plugin"
+
 
 class PluginMetadata(BaseModel):
     description: str
@@ -43,17 +39,25 @@ class Plugin(BaseModel):
                 license=dist.metadata.json.get("license", ""),
                 url=dist.metadata.json.get("url", ""),
                 version=version(entrypoint.module),
-                requirements=dist.metadata.json.get("requires_dist", [])
+                requirements=dist.metadata.json.get("requires_dist", []),
             ),
-            module=entrypoint.load()
+            module=entrypoint.load(),
         )
 
     async def list_datafiles(
         self,
         skip_words: list[str] = [
-            "__pycache__", ".pyc", ".py", ".egg-info", ".dist-info",
-            ".git", ".github", ".pytest_cache", "tests", "docs"
-        ]
+            "__pycache__",
+            ".pyc",
+            ".py",
+            ".egg-info",
+            ".dist-info",
+            ".git",
+            ".github",
+            ".pytest_cache",
+            "tests",
+            "docs",
+        ],
     ) -> list[Path]:
         """
         Get a list of datafiles bundled with the plugin.
@@ -82,8 +86,7 @@ class Plugin(BaseModel):
                             if await run_in_thread(manifest_path.exists):
                                 data_files.extend(
                                     await parse_package_manifest(
-                                        manifest_path=manifest_path,
-                                        skip_words=skip_words
+                                        manifest_path=manifest_path, skip_words=skip_words
                                     )
                                 )
 

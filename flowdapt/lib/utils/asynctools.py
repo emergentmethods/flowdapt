@@ -1,26 +1,28 @@
 import asyncio
-import sys
 import subprocess
+import sys
+from contextlib import asynccontextmanager
+from functools import cache, partial, wraps
+from pathlib import Path
 from typing import (
-    Callable,
-    Awaitable,
     Any,
-    Tuple,
-    AsyncIterator,
     AsyncIterable,
-    TypeVar,
-    ParamSpec,
+    AsyncIterator,
+    Awaitable,
+    Callable,
     Coroutine,
     Dict,
+    ParamSpec,
     Protocol,
+    Tuple,
+    TypeVar,
+    cast,
     runtime_checkable,
-    cast
 )
-from contextlib import asynccontextmanager
-from functools import wraps, partial, cache
-from pathlib import Path
-from asynctempfile import NamedTemporaryFile
+
 from aiosonic import HTTPClient
+from asynctempfile import NamedTemporaryFile
+
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -28,16 +30,14 @@ R = TypeVar("R")
 
 CallableType = Callable[..., R] | Callable[..., Awaitable[R]]  # type: ignore
 
+
 @runtime_checkable
 class AsyncFileLikeObject(Protocol):
-    async def read(self, n: int = -1) -> bytes:
-        ...
+    async def read(self, n: int = -1) -> bytes: ...
 
-    async def write(self, data: bytes) -> None | int:
-        ...
+    async def write(self, data: bytes) -> None | int: ...
 
-    async def close(self) -> None:
-        ...
+    async def close(self) -> None: ...
 
 
 def is_async_callable(f: CallableType) -> bool:
@@ -97,6 +97,7 @@ def to_sync(func: Callable[P, Coroutine[Any, Any, R]]) -> Callable[P, R]:
         except RuntimeError:
             pass
         return asyncio.run(func(*args, **kwargs))
+
     return wrapper
 
 
@@ -113,6 +114,7 @@ def to_async(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
     @wraps(func)
     async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         return await run_in_thread(func, *args, **kwargs)
+
     return wrapper
 
 
@@ -215,22 +217,7 @@ async def temp_file_from_upload(uploaded_file: AsyncFileLikeObject):
         yield tmpf.name
 
 
-def set_loop_policy():
-    """
-    Set's the loop policy to `uvloop` if available.
-    """
-    try:
-        import uvloop
-
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-    except (ImportError):
-        if sys.version_info >= (3, 8) and sys.platform == "win32":
-            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # noqa
-
-
-async def aenumerate(
-    aiterable: AsyncIterable[T]
-) -> AsyncIterator[Tuple[int, T]]:
+async def aenumerate(aiterable: AsyncIterable[T]) -> AsyncIterator[Tuple[int, T]]:
     """
     Enumerate over an asynchronous iterable
 
@@ -242,10 +229,7 @@ async def aenumerate(
         i += 1
 
 
-async def aslice(
-    aiterable: AsyncIterable[T | None],
-    *args
-) -> AsyncIterator[T | None]:
+async def aslice(aiterable: AsyncIterable[T | None], *args) -> AsyncIterator[T | None]:
     """
     Slice an asynchronous iterable
 
@@ -267,43 +251,36 @@ async def aslice(
                 return
 
 
-async def achunk(
-    aiterator: AsyncIterable[T | None],
-    n: int
-) -> AsyncIterator[list[T | None]]:
+async def achunk(aiterator: AsyncIterable[T | None], n: int) -> AsyncIterator[list[T | None]]:
     """
     Chunk an Async Iterator in to `n` sized chunks
 
     :param iterator: The iterator to chunk
     :param n: The size of the chunks
     """
+
     async def take(i, n) -> list[T | None]:
-        return [
-            item
-            async for item in aslice(i, n)
-        ]
+        return [item async for item in aslice(i, n)]
+
     if n < 1:
         raise ValueError("n must be at least one")
 
     it = aiter(aiterator)
     try:
-        while (chunk := await take(it, n)):
+        while chunk := await take(it, n):
             yield chunk
     except StopAsyncIteration:
         return
 
 
-async def amerge(
-    *aiterables: AsyncIterable[T | None]
-) -> AsyncIterator[T | None]:
+async def amerge(*aiterables: AsyncIterable[T | None]) -> AsyncIterator[T | None]:
     """
     Merge asynchronous iterables into a single stream
 
     :param *aiterables: The iterables to merge
     """
     iter_next: Dict[AsyncIterator[T | None], None | asyncio.Future] = {
-        it.__aiter__(): None
-        for it in aiterables
+        it.__aiter__(): None for it in aiterables
     }
     orig_iter: Dict[asyncio.Future, AsyncIterator[T | None]] = {}
 
@@ -324,8 +301,7 @@ async def amerge(
                 iter_next[it] = fut
 
         done, _ = await asyncio.wait(
-            [fut for fut in iter_next.values() if fut],
-            return_when=asyncio.ALL_COMPLETED
+            [fut for fut in iter_next.values() if fut], return_when=asyncio.ALL_COMPLETED
         )
 
         for fut in done:
@@ -341,9 +317,7 @@ async def amerge(
 
 
 async def timed_iter(
-    aiterator: AsyncIterable[T | None],
-    timeout: float,
-    sentinel: None = None
+    aiterator: AsyncIterable[T | None], timeout: float, sentinel: None = None
 ) -> AsyncIterator[T | None]:
     """
     Wrap an async iterator into a timed iterator. If
@@ -372,9 +346,7 @@ async def timed_iter(
 
 
 async def batch_streams(
-    batch_size: int = 4,
-    timeout: float = 1.0,
-    *aiterables: AsyncIterable[T | None]
+    batch_size: int = 4, timeout: float = 1.0, *aiterables: AsyncIterable[T | None]
 ) -> AsyncIterator[list[T | None]]:
     """
     Merge and chunk a list of async iterables into `batch_size`
@@ -382,12 +354,7 @@ async def batch_streams(
     :param batch_size: The size of the batches
     :param *aiterables: The asynchronous iterables to batch
     """
-    aiterables = *(
-        [
-            timed_iter(iterable, timeout)
-            for iterable in aiterables
-        ]
-    ),
+    aiterables = (*([timed_iter(iterable, timeout) for iterable in aiterables]),)
     async for batch in achunk(amerge(*aiterables), batch_size):
         yield batch
 
@@ -396,7 +363,7 @@ async def wait_for_value(
     condition: Callable,
     terminating_values: list = [],
     non_terminating_values: list = [],
-    timeout: int = 10
+    timeout: int = 10,
 ):
     """
     Asynchronously wait for a condition to reach a target value within a specified timeout.
@@ -427,8 +394,7 @@ async def wait_for_value(
 
 
 async def call_bash_command(
-    command: list,
-    stream_callbacks: list[Callable[..., None]] = []
+    command: list, stream_callbacks: list[Callable[..., None]] = []
 ) -> tuple[int, str]:
     async def _read_stream(stream, callbacks):
         while True:
@@ -445,17 +411,14 @@ async def call_bash_command(
                 break
 
     process = await asyncio.create_subprocess_exec(
-        command[0],
-        *command[1:],
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        command[0], *command[1:], stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
     stdout_lines: list[str] = []
     stderr_lines: list[str] = []
 
     await asyncio.gather(
         _read_stream(process.stdout, [stdout_lines.append] + stream_callbacks),
-        _read_stream(process.stderr, [stderr_lines.append] + stream_callbacks)
+        _read_stream(process.stderr, [stderr_lines.append] + stream_callbacks),
     )
     await process.wait()
 
@@ -464,10 +427,7 @@ async def call_bash_command(
 
     if process.returncode and process.returncode != 0:
         raise subprocess.CalledProcessError(
-            process.returncode,
-            command,
-            output=stdout,
-            stderr=stderr
+            process.returncode, command, output=stdout, stderr=stderr
         )
 
     return process.returncode or 0, stdout

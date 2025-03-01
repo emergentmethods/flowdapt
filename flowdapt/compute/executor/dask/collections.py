@@ -1,30 +1,28 @@
 from typing import Any
-from pandas import DataFrame as PandasDataFrame
-from numpy import ndarray as NumpyArray
-from dask import delayed, compute
-from dask.dataframe import (
-    DataFrame as DaskDataFrame,
-    from_delayed as from_delayed_dataframe,
-    from_pandas as from_pandas_dataframe
-)
-from dask.array import (
-    Array as DaskArray,
-    from_delayed as from_delayed_array,
-    from_array as from_numpy_array,
-    concatenate as concatenate_arrays
-)
+
+from dask import compute, delayed
+from dask.array import Array as DaskArray
+from dask.array import concatenate as concatenate_arrays
+from dask.array import from_array as from_numpy_array
+from dask.array import from_delayed as from_delayed_array
+from dask.dataframe import DataFrame as DaskDataFrame
+from dask.dataframe import from_delayed as from_delayed_dataframe
+from dask.dataframe import from_pandas as from_pandas_dataframe
 from distributed import worker_client
+from numpy import ndarray as NumpyArray
+from pandas import DataFrame as PandasDataFrame
 
 from flowdapt.compute.artifacts import Artifact
 from flowdapt.compute.artifacts.dataset import register_handler
+from flowdapt.compute.artifacts.dataset.arrays import (
+    read_array_from_artifact,
+    write_array_to_artifact,
+)
 from flowdapt.compute.artifacts.dataset.dataframes import (
     read_dataframe_from_artifact,
     write_dataframe_to_artifact,
 )
-from flowdapt.compute.artifacts.dataset.arrays import (
-    read_array_from_artifact,
-    write_array_to_artifact
-)
+
 
 def dask_dataframe_to_artifact(
     artifact: Artifact,
@@ -53,9 +51,7 @@ def dask_dataframe_to_artifact(
     for i, part in enumerate(partitions):
         part_file = artifact.new_file(f"partition-{i}.{format}")
 
-        writes.append(
-            write_func(part_file, part, format)
-        )
+        writes.append(write_func(part_file, part, format))
 
     try:
         # Compute the writes on the cluster if we're on a worker
@@ -68,11 +64,7 @@ def dask_dataframe_to_artifact(
     return artifact
 
 
-def dask_dataframe_from_artifact(
-    artifact: Artifact,
-    format: str = "parquet",
-    num_points: int = -1
-):
+def dask_dataframe_from_artifact(artifact: Artifact, format: str = "parquet", num_points: int = -1):
     """
     Get a dask dataframe from an Artifact.
 
@@ -85,16 +77,14 @@ def dask_dataframe_from_artifact(
         "dask.dataframe.core.DataFrame",
         "dask.dataframe.core.Series",
         "dask_expr._collection.DataFrame",
+        "dask.dataframe.dask_expr._collection.DataFrame",
     ]
     assert artifact["value_type"] in _valid_types, f"Artifact must be of type {_valid_types}"
 
     partition_files = artifact.list_files()
     read_func = delayed(read_dataframe_from_artifact, name="read-dataframe-from-artifact")
 
-    reads = [
-        read_func(file, format=format)
-        for file in partition_files
-    ]
+    reads = [read_func(file, format=format) for file in partition_files]
 
     dataframe = from_delayed_dataframe(reads)
 
@@ -142,9 +132,7 @@ def dask_array_to_artifact(
     for i, part in enumerate(blocks):
         part_file = artifact.new_file(f"partition-{i}.{format}")
 
-        writes.append(
-            write_func(part_file, part, format)
-        )
+        writes.append(write_func(part_file, part, format))
 
     try:
         # Compute the writes on the cluster if we're on a worker
@@ -157,10 +145,7 @@ def dask_array_to_artifact(
     return artifact
 
 
-def dask_array_from_artifact(
-    artifact: Artifact,
-    format: str = "npy"
-):
+def dask_array_from_artifact(artifact: Artifact, format: str = "npy"):
     """
     Get a dask array from an Artifact.
 
@@ -168,8 +153,9 @@ def dask_array_from_artifact(
     :param format: The format to use when reading the array.
     :return: A dask array.
     """
-    assert artifact["value_type"] == "dask.array.core.Array", \
+    assert artifact["value_type"] == "dask.array.core.Array", (
         "Artifact must have value_type 'dask.array.core.Array'"
+    )
 
     partition_files = artifact.list_files()
     read_func = delayed(read_array_from_artifact, name="read-array-from-artifact")
@@ -178,14 +164,8 @@ def dask_array_from_artifact(
     axis = artifact["axis"]
     chunksize = artifact["chunksize"]
 
-    reads = [
-        read_func(file, format=format)
-        for file in partition_files
-    ]
-    partitions = [
-        from_delayed_array(file, dtype=dtype, shape=chunksize)
-        for file in reads
-    ]
+    reads = [read_func(file, format=format) for file in partition_files]
+    partitions = [from_delayed_array(file, dtype=dtype, shape=chunksize) for file in reads]
 
     return concatenate_arrays(partitions, axis=axis)
 
@@ -211,9 +191,29 @@ def simple_collection_from_dask(value: Any, **kwargs):
 # Register dask collections handlers for Artifacts
 register_handler("dask", "dask.dataframe.core.DataFrame", "to_artifact", dask_dataframe_to_artifact)
 register_handler("dask", "dask.dataframe.core.Series", "to_artifact", dask_dataframe_to_artifact)
-register_handler("dask", "dask.dataframe.core.DataFrame", "from_artifact", dask_dataframe_from_artifact)  # noqa: E501
-register_handler("dask", "dask.dataframe.core.Series", "from_artifact", dask_dataframe_from_artifact)  # noqa: E501
+register_handler(
+    "dask", "dask.dataframe.core.DataFrame", "from_artifact", dask_dataframe_from_artifact
+)  # noqa: E501
+register_handler(
+    "dask", "dask.dataframe.core.Series", "from_artifact", dask_dataframe_from_artifact
+)  # noqa: E501
 register_handler("dask", "dask.array.core.Array", "to_artifact", dask_array_to_artifact)
 register_handler("dask", "dask.array.core.Array", "from_artifact", dask_array_from_artifact)
-register_handler("dask", "dask_expr._collection.DataFrame", "to_artifact", dask_dataframe_to_artifact)  # noqa: E501
-register_handler("dask", "dask_expr._collection.DataFrame", "from_artifact", dask_dataframe_from_artifact)  # noqa: E501
+register_handler(
+    "dask", "dask_expr._collection.DataFrame", "to_artifact", dask_dataframe_to_artifact
+)  # noqa: E501
+register_handler(
+    "dask", "dask_expr._collection.DataFrame", "from_artifact", dask_dataframe_from_artifact
+)  # noqa: E501
+register_handler(
+    "dask",
+    "dask.dataframe.dask_expr._collection.DataFrame",
+    "to_artifact",
+    dask_dataframe_to_artifact,
+)  # noqa: E501
+register_handler(
+    "dask",
+    "dask.dataframe.dask_expr._collection.DataFrame",
+    "from_artifact",
+    dask_dataframe_from_artifact,
+)  # noqa: E501

@@ -1,36 +1,28 @@
 import asyncio
+from time import process_time_ns
 from typing import Any, Type
 from uuid import UUID
-from time import process_time_ns
-
-from flowdapt.lib.rpc import RPC
-from flowdapt.lib.logger import get_logger
-from flowdapt.lib.errors import (
-    ResourceNotFoundError
-)
-from flowdapt.lib.utils.model import model_dump
-from flowdapt.lib.context import inject_context
-from flowdapt.lib.telemetry import (
-    get_tracer,
-    get_meter,
-    Status,
-    StatusCode
-)
-from flowdapt.lib.database.base import BaseStorage
-from flowdapt.lib.utils.taskset import TaskSet
-from flowdapt.lib.config import Configuration
-from flowdapt.compute.executor.base import Executor
-from flowdapt.compute.domain.models.workflow import WorkflowResource
-from flowdapt.compute.domain.models.config import ConfigResource
-from flowdapt.compute.domain.models.workflowrun import WorkflowRun, WorkflowRunState
 
 from flowdapt.compute.domain.events.workflow import (
+    Event,
     WorkflowFinishedEvent,
     WorkflowStartedEvent,
-    Event
 )
-from flowdapt.compute.resources.workflow.execute import execute_workflow
+from flowdapt.compute.domain.models.config import ConfigResource
+from flowdapt.compute.domain.models.workflow import WorkflowResource
+from flowdapt.compute.domain.models.workflowrun import WorkflowRun, WorkflowRunState
+from flowdapt.compute.executor.base import Executor
 from flowdapt.compute.resources.config.methods import get_merged_config_data
+from flowdapt.compute.resources.workflow.execute import execute_workflow
+from flowdapt.lib.config import Configuration
+from flowdapt.lib.context import inject_context
+from flowdapt.lib.database.base import BaseStorage
+from flowdapt.lib.errors import ResourceNotFoundError
+from flowdapt.lib.logger import get_logger
+from flowdapt.lib.rpc import RPC
+from flowdapt.lib.telemetry import Status, StatusCode, get_meter, get_tracer
+from flowdapt.lib.utils.model import model_dump
+from flowdapt.lib.utils.taskset import TaskSet
 
 
 logger = get_logger(__name__)
@@ -38,32 +30,27 @@ tracer = get_tracer(__name__)
 meter = get_meter(__name__)
 
 workflows_executed_count = meter.create_counter(
-    name="workflows_executed",
-    description="Number of workflows ran",
-    unit="1"
+    name="workflows_executed", description="Number of workflows ran", unit="1"
 )
 workflow_execution_time = meter.create_histogram(
-    name="workflow_execution_time",
-    description="Time to execute a workflow",
-    unit="ms"
+    name="workflow_execution_time", description="Time to execute a workflow", unit="ms"
 )
 workflows_failed_count = meter.create_counter(
-    name="workflows_failed",
-    description="Number of failed workflows",
-    unit="1"
+    name="workflows_failed", description="Number of failed workflows", unit="1"
 )
+
 
 async def _publish_workflow_run_event(rpc: RPC, event_type: Type[Event], run: WorkflowRun):
     await logger.adebug("PublishingEvent", event_type=event_type.__name__)
-    await rpc.event_bus.publish(
-        event_type(source="compute", data=run)
-    )
+    await rpc.event_bus.publish(event_type(source="compute", data=run))
+
 
 async def _get_workflow(identifier: str | UUID, database: BaseStorage) -> WorkflowResource:
     workflow = await WorkflowResource.get(database, identifier)
     if not workflow:
         raise ResourceNotFoundError
     return workflow
+
 
 async def _get_workflow_run(identifier: str | UUID, database: BaseStorage) -> WorkflowRun | None:
     return await WorkflowRun.get(database, identifier)
@@ -84,10 +71,7 @@ async def list_workflows(database: BaseStorage) -> list[WorkflowResource]:
 
 @tracer.start_as_current_span("create_workflow")
 @inject_context
-async def create_workflow(
-    payload: WorkflowResource,
-    database: BaseStorage
-) -> WorkflowResource:
+async def create_workflow(payload: WorkflowResource, database: BaseStorage) -> WorkflowResource:
     """
     Create a WorkflowResource given a payload.
 
@@ -103,9 +87,7 @@ async def create_workflow(
 @tracer.start_as_current_span("update_workflow")
 @inject_context
 async def update_workflow(
-    identifier: str | UUID,
-    payload: WorkflowResource,
-    database: BaseStorage
+    identifier: str | UUID, payload: WorkflowResource, database: BaseStorage
 ) -> WorkflowResource:
     """
     Update a WorkflowResource given a payload.
@@ -183,10 +165,7 @@ async def run_workflow(
     with tracer.start_as_current_span("run_workflow", end_on_exit=False) as span:
         definition = await _get_workflow(identifier, database)
 
-        run_info = {
-            "workflow": definition.metadata.name,
-            "source": source or "manual"
-        }
+        run_info = {"workflow": definition.metadata.name, "source": source or "manual"}
         if config.services.compute.run_retention_duration != 0:
             workflow_run = await WorkflowRun.create(database, run_info)
         else:
@@ -202,7 +181,7 @@ async def run_workflow(
                 database=database,
                 rpc=rpc,
                 config=config,
-                executor=executor
+                executor=executor,
             )
         )
         run_task.add_done_callback(lambda _: span.end())
@@ -222,7 +201,7 @@ async def _run_workflow(
     database: BaseStorage,
     rpc: RPC,
     config: Configuration,
-    executor: Executor
+    executor: Executor,
 ) -> Any:
     namespace = namespace or config.services.compute.default_namespace
 
@@ -283,10 +262,7 @@ async def _run_workflow(
                 return_result=True,
             )
 
-            workflow_execution_time.record(
-                (process_time_ns() - _) / 1e6,
-                metrics_attributes
-            )
+            workflow_execution_time.record((process_time_ns() - _) / 1e6, metrics_attributes)
 
     except Exception as e:
         await _logger.aexception("WorkflowRunFailed", error=str(e))
@@ -313,9 +289,7 @@ async def _run_workflow(
 @tracer.start_as_current_span("get_recent_workflow_runs")
 @inject_context
 async def get_recent_workflow_runs(
-    workflow: str,
-    database: BaseStorage,
-    limit: int = 10
+    workflow: str, database: BaseStorage, limit: int = 10
 ) -> list[WorkflowRun]:
     """
     Get a list of recent WorkflowRuns for a given WorkflowResource.

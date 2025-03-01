@@ -1,5 +1,5 @@
-from flowdapt.lib.utils.misc import import_from_string
 from flowdapt.compute.cluster_memory.base import ClusterMemory
+from flowdapt.lib.utils.misc import import_from_string
 
 
 def get_cluster_memory_backend(backend: str, **kwargs) -> ClusterMemory:

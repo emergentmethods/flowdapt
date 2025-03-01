@@ -1,18 +1,19 @@
-import sys
 import logging
-import structlog
+import sys
 import time
 from contextlib import contextmanager
 from io import StringIO
 from types import TracebackType
-from typing import IO, Callable, Type, Optional, Iterator
+from typing import IO, Callable, Iterator, Optional, Type
+
+import structlog
 from rich.console import Console
 from rich.traceback import Traceback
-from structlog.processors import ExceptionRenderer, ExceptionDictTransformer
+from structlog.processors import ExceptionDictTransformer, ExceptionRenderer
 from structlog.testing import capture_logs
 
-from flowdapt.lib.utils.model import model_dump
 from flowdapt.lib.utils.misc import hash_map
+from flowdapt.lib.utils.model import model_dump
 
 
 LoggerType = structlog.BoundLoggerBase
@@ -27,7 +28,7 @@ _COLORS = {
     "TIMESTAMP": "grey70",
     "LOGGER_NAME": "royal_blue1",
     "KEY": "grey70",
-    "VALUE": "sky_blue3"
+    "VALUE": "sky_blue3",
 }
 
 _last_log_times = {}
@@ -125,13 +126,19 @@ class ConsoleRenderer:
             output += f"\\[[{_get_color(level)}]{level}[/{_get_color(level)}]]"
 
         if logger_name:
-            output += f"\\[[{_get_color('logger_name')}]{logger_name}[/{_get_color('logger_name')}]]"  # noqa: E501
+            output += (
+                f"\\[[{_get_color('logger_name')}]{logger_name}[/{_get_color('logger_name')}]]"  # noqa: E501
+            )
 
-        rendered_kw.append(f"[{_get_color('key')}]event[/{_get_color('key')}]=[{_get_color('value')}]{event}[/{_get_color('value')}]")  # noqa: E501
-        rendered_kw.extend([
-            f"[{_get_color('key')}]{k}[/{_get_color('key')}]=[{_get_color('value')}]{v}[/{_get_color('value')}]"  # noqa: E501
-            for k, v in event_dict.items()
-        ])
+        rendered_kw.append(
+            f"[{_get_color('key')}]event[/{_get_color('key')}]=[{_get_color('value')}]{event}[/{_get_color('value')}]"
+        )  # noqa: E501
+        rendered_kw.extend(
+            [
+                f"[{_get_color('key')}]{k}[/{_get_color('key')}]=[{_get_color('value')}]{v}[/{_get_color('value')}]"  # noqa: E501
+                for k, v in event_dict.items()
+            ]
+        )
 
         output += f"\\[{' '.join(rendered_kw)}]"
 
@@ -188,7 +195,7 @@ def configure_logger(
                         max_frames=traceback_max_frames,
                     )
                 ),
-                structlog.processors.JSONRenderer()
+                structlog.processors.JSONRenderer(),
             ]
         case _:
             raise ValueError(f"Unknown logging format: {format}")
@@ -197,14 +204,13 @@ def configure_logger(
         logger_factory=RichPrintLoggerFactory(),
         processors=shared_processors + output_processors,
         context_class=dict,
-        wrapper_class=structlog.make_filtering_bound_logger(
-            logging.getLevelName(level)
-        ),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.getLevelName(level)),
     )
 
 
 def get_logging_configuration() -> dict:
     from flowdapt.lib.config import get_configuration
+
     return model_dump(get_configuration().logging)
 
 

@@ -1,0 +1,15 @@
+include:
+  - local: '.gitlab/templates.yml'
+
+image: python:3.11
+
+stages: !reference [.stages, stages]
+
+lint_commit:
+  extends: .lint_commit
+
+# lint_code:
+#   extends: .lint_code
+
+unit_tests:
+  extends: .unit_tests
