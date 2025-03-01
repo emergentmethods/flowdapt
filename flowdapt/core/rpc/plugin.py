@@ -1,33 +1,29 @@
-from fastapi import status, Depends, Response
+from fastapi import Depends, Response, status
 from starlette.responses import FileResponse
 
-from flowdapt.lib.plugins import (
-    PLUGIN_RESOURCE_KIND,
-    list_plugins,
-    get_plugin,
-)
-from flowdapt.lib.errors import APIErrorModel, ResourceNotFoundError
-from flowdapt.lib.rpc import RPCRouter
-from flowdapt.lib.rpc.api.utils import (
-    build_responses_dict,
-    responses_from_dtos,
-    get_versioned_dto,
-    build_response,
-)
-from flowdapt.lib.domain.dto.protocol import DTOPair
-
 from flowdapt.core.domain.dto import (
-    PluginReadDTOs,
     PluginFilesReadDTOs,
     PluginFilesResponse,
+    PluginReadDTOs,
     PluginResponse,
 )
-
-
-router = RPCRouter(
-    prefix="/plugin",
-    tags=["plugins"]
+from flowdapt.lib.domain.dto.protocol import DTOPair
+from flowdapt.lib.errors import APIErrorModel, ResourceNotFoundError
+from flowdapt.lib.plugins import (
+    PLUGIN_RESOURCE_KIND,
+    get_plugin,
+    list_plugins,
 )
+from flowdapt.lib.rpc import RPCRouter
+from flowdapt.lib.rpc.api.utils import (
+    build_response,
+    build_responses_dict,
+    get_versioned_dto,
+    responses_from_dtos,
+)
+
+
+router = RPCRouter(prefix="/plugin", tags=["plugins"])
 
 
 @router.add_api_route(
@@ -37,33 +33,23 @@ router = RPCRouter(
     summary="Get information about a specific Plugin",
     response_description="Plugin info",
     status_code=status.HTTP_200_OK,
-    responses=build_responses_dict({
-        **responses_from_dtos(PluginReadDTOs, PLUGIN_RESOURCE_KIND),
-        **{
-            404: {
-                "model": APIErrorModel
-            }
+    responses=build_responses_dict(
+        {
+            **responses_from_dtos(PluginReadDTOs, PLUGIN_RESOURCE_KIND),
+            **{404: {"model": APIErrorModel}},
         }
-    }),
+    ),
     response_class=Response,
-    name="get_plugin"
+    name="get_plugin",
 )
 async def get_plugin_api(
     plugin_name: str,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            PluginReadDTOs,
-            resource_type=PLUGIN_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(PluginReadDTOs, resource_type=PLUGIN_RESOURCE_KIND)
+    ),
 ):
     (_, response_dto), version = versioned_dto
-    return build_response(
-        response_dto,
-        get_plugin(plugin_name),
-        PLUGIN_RESOURCE_KIND,
-        version
-    )
+    return build_response(response_dto, get_plugin(plugin_name), PLUGIN_RESOURCE_KIND, version)
 
 
 @router.add_api_route(
@@ -77,23 +63,16 @@ async def get_plugin_api(
         responses_from_dtos(PluginReadDTOs, PLUGIN_RESOURCE_KIND, is_array=True)
     ),
     response_class=Response,
-    name="list_plugins"
+    name="list_plugins",
 )
 async def list_plugins_api(
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            PluginReadDTOs,
-            resource_type=PLUGIN_RESOURCE_KIND
-        )
-    )
+        get_versioned_dto(PluginReadDTOs, resource_type=PLUGIN_RESOURCE_KIND)
+    ),
 ):
     (_, response_dto), version = versioned_dto
     return build_response(
-        response_dto,
-        list_plugins(),
-        PLUGIN_RESOURCE_KIND,
-        version,
-        recursive=True
+        response_dto, list_plugins(), PLUGIN_RESOURCE_KIND, version, recursive=True
     )
 
 
@@ -104,33 +83,25 @@ async def list_plugins_api(
     summary="Get a list of files bundled with a Plugin",
     response_description="List of files",
     status_code=status.HTTP_200_OK,
-    responses=build_responses_dict({
-        **responses_from_dtos(PluginFilesReadDTOs, f"{PLUGIN_RESOURCE_KIND}.files"),
-        **{
-            404: {
-                "model": APIErrorModel
-            }
+    responses=build_responses_dict(
+        {
+            **responses_from_dtos(PluginFilesReadDTOs, f"{PLUGIN_RESOURCE_KIND}.files"),
+            **{404: {"model": APIErrorModel}},
         }
-    }),
+    ),
     response_class=Response,
-    name="list_plugin_files"
+    name="list_plugin_files",
 )
 async def list_plugin_files_api(
     plugin_name: str,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            PluginFilesReadDTOs,
-            resource_type=f"{PLUGIN_RESOURCE_KIND}.files"
-        )
-    )
+        get_versioned_dto(PluginFilesReadDTOs, resource_type=f"{PLUGIN_RESOURCE_KIND}.files")
+    ),
 ):
     (_, response_dto), version = versioned_dto
-    files = await (get_plugin(plugin_name).list_datafiles())
+    files = await get_plugin(plugin_name).list_datafiles()
     return build_response(
-        response_dto,
-        [file.name for file in files],
-        f"{PLUGIN_RESOURCE_KIND}.files",
-        version
+        response_dto, [file.name for file in files], f"{PLUGIN_RESOURCE_KIND}.files", version
     )
 
 
@@ -140,18 +111,11 @@ async def list_plugin_files_api(
     summary="Download a file from a specific Plugin",
     response_description="The file requested",
     status_code=status.HTTP_200_OK,
-    responses=build_responses_dict({
-        200: {
-            "content": {
-                "application/octet-stream": {}
-            }
-        },
-        404: {
-            "model": APIErrorModel
-        }
-    }),
+    responses=build_responses_dict(
+        {200: {"content": {"application/octet-stream": {}}}, 404: {"model": APIErrorModel}}
+    ),
     response_class=Response,
-    name="get_plugin_file"
+    name="get_plugin_file",
 )
 async def download_plugin_file_api(plugin_name: str, file_name: str) -> FileResponse:
     plugin = get_plugin(plugin_name)
@@ -160,9 +124,7 @@ async def download_plugin_file_api(plugin_name: str, file_name: str) -> FileResp
     for file_path in data_files:
         if file_name == file_path.name:
             return FileResponse(
-                file_path,
-                media_type="application/octet-stream",
-                filename=file_path.name
+                file_path, media_type="application/octet-stream", filename=file_path.name
             )
 
     raise ResourceNotFoundError()

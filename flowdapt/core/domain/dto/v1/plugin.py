@@ -1,5 +1,5 @@
-from flowdapt.lib.utils.model import BaseModel, model_dump
 from flowdapt.lib.plugins import Plugin
+from flowdapt.lib.utils.model import BaseModel, model_dump
 
 
 class V1Alpha1PluginMetadata(BaseModel):
@@ -18,12 +18,7 @@ class V1Alpha1Plugin(BaseModel):
 
     @classmethod
     def from_model(cls, model: Plugin):
-        return cls(
-            **{
-                **model_dump(model),
-                "module": model.module.__name__
-            }
-        )
+        return cls(**{**model_dump(model), "module": model.module.__name__})
 
 
 class V1Alpha1PluginFiles(BaseModel):
@@ -31,6 +26,4 @@ class V1Alpha1PluginFiles(BaseModel):
 
     @classmethod
     def from_model(cls, model: list[str]):
-        return cls(
-            files=model
-        )
+        return cls(files=model)

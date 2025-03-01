@@ -1,9 +1,11 @@
 from __future__ import annotations
+
 from enum import Enum
 
-from flowdapt.lib.utils.model import BaseModel
 from flowdapt.lib.database.base import BaseStorage, Field
 from flowdapt.lib.domain.models.base import Resource
+from flowdapt.lib.utils.model import BaseModel
+
 
 CONFIG_RESOURCE_KIND = "config"
 
@@ -38,10 +40,10 @@ class ConfigResource(Resource):
         """
         by_name = await database.find(
             cls,
-            (Field.spec.selector.exists()) &
-            (Field.spec.selector.kind.is_any([resource.kind, None])) &
-            (Field.spec.selector.type == "name") &
-            (Field.spec.selector.value == resource.metadata.name)
+            (Field.spec.selector.exists())
+            & (Field.spec.selector.kind.is_any([resource.kind, None]))
+            & (Field.spec.selector.type == "name")
+            & (Field.spec.selector.value == resource.metadata.name),
         )
 
         # Query for configs with a selector matching any of the annotations
@@ -49,13 +51,10 @@ class ConfigResource(Resource):
         if resource.metadata.annotations:
             by_annotation = await database.find(
                 cls,
-                (Field.spec.selector.exists()) &
-                (Field.spec.selector.kind.is_any([resource.kind, None])) &
-                (Field.spec.selector.type == "annotation") & (
-                    Field.spec.selector.value.partial(
-                        resource.metadata.annotations
-                    )
-                )
+                (Field.spec.selector.exists())
+                & (Field.spec.selector.kind.is_any([resource.kind, None]))
+                & (Field.spec.selector.type == "annotation")
+                & (Field.spec.selector.value.partial(resource.metadata.annotations)),
             )
         else:
             by_annotation = []

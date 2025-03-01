@@ -7,6 +7,7 @@ from flowdapt.lib.utils.model import (
     field_validator,
 )
 
+
 WORKFLOW_RESOURCE_KIND = "workflow"
 
 
@@ -21,7 +22,7 @@ class WorkflowStage(BaseModel):
     resources: dict = {}
     priority: int | None = None
 
-    @field_validator('type')
+    @field_validator("type")
     @classmethod
     def validate_type(cls, value):
         from flowdapt.compute.resources.workflow.stage import get_available_stage_types

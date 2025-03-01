@@ -1,50 +1,52 @@
 import os
-import grpc
+
 # from datetime import datetime
 from collections import defaultdict
-from opentelemetry import trace, metrics
-from opentelemetry.trace import Tracer, Span, Status, StatusCode
-from opentelemetry.metrics import Meter
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.semconv.resource import ResourceAttributes
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.metrics import (
-    MeterProvider,
+
+import grpc
+from opentelemetry import metrics, trace
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
+    OTLPMetricExporter as GRPCOTLPMetricExporter,
 )
-from opentelemetry.sdk.trace.export import (
-    SpanExporter,
-    BatchSpanProcessor,
-    ConsoleSpanExporter,
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+    OTLPSpanExporter as GRPCOTLPSpanExporter,
 )
-from opentelemetry.sdk.metrics.export import (
-    MetricExportResult,
-    MetricsData,
-    MetricExporter,
-    ConsoleMetricExporter,
-    PeriodicExportingMetricReader
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
+    OTLPMetricExporter as HTTPOTLPMetricExporter,
+)
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+    OTLPSpanExporter as HTTPOTLPSpanExporter,
 )
 from opentelemetry.instrumentation.asgi import (
     OpenTelemetryMiddleware as TelemetryMiddleware,
 )
 from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
-    OTLPSpanExporter as GRPCOTLPSpanExporter
+from opentelemetry.metrics import Meter
+from opentelemetry.sdk.metrics import (
+    MeterProvider,
 )
-from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import (
-    OTLPMetricExporter as GRPCOTLPMetricExporter
+from opentelemetry.sdk.metrics.export import (
+    ConsoleMetricExporter,
+    MetricExporter,
+    MetricExportResult,
+    MetricsData,
+    PeriodicExportingMetricReader,
 )
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
-    OTLPSpanExporter as HTTPOTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+    SpanExporter,
 )
-from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
-    OTLPMetricExporter as HTTPOTLPMetricExporter
-)
+from opentelemetry.semconv.resource import ResourceAttributes
+from opentelemetry.trace import Span, Status, StatusCode, Tracer
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from flowdapt import __version__
 from flowdapt.lib.config import Configuration
+from flowdapt.lib.enum import TelemetryCompression, TelemetryProtocol
 from flowdapt.lib.serializers import JSONSerializer
-from flowdapt.lib.enum import TelemetryProtocol, TelemetryCompression
 
 
 __all__ = (
@@ -65,7 +67,7 @@ def setup_telemetry(config: Configuration):
         {
             ResourceAttributes.SERVICE_NAME: config.name,
             ResourceAttributes.SERVICE_VERSION: __version__,
-            ResourceAttributes.SERVICE_INSTANCE_ID: os.getpid()
+            ResourceAttributes.SERVICE_INSTANCE_ID: os.getpid(),
         }
     )
 
@@ -99,15 +101,15 @@ def setup_telemetry(config: Configuration):
                 compression = {
                     TelemetryCompression.gzip: grpc.Compression.Gzip,
                     TelemetryCompression.deflate: grpc.Compression.Deflate,
-                    TelemetryCompression.none: grpc.Compression.NoCompression
+                    TelemetryCompression.none: grpc.Compression.NoCompression,
                 }[config.telemetry.compression]
                 trace_exporter = GRPCOTLPSpanExporter(
                     compression=compression,
-                    **kwargs   # type: ignore
+                    **kwargs,  # type: ignore
                 )
                 metrics_exporter = GRPCOTLPMetricExporter(
                     compression=compression,
-                    **kwargs  # type: ignore
+                    **kwargs,  # type: ignore
                 )
             case TelemetryProtocol.http:
                 # TODO: The HTTP exporter fails to export when compression is passed
@@ -115,12 +117,12 @@ def setup_telemetry(config: Configuration):
                 trace_exporter = HTTPOTLPSpanExporter(
                     # The collector expects the endpoint to include the full path
                     endpoint=f"{endpoint}/v1/traces",
-                    **kwargs  # type: ignore
+                    **kwargs,  # type: ignore
                 )
                 metrics_exporter = HTTPOTLPMetricExporter(
                     # The collector expects the endpoint to include the full path
                     endpoint=f"{endpoint}/v1/metrics",
-                    **kwargs  # type: ignore
+                    **kwargs,  # type: ignore
                 )
     else:
         # If disabled we just dump the traces and metrics to null
@@ -135,7 +137,7 @@ def setup_telemetry(config: Configuration):
             max_queue_size=config.telemetry.trace_max_queue_size,
             max_export_batch_size=config.telemetry.trace_export_batch_size,
             schedule_delay_millis=config.telemetry.trace_schedule_delay_ms,
-            export_timeout_millis=config.telemetry.trace_export_timeout_ms
+            export_timeout_millis=config.telemetry.trace_export_timeout_ms,
         )
     )
 
@@ -144,15 +146,15 @@ def setup_telemetry(config: Configuration):
             PeriodicExportingMetricReader(
                 exporter=metrics_exporter,
                 export_interval_millis=config.telemetry.metrics_interval_ms,
-                export_timeout_millis=config.telemetry.metrics_export_timeout_ms
+                export_timeout_millis=config.telemetry.metrics_export_timeout_ms,
             ),
             PeriodicExportingMetricReader(
                 exporter=InMemoryMetricsExporter(),
                 export_interval_millis=config.telemetry.metrics_interval_ms,
-                export_timeout_millis=config.telemetry.metrics_export_timeout_ms
-            )
+                export_timeout_millis=config.telemetry.metrics_export_timeout_ms,
+            ),
         ],
-        resource=resource
+        resource=resource,
     )
 
     # Setup the system metrics
@@ -214,9 +216,7 @@ def get_trace_id() -> str:
     """
     Get the current formatted trace ID.
     """
-    return trace.format_trace_id(
-        get_current_span().get_span_context().trace_id
-    )
+    return trace.format_trace_id(get_current_span().get_span_context().trace_id)
 
 
 def ctx_from_parent(trace_parent: str) -> trace.Context:
@@ -259,22 +259,17 @@ class MetricsContainer:
         """
         # Add new data points to the buffer
         self._metrics[metric] = sorted(
-            data_points + self._metrics[metric],
-            key=lambda x: x['time_unix_nano'],
-            reverse=True
+            data_points + self._metrics[metric], key=lambda x: x["time_unix_nano"], reverse=True
         )
 
         # Get the latest time_unix_nano across all data points
-        latest_time = max(
-            data_point['time_unix_nano']
-            for data_point in self._metrics[metric]
-        )
+        latest_time = max(data_point["time_unix_nano"] for data_point in self._metrics[metric])
 
         # Remove data points that are older than max_time seconds
         self._metrics[metric] = [
             data_point
             for data_point in self._metrics[metric]
-            if latest_time - data_point['time_unix_nano'] <= self._max_time_nano
+            if latest_time - data_point["time_unix_nano"] <= self._max_time_nano
         ]
 
     def get_data_points(
@@ -282,7 +277,7 @@ class MetricsContainer:
         metric: str,
         start_time: int | None = None,
         end_time: int | None = None,
-        max_length: int | None = None
+        max_length: int | None = None,
     ) -> list:
         """
         Get data points for a metric.
@@ -305,17 +300,11 @@ class MetricsContainer:
 
         if start_time is not None:
             data_points = [
-                point
-                for point in data_points
-                if point['start_time_unix_nano'] >= start_time
+                point for point in data_points if point["start_time_unix_nano"] >= start_time
             ]
 
         if end_time is not None:
-            data_points = [
-                point
-                for point in data_points
-                if point['time_unix_nano'] <= end_time
-            ]
+            data_points = [point for point in data_points if point["time_unix_nano"] <= end_time]
 
         if max_length is not None:
             data_points = data_points[:max_length]
@@ -350,13 +339,9 @@ class InMemoryMetricsExporter(MetricExporter):
     """
 
     def export(  # type: ignore
-        self,
-        metrics_data: MetricsData,
-        **kwargs
+        self, metrics_data: MetricsData, **kwargs
     ) -> MetricExportResult:
-        data: dict = JSONSerializer.loads(
-            metrics_data.to_json().encode()
-        )
+        data: dict = JSONSerializer.loads(metrics_data.to_json().encode())
 
         for resource_metric in data["resource_metrics"]:
             for scope_metric in resource_metric["scope_metrics"]:

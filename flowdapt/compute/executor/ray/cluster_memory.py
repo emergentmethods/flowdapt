@@ -1,7 +1,8 @@
 import os
-from typing import Any
 from collections import defaultdict
-from ray import remote, put, get, get_actor
+from typing import Any
+
+from ray import get, get_actor, put, remote
 
 from flowdapt.compute.cluster_memory.base import ClusterMemory
 
@@ -36,10 +37,7 @@ class RayClusterMemoryActor:
             get_actor(actor_name, namespace="flowdapt")
         except ValueError:
             RayClusterMemoryActor.options(
-                name=actor_name,
-                lifetime="detached",
-                namespace="flowdapt",
-                **options
+                name=actor_name, lifetime="detached", namespace="flowdapt", **options
             ).remote()
 
 

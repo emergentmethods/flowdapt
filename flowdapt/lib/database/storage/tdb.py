@@ -1,27 +1,30 @@
-from uuid import UUID
-from typing import Any
 from datetime import datetime
 from functools import reduce
 from pathlib import Path
-from aiotinydb import AIOTinyDB, AIOJSONStorage
-from tinydb import Query as TDBQuery, where
+from typing import Any
+from uuid import UUID
+
+from aiotinydb import AIOJSONStorage, AIOTinyDB
+from tinydb import Query as TDBQuery
+from tinydb import where
 from tinydb.operations import delete
+from tinydb.table import Document as TinyDBDocument
+from tinydb.table import Table
 from tinydb_serialization import SerializationMiddleware, Serializer
-from tinydb.table import Table, Document as TinyDBDocument
 
 from flowdapt.lib.database.base import (
-    ExpressionVisitor,
-    Query,
-    Operator,
-    Expression,
-    UnaryExpression,
-    BinaryExpression,
-    VariadicExpression,
-    LiteralExpression,
-    FieldExpression,
-    Document,
     BaseStorage,
+    BinaryExpression,
+    Document,
+    Expression,
+    ExpressionVisitor,
+    FieldExpression,
+    LiteralExpression,
+    Operator,
+    Query,
     SortDirection,
+    UnaryExpression,
+    VariadicExpression,
 )
 from flowdapt.lib.database.utils import get_nested_field
 from flowdapt.lib.utils.misc import UNDEFINED
@@ -109,12 +112,8 @@ class TinyDBExpressionVisitor(ExpressionVisitor):
     def visit_variadic(self, expression: VariadicExpression) -> Any:
         operands = [operand.accept(self) for operand in expression.operands]
         left, *right = operands
-        operator = self.get_mapped_operator(
-            expression.operator, self.variadic_operator_mappings
-        )
-        join_operator = self.get_mapped_operator(
-            expression.operator, self.join_operator_mappings
-        )
+        operator = self.get_mapped_operator(expression.operator, self.variadic_operator_mappings)
+        join_operator = self.get_mapped_operator(expression.operator, self.join_operator_mappings)
 
         return reduce(
             lambda acc, operand: getattr(acc, join_operator)(
@@ -125,9 +124,7 @@ class TinyDBExpressionVisitor(ExpressionVisitor):
         )
 
     def visit_field(self, expression: FieldExpression) -> Any:
-        return reduce(
-            lambda query, field: query[field], expression.__fields__, TDBQuery()
-        )
+        return reduce(lambda query, field: query[field], expression.__fields__, TDBQuery())
 
     def visit_literal(self, expression: LiteralExpression) -> Any:
         return expression.value
@@ -151,6 +148,7 @@ class TinyDBStorage(BaseStorage):
     :param path: Path to database file. If not provided, database will be created in
     the application directory at`db.json`.
     """
+
     def __init__(
         self,
         path: str = UNDEFINED,
@@ -162,6 +160,7 @@ class TinyDBStorage(BaseStorage):
             self._path = path
         else:
             from flowdapt.lib.config import get_app_dir
+
             self._path = str((get_app_dir() or Path.cwd()) / "db.json")
 
         self._json_encoders = json_encoders or {}
@@ -200,14 +199,10 @@ class TinyDBStorage(BaseStorage):
         return None
 
     async def set_revision_id(self, revision_id: str) -> None:
-        self._db.table("_migrate").upsert(
-            TinyDBDocument({"revision_id": revision_id}, doc_id=0)
-        )
+        self._db.table("_migrate").upsert(TinyDBDocument({"revision_id": revision_id}, doc_id=0))
 
     async def start(self) -> None:
-        self._db = await AIOTinyDB(
-            self._path, storage=self._build_storage()
-        ).__aenter__()
+        self._db = await AIOTinyDB(self._path, storage=self._build_storage()).__aenter__()
 
     async def stop(self) -> None:
         await self._db.__aexit__(None, None, None)
@@ -226,9 +221,7 @@ class TinyDBStorage(BaseStorage):
     async def _update(self, documents: list[Document]) -> None:
         for document in documents:
             collection = self._get_collection(document)
-            collection.update(
-                self._serialize_document(document), doc_ids=[document._doc_id_.int]
-            )
+            collection.update(self._serialize_document(document), doc_ids=[document._doc_id_.int])
 
     async def _find(
         self,
@@ -251,7 +244,7 @@ class TinyDBStorage(BaseStorage):
                 reverse=direction == SortDirection.DESC,
             )
 
-        documents = documents[skip:skip + limit if limit > 0 else None]
+        documents = documents[skip : skip + limit if limit > 0 else None]
 
         if project:
             documents = [
@@ -259,14 +252,9 @@ class TinyDBStorage(BaseStorage):
                 for doc in documents
             ]
 
-        return [
-            self._deserialize_document(document_type, doc.doc_id, doc)
-            for doc in documents
-        ]
+        return [self._deserialize_document(document_type, doc.doc_id, doc) for doc in documents]
 
-    async def _get(
-        self, document_type: type[Document], document_uid: UUID
-    ) -> Document | None:
+    async def _get(self, document_type: type[Document], document_uid: UUID) -> Document | None:
         collection = self._get_collection(document_type)
         result = collection.get(doc_id=document_uid.int)
 
@@ -279,10 +267,7 @@ class TinyDBStorage(BaseStorage):
         collection = self._get_collection(document_type)
         documents = collection.all()
 
-        return [
-            self._deserialize_document(document_type, doc.doc_id, doc)
-            for doc in documents
-        ]
+        return [self._deserialize_document(document_type, doc.doc_id, doc) for doc in documents]
 
     async def list_collections(self) -> list[str]:
         return list(self._db.tables())

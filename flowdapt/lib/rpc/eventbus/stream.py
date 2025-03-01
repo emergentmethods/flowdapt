@@ -2,14 +2,13 @@ import asyncio
 import logging
 from typing import AsyncIterator, Type
 
-from flowdapt.lib.rpc.eventbus.event import BaseEvent, Event, EndOfStream
+from flowdapt.lib.rpc.eventbus.event import BaseEvent, EndOfStream, Event
 
 
 logger = logging.getLogger(__name__)
 
 
-class StreamFinished(Exception):
-    ...
+class StreamFinished(Exception): ...
 
 
 class EventStream:
@@ -29,16 +28,11 @@ class EventStream:
         :type schemas: List[Type[BaseEvent]]
         """
         self._queue: asyncio.Queue[dict | EndOfStream] = asyncio.Queue(maxsize)
-        self._event_schemas = {
-            "_default": _default_schema
-        }
+        self._event_schemas = {"_default": _default_schema}
 
         if schemas:
             self._event_schemas.update(
-                dict(
-                    (event.__fields__["type"].get_default(), event)
-                    for event in schemas
-                )
+                dict((event.__fields__["type"].get_default(), event) for event in schemas)
             )
 
     def _validate_event_schema(self, event: dict) -> BaseEvent:

@@ -1,18 +1,18 @@
-import typer
-
 from pathlib import Path
 from typing import Optional
+
+import typer
 from rich import print as pprint
 
 from flowdapt import __version__
 from flowdapt.cli._internal import AsyncTyper
-from flowdapt.lib.logger import setup_logging
 from flowdapt.lib.config import (
     Configuration,
-    set_configuration,
-    set_app_dir,
     config_from_env,
+    set_app_dir,
+    set_configuration,
 )
+from flowdapt.lib.logger import setup_logging
 from flowdapt.lib.plugins import load_plugins
 from flowdapt.lib.utils.misc import get_default_app_dir
 
@@ -26,12 +26,7 @@ def _show_version(show: bool):
         raise typer.Exit(code=0)
 
 
-@cli.callback(
-    context_settings={
-        "allow_extra_args": True,
-        "ignore_unknown_options": True
-    }
-)
+@cli.callback(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 async def main(
     typer_context: typer.Context,
     version: Optional[bool] = typer.Option(
@@ -56,23 +51,11 @@ async def main(
         envvar="FLOWDAPT__CONFIG_FILE",
         help="The configuration file path relative to the config directory.",
     ),
-    dotenv: list[str] = typer.Option(
-        [],
-        "--env",
-        help="Load a .env file in the configuration."
-    ),
+    dotenv: list[str] = typer.Option([], "--env", help="Load a .env file in the configuration."),
     dev_mode: bool = typer.Option(
-        False,
-        "--dev",
-        envvar="FLOWDAPT_DEV_MODE",
-        help="Use flowdapt in development mode."
+        False, "--dev", envvar="FLOWDAPT_DEV_MODE", help="Use flowdapt in development mode."
     ),
-    overrides: list[str] = typer.Option(
-        [],
-        "-o",
-        "--override",
-        help="Configuration overrides."
-    )
+    overrides: list[str] = typer.Option([], "-o", "--override", help="Configuration overrides."),
 ) -> None:
     app_dir = (app_dir or get_default_app_dir()).expanduser().resolve()
     set_app_dir(app_dir)
@@ -100,8 +83,7 @@ async def main(
     else:
         # If the user specified "-" then use default configuration
         config = typer_context.obj = await config_from_env(
-            config_file=config_file,
-            dev_mode=dev_mode
+            config_file=config_file, dev_mode=dev_mode
         )
 
     set_configuration(config)

@@ -1,5 +1,7 @@
 version: '3'
 
+silent: true
+
 vars:
   PACKAGE_SRC_DIR: flowdapt
 
@@ -16,10 +18,335 @@ vars:
 tasks:
   # ---------------------
 
+  download-binary:
+    desc: Download a binary from GitHub releases
+    cmds:
+      - |
+        if [ -z "{{.REPO}}" ] || [ -z "{{.TAG}}" ] || [ -z "{{.BINARY}}" ]; then
+            echo "REPO TAG, and BINARY are required"
+            exit 1
+        fi
+
+        if [ -z "{{.DEBUG}}" ]; then
+            DEBUG="false"
+        else
+            DEBUG="{{.DEBUG}}"
+        fi
+
+        if [ -z "{{.EXTRACT_PATH}}" ]; then
+            EXTRACT_PATH="/usr/local/bin"
+        else
+            EXTRACT_PATH=$(echo "{{.EXTRACT_PATH}}" | sed 's:/*$::')
+        fi
+
+        if [ -z "{{.BINARY}}" ]; then
+            BASENAME=$(basename "{{.REPO}}")
+        else
+            BASENAME="{{.BINARY}}"
+        fi
+
+        if [ -z "{{.SKIP_CHECK}}" ]; then
+          if ! command -v $BASENAME > /dev/null; then
+            if [ "$DEBUG" != "false" ]; then
+              echo "No $BASENAME found, downloading"
+            fi
+          else
+              exit 0
+          fi
+        fi
+
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        ARCH=$(uname -m)
+        case $ARCH in
+          x86_64)
+            if [ "{{.PREFER_X86}}" = "true" ]; then
+              ARCH="x86_64"
+            else
+              ARCH="amd64"
+            fi
+            ;;
+          aarch64) ARCH="arm64" ;;
+          *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+        esac
+
+        # Determine whether to use curl or wget
+        DOWNLOAD_CMD=""
+        if command -v curl > /dev/null; then
+            DOWNLOAD_CMD="curl -s -L -o"
+        elif command -v wget > /dev/null; then
+            DOWNLOAD_CMD="wget -O"
+        else
+          if [ "$DEBUG" != "false" ]; then
+            echo "Neither curl nor wget is available, please install one and retry."
+          fi
+            exit 1
+        fi
+
+        # Fetch the release information
+        if [ "{{.TAG}}" = "latest" ]; then
+            TAG=$(curl -s "https://api.github.com/repos/{{.REPO}}/releases/latest" | grep "tag_name" | cut -d '"' -f 4)
+        else
+            TAG="{{.TAG}}"
+        fi
+
+        RELEASE_INFO=$(curl -s "https://api.github.com/repos/{{.REPO}}/releases/tags/$TAG")
+        URL=$(echo $RELEASE_INFO | grep -o '"browser_download_url": *"[^"]*"' | grep -E "${OS}_${ARCH}\.(tar\.gz|gz|zip)" | cut -d '"' -f 4)
+
+        if [ -z "$URL" ]; then
+          URL=$(echo $RELEASE_INFO | grep -o '"browser_download_url": *"[^"]*"' | grep -E "${OS}_${ARCH}" | cut -d '"' -f 4)
+        fi
+
+        # Check if a URL was found
+        if [ -z "$URL" ]; then
+            echo "Failed to find a release for tag '$TAG' with filename '$FILENAME'."
+            exit 1
+        fi
+
+        if [[ "$URL" =~ \.tar.gz$ ]]; then
+          FILETYPE="tar.gz"
+        elif [[ "$URL" =~ \.zip$ ]]; then
+          FILETYPE="zip"
+        elif [[ "$URL" =~ \.gz$ ]]; then
+          FILETYPE="gz"
+        else
+          FILETYPE="binary"
+        fi
+
+        # Construct the download URL and filename
+        if [ "$FILETYPE" = "binary" ]; then
+          FILENAME="${BASENAME}_${TAG}_${OS}_${ARCH}"
+        else
+          FILENAME="${BASENAME}_${TAG}_${OS}_${ARCH}.${FILETYPE}"
+        fi
+
+        # Download and extract the tar.gz file
+        if [ "$DEBUG" != "false" ]; then
+          echo "Downloading $FILENAME from $URL"
+        fi
+        $DOWNLOAD_CMD $FILENAME $URL
+
+        # Extract the binary
+        if [ "$DEBUG" != "false" ]; then
+          echo "Extracting $BASENAME to $EXTRACT_PATH"
+        fi
+
+        if [ "$FILETYPE" = "tar.gz" ]; then
+          tar -xzf $FILENAME -C . $BASENAME
+        elif [ "$FILETYPE" = "zip" ]; then
+          unzip -o $FILENAME -d . $BASENAME
+        elif [ "$FILETYPE" = "gz" ]; then
+          gunzip -c $FILENAME > $BASENAME
+        elif [ "$FILETYPE" = "binary" ]; then
+          mv $FILENAME $BASENAME
+        else
+          echo "Unsupported filetype: $FILETYPE"
+          exit 1
+        fi
+
+        # Make the binary executable
+        chmod +x $BASENAME
+
+        # Move the binary to the desired location
+        if [ "{{.CI}}" = "true" ] || [ -w $EXTRACT_PATH ] || ! command -v sudo > /dev/null; then
+          mv $BASENAME $EXTRACT_PATH/$BASENAME
+        else
+          sudo mv $BASENAME $EXTRACT_PATH/$BASENAME
+        fi
+
+        # Cleanup the downloaded tar.gz file if it exists
+        if [ -f $FILENAME ]; then
+          rm $FILENAME
+        fi
+
+  download-atlas:
+    desc: Download the atlas-cli
+    vars:
+      TAG: latest
+    cmds:
+      - |
+        if [ -z "{{.DEBUG}}" ]; then
+            DEBUG="false"
+        else
+            DEBUG="{{.DEBUG}}"
+        fi
+
+        if [ -z "{{.EXTRACT_PATH}}" ]; then
+            EXTRACT_PATH="/usr/local/bin"
+        else
+            EXTRACT_PATH=$(echo "{{.EXTRACT_PATH}}" | sed 's:/*$::')
+        fi
+
+        if [ -z "{{.SKIP_CHECK}}" ]; then
+          if ! command -v atlas > /dev/null; then
+            if [ "$DEBUG" != "false" ]; then
+              echo "No atlas found, downloading"
+            fi
+          else
+              exit 0
+          fi
+        fi
+
+        DOWNLOAD_CMD=""
+        if command -v curl > /dev/null; then
+            DOWNLOAD_CMD="curl -sSfL"
+        elif command -v wget > /dev/null; then
+            DOWNLOAD_CMD="wget -qO-"
+        else
+          if [ "$DEBUG" != "false" ]; then
+            echo "Neither curl nor wget is available, please install one and retry."
+          fi
+            exit 1
+        fi
+
+        $DOWNLOAD_CMD https://atlasgo.sh | CI=true sh -s -- -y --no-install -o ./atlas > /dev/null 2>&1
+
+        if [ ! -e ./atlas ]; then
+          echo "Failed to download atlas"
+          exit 1
+        fi
+
+        chmod +x ./atlas
+
+        # Move to the desired location
+        if [ "{{.CI}}" = "true" ] || [ -w $EXTRACT_PATH ] || ! command -v sudo > /dev/null; then
+          mv ./atlas $EXTRACT_PATH/atlas
+        else
+          sudo mv ./atlas $EXTRACT_PATH/atlas
+        fi
+
+  install-devtools:
+    desc: Install development tools
+    cmds:
+      - task: download-binary
+        vars:
+          REPO: git-chglog/git-chglog
+          TAG: latest
+          BINARY: git-chglog
+      - task: download-binary
+        vars:
+          REPO: caarlos0/svu
+          TAG: v2.2.0
+          BINARY: svu
+
+  build-docker:
+    desc: Build the Docker image
+    cmds:
+      - docker build -f Dockerfile --build-arg BUILD_VERSION={{.BUILD_VERSION}} {{.DOCKER_BUILD_ARGS}} -t {{.IMAGE_NAME}}:{{.IMAGE_TAG}} .
+
+  version:
+    desc: Print the version
+    deps: [install-devtools]
+    cmds:
+      - svu current --strip-prefix {{.CLI_ARGS}}
+
+  next-version:
+    desc: Get the next version given SemVer
+    deps: [install-devtools]
+    cmds:
+      - |
+        NEXT=$(svu next --strip-prefix {{.CLI_ARGS}})
+        if [ -n "{{.PRE_RELEASE}}" ]; then
+          NEXT="$NEXT-{{.PRE_RELEASE}}"
+        fi
+        if [ -n "{{.BUILD_NUMBER}}" ]; then
+          NEXT="$NEXT+{{.BUILD_NUMBER}}"
+        fi
+        echo $NEXT
+
+  update-version-file:
+    desc: Update the version in a specified file
+    cmds:
+      - |
+        NEXT_VERSION="{{.NEXT_VERSION}}"
+        VERSION_FILE="{{.VERSION_FILE}}"
+        LANGUAGE="{{.LANGUAGE}}"
+
+        if [ -z "$NEXT_VERSION" ] || [ -z "$VERSION_FILE" ] || [ -z "$LANGUAGE" ]; then
+            echo "CURRENT_VERSION, NEXT_VERSION, VERSION_FILE and LANGUAGE are required"
+            exit 1
+        fi
+
+        if [ -z "{{.DEBUG}}" ]; then
+            DEBUG="false"
+        else
+            DEBUG="{{.DEBUG}}"
+        fi
+
+        case $LANGUAGE in
+          python)
+            VERSION_PATTERN='^version = ".*"'
+            NEW_VERSION_FORMAT="version = \"$NEXT_VERSION\""
+            ;;
+          nodejs)
+            VERSION_PATTERN='^\s*"version": ".*",'
+            NEW_VERSION_FORMAT="\"version\": \"$NEXT_VERSION\","
+            ;;
+          rust)
+            VERSION_PATTERN='^version = ".*"'
+            NEW_VERSION_FORMAT="version = \"$NEXT_VERSION\""
+            ;;
+          *)
+            echo "Unsupported language: $LANGUAGE"
+            exit 1
+            ;;
+        esac
+
+        # Using sed to replace the line with more precise targeting
+        sed -i "/$VERSION_PATTERN/c\\$NEW_VERSION_FORMAT" $VERSION_FILE
+
+        if [ "$DEBUG" != "false" ]; then
+          echo "Updated version in $VERSION_FILE to $NEXT_VERSION"
+        fi
+
+  changelog:
+    desc: Generate the changelog
+    deps: [install-devtools]
+    cmds:
+      - git-chglog {{.CLI_ARGS}}
+
+  bump-version:
+    desc: Bump the version
+    deps: [install-devtools]
+    cmds:
+      - |
+        CURRENT_VERSION=$(svu current --strip-prefix)
+        NEXT_VERSION=$(svu next --strip-prefix)
+
+        if [ "$CURRENT_VERSION" == "$NEXT_VERSION" ]; then
+          echo "No new version found, skipping bump"
+          exit 1
+        fi
+
+        git-chglog -o CHANGELOG.md --next-tag $NEXT_VERSION || true
+        git add CHANGELOG.md
+
+        if [ -n "{{.VERSION_FILE}}" ]; then
+          if ! task update-version-file NEXT_VERSION=$NEXT_VERSION VERSION_FILE="{{.VERSION_FILE}}" LANGUAGE="{{.LANGUAGE}}"; then
+            echo "Failed to update version in {{.VERSION_FILE}}"
+            exit 1
+          fi
+          git add "{{.VERSION_FILE}}"
+        fi
+
+        git commit -m "chore(release): Release $NEXT_VERSION"
+        git tag "$NEXT_VERSION" -m "chore(release): Release $NEXT_VERSION"
+        
+        exit 0
+
   # Linting
   lint:
     cmds:
-      - flake8 {{.PACKAGE_SRC_DIR}}
+      - |
+        if [ -n "{{.SRC_DIR}}" ]; then
+          export SRC_DIR="{{.SRC_DIR}}"
+        else
+          export SRC_DIR="{{.PACKAGE_SRC_DIR}}"
+        fi
+      - uvx ruff check $SRC_DIR {{.CLI_ARGS}}
+      - |
+        if [ "{{.FORMAT}}" = "true" ]; then
+          uvx ruff format $SRC_DIR {{.CLI_ARGS}}
+        fi
 
   # Run unit tests
   unit-tests:
@@ -40,6 +367,10 @@ tasks:
       - mkdocs serve
 
   # ---------------------
+
+  build-whl:
+    cmds:
+      - uv build --wheel
 
   # Build the docs image
   build-docker-docs:

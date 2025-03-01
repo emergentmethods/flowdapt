@@ -1,15 +1,17 @@
 import re
-from uuid import uuid4, UUID
 from datetime import datetime
-from typing import TypeVar, Annotated
+from typing import Annotated, TypeVar
+from uuid import UUID, uuid4
 
-from flowdapt.lib.utils.model import BaseModel, Field as PydanticField, field_validator
-from flowdapt.lib.utils.mixins.active_record import ActiveRecordMixin
-from flowdapt.lib.database.base import Document, BaseStorage, Field
 from flowdapt.lib.database.annotations import Immutable
+from flowdapt.lib.database.base import BaseStorage, Document, Field
+from flowdapt.lib.utils.mixins.active_record import ActiveRecordMixin
+from flowdapt.lib.utils.model import BaseModel, field_validator
+from flowdapt.lib.utils.model import Field as PydanticField
 
 
 T = TypeVar("T")
+
 
 class ResourceMetadata(BaseModel):
     uid: Annotated[UUID, Immutable] = PydanticField(default_factory=uuid4)
@@ -24,10 +26,9 @@ class ResourceMetadata(BaseModel):
         if not value:
             raise ValueError("name cannot be empty")
 
-        if not re.match(r'^[A-Za-z0-9_\-]+$', value):
+        if not re.match(r"^[A-Za-z0-9_\-]+$", value):
             raise ValueError(
-                "`name` can only contain alphanumeric characters,"
-                " underscores, and hyphens."
+                "`name` can only contain alphanumeric characters, underscores, and hyphens."
             )
 
         return value
@@ -39,7 +40,7 @@ class Resource(Document, ActiveRecordMixin):
     spec: dict
 
     async def _insert_before(self, database: BaseStorage):
-        query = (Field.metadata.name == self.metadata.name)
+        query = Field.metadata.name == self.metadata.name
 
         if await database.find_one(self, query):
             raise ValueError(

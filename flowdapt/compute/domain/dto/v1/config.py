@@ -1,8 +1,8 @@
 from enum import Enum
 
-from flowdapt.lib.utils.model import BaseModel, model_dump
+from flowdapt.compute.domain.models.config import CONFIG_RESOURCE_KIND, ConfigResource
 from flowdapt.lib.domain.dto.v1.base import V1Alpha1ResourceMetadata
-from flowdapt.compute.domain.models.config import ConfigResource, CONFIG_RESOURCE_KIND
+from flowdapt.lib.utils.model import BaseModel, model_dump
 
 
 class V1Alpha1ConfigSelectorType(str, Enum):
@@ -26,12 +26,14 @@ class V1Alpha1ConfigResourceBase(BaseModel):
     metadata: V1Alpha1ResourceMetadata
     spec: V1Alpha1ConfigResourceSpec
 
+
 class V1Alpha1ConfigResourceCreateRequest(V1Alpha1ConfigResourceBase):
     def to_model(self) -> ConfigResource:
         return ConfigResource(
             # Explicitly ignore internally populated fields
             **model_dump(self, exclude={"metadata": {"uid", "created_at", "updated_at"}}),
         )
+
 
 class V1Alpha1ConfigResourceCreateResponse(V1Alpha1ConfigResourceBase):
     @classmethod

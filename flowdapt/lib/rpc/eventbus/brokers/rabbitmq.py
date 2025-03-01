@@ -1,17 +1,19 @@
 import asyncio
-import aio_pika
-from typing import Tuple
 from contextlib import suppress
+from typing import Tuple
 
-from flowdapt.lib.utils.misc import model_dump
+import aio_pika
+
 from flowdapt.lib.rpc.eventbus.brokers.base import Broker
 from flowdapt.lib.rpc.eventbus.event import BaseEvent
+from flowdapt.lib.utils.misc import model_dump
 
 
 class RabbitMQBroker(Broker):
     """
     A RabbitMQ Broker
     """
+
     _channel_consumers: dict[str, asyncio.Task] = {}
     _inbound_queue: asyncio.Queue[tuple[str, dict]]
     _connection: aio_pika.abc.AbstractRobustConnection
@@ -45,9 +47,7 @@ class RabbitMQBroker(Broker):
             _channel = await self._connection.channel()
             _queue = await _channel.declare_queue(channel, auto_delete=True)
 
-            self._channel_consumers[channel] = asyncio.create_task(
-                self._consume_channel(_queue)
-            )
+            self._channel_consumers[channel] = asyncio.create_task(self._consume_channel(_queue))
 
     async def unsubscribe(self, channel: str) -> None:
         if task := self._channel_consumers.get(channel):
@@ -58,12 +58,7 @@ class RabbitMQBroker(Broker):
 
             del self._channel_consumers[channel]
 
-    async def publish(
-        self,
-        event: BaseEvent | dict,
-        headers: dict = {},
-        **kwargs
-    ) -> None:
+    async def publish(self, event: BaseEvent | dict, headers: dict = {}, **kwargs) -> None:
         if isinstance(event, BaseEvent):
             event = model_dump(event)
 
@@ -73,13 +68,9 @@ class RabbitMQBroker(Broker):
         serialized_event = self._serializer.dumps(event)
 
         await self._producer.default_exchange.publish(
-            aio_pika.Message(
-                body=serialized_event,
-                headers=event["headers"],
-                **kwargs
-            ),
+            aio_pika.Message(body=serialized_event, headers=event["headers"], **kwargs),
             routing_key=channel,
-            **kwargs
+            **kwargs,
         )
 
     async def next(self) -> Tuple[str, dict]:

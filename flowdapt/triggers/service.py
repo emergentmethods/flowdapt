@@ -1,14 +1,12 @@
 import asyncio
 
-from flowdapt.lib.logger import get_logger
-from flowdapt.lib.service import Service
 from flowdapt.lib.config import Configuration
+from flowdapt.lib.logger import get_logger
 from flowdapt.lib.rpc import RPC
+from flowdapt.lib.service import Service
+from flowdapt.triggers.resources.triggers.methods import get_next_scheduled_triggers, set_last_run
 from flowdapt.triggers.rpc import register_rpc
-from flowdapt.triggers.resources.triggers.methods import (
-    get_next_scheduled_triggers,
-    set_last_run
-)
+
 
 logger = get_logger(__name__, service="trigger")
 

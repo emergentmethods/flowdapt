@@ -1,22 +1,25 @@
-from typing import Any, Type, Callable
 from enum import Enum
+from typing import Any, Callable, Type
 
-from flowdapt.compute.artifacts import get_artifact, Artifact
+from flowdapt.compute.artifacts import Artifact, get_artifact
 from flowdapt.compute.cluster_memory import (
-    put_in_cluster_memory,
-    get_from_cluster_memory,
     delete_from_cluster_memory,
+    get_from_cluster_memory,
+    put_in_cluster_memory,
 )
-from flowdapt.lib.serializers import Serializer, CloudPickleSerializer
-from flowdapt.lib.logger import get_logger
 from flowdapt.lib.config import get_configuration
+from flowdapt.lib.logger import get_logger
+from flowdapt.lib.serializers import CloudPickleSerializer, Serializer
+
 
 logger = get_logger(__name__)
+
 
 class Strategy(str, Enum):
     """
     The strategy to use for storing/retrieving objects in the object store.
     """
+
     # Fallback first attempts cluster memory, and if it fails, falls back to
     # storing the object in an Artifact.
     FALLBACK = "fallback"
@@ -33,11 +36,13 @@ def default_save_hook(serializer: Type[Serializer] | Serializer = CloudPickleSer
     This will serialize the object using the given serializer and save it to the
     Artifact under the `object` file.
     """
+
     def _inner(artifact: Artifact, value: Any):
         artifact["value_type"] = "object"
         serialized = serializer.dumps(value)
         obj_file = artifact.get_file("object", create=True)
         obj_file.write(serialized)
+
     return _inner
 
 
@@ -48,6 +53,7 @@ def default_load_hook(serializer: type[Serializer] | Serializer = CloudPickleSer
     This will load the object from the Artifact under the `object` file and
     deserialize it using the given serializer.
     """
+
     def _inner(artifact: Artifact):
         if artifact["value_type"] != "object":
             logger.warning(
@@ -55,7 +61,7 @@ def default_load_hook(serializer: type[Serializer] | Serializer = CloudPickleSer
                 artifact=artifact.name,
                 namespace=artifact.namespace,
                 old=artifact["value_type"],
-                new="object"
+                new="object",
             )
         try:
             obj_file = artifact.get_file("object")
@@ -65,9 +71,8 @@ def default_load_hook(serializer: type[Serializer] | Serializer = CloudPickleSer
                 "corrupted or it was not saved with the default save hook."
             ) from e
 
-        return serializer.loads(
-            obj_file.read()
-        )
+        return serializer.loads(obj_file.read())
+
     return _inner
 
 
@@ -112,18 +117,14 @@ def put(
             message=(
                 "The `artifact_only` parameter is deprecated and will be removed in a "
                 "future version. Use the `strategy` parameter instead."
-            )
+            ),
         )
         strategy = Strategy.ARTIFACT
 
     if strategy != Strategy.ARTIFACT:
         try:
             return put_in_cluster_memory(
-                key=key,
-                value=value,
-                namespace=namespace,
-                backend=executor,
-                **cluster_memory_params
+                key=key, value=value, namespace=namespace, backend=executor, **cluster_memory_params
             )
         except Exception as e:
             if not isinstance(e, KeyError):
@@ -132,12 +133,7 @@ def put(
             if strategy == Strategy.CLUSTER_MEMORY:
                 raise
 
-    _artifact = get_artifact(
-        name=key,
-        namespace=namespace,
-        create=True,
-        **artifact_params
-    )
+    _artifact = get_artifact(name=key, namespace=namespace, create=True, **artifact_params)
     save_artifact_hook(_artifact, value)
     return
 
@@ -181,17 +177,14 @@ def get(
             message=(
                 "The `artifact_only` parameter is deprecated and will be removed in a "
                 "future version. Use the `strategy` parameter instead."
-            )
+            ),
         )
         strategy = Strategy.ARTIFACT
 
     if strategy != Strategy.ARTIFACT:
         try:
             return get_from_cluster_memory(
-                key=key,
-                namespace=namespace,
-                backend=executor,
-                **cluster_memory_params
+                key=key, namespace=namespace, backend=executor, **cluster_memory_params
             )
         except Exception as e:
             if not isinstance(e, KeyError):
@@ -200,11 +193,7 @@ def get(
             if strategy == Strategy.CLUSTER_MEMORY:
                 raise
 
-    _artifact = get_artifact(
-        name=key,
-        namespace=namespace,
-        **artifact_params
-    )
+    _artifact = get_artifact(name=key, namespace=namespace, **artifact_params)
     return load_artifact_hook(_artifact)
 
 
@@ -246,17 +235,14 @@ def delete(
             message=(
                 "The `artifact_only` parameter is deprecated and will be removed in a "
                 "future version. Use the `strategy` parameter instead."
-            )
+            ),
         )
         strategy = Strategy.ARTIFACT
 
     if strategy != Strategy.ARTIFACT:
         try:
             return delete_from_cluster_memory(
-                key=key,
-                namespace=namespace,
-                backend=executor,
-                **cluster_memory_params
+                key=key, namespace=namespace, backend=executor, **cluster_memory_params
             )
         except Exception as e:
             if not isinstance(e, KeyError):
@@ -265,10 +251,5 @@ def delete(
             if strategy == Strategy.CLUSTER_MEMORY:
                 raise
 
-    _artifact = get_artifact(
-        name=key,
-        namespace=namespace,
-        create=True,
-        **artifact_params
-    )
+    _artifact = get_artifact(name=key, namespace=namespace, create=True, **artifact_params)
     _artifact.delete()

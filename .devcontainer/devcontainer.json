@@ -1,0 +1,21 @@
+{
+    "name": "Flowdapt",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "..",
+		"args": {
+			"VARIANT": "3.11-bookworm"
+		}
+    },
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.mypy-type-checker",
+				"charliemarsh.ruff"
+			]
+		}
+	},
+	"postCreateCommand": ". /opt/venv/bin/activate && uv sync && pre-commit install --install-hooks && pre-commit install --hook-type commit-msg",
+	"remoteUser": "dev"
+}

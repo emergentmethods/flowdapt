@@ -1,9 +1,9 @@
-from uuid import UUID
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
-from flowdapt.lib.utils.model import BaseModel, model_dump
 from flowdapt.compute.domain.models.workflowrun import WorkflowRun
+from flowdapt.lib.utils.model import BaseModel, model_dump
 
 
 class V1Alpha1WorkflowRunReadResponse(BaseModel):

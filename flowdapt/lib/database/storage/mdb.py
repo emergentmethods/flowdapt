@@ -1,22 +1,24 @@
 import asyncio
 from typing import Any, Callable
 from uuid import UUID
+
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection
 from pymongo import ASCENDING, DESCENDING
-from pymongo.errors import OperationFailure, DocumentTooLarge, WriteError as PymongoWriteError
+from pymongo.errors import DocumentTooLarge, OperationFailure
+from pymongo.errors import WriteError as PymongoWriteError
 
 from flowdapt.lib.database.base import (
     BaseStorage,
+    BinaryExpression,
     Document,
-    Query,
     ExpressionVisitor,
     FieldExpression,
     LiteralExpression,
-    UnaryExpression,
-    BinaryExpression,
-    VariadicExpression,
-    SortDirection,
     Operator,
+    Query,
+    SortDirection,
+    UnaryExpression,
+    VariadicExpression,
 )
 from flowdapt.lib.database.errors import WriteError
 
@@ -107,9 +109,7 @@ class MongoExpressionVisitor(ExpressionVisitor):
             elif isinstance(expression.operand, LiteralExpression):
                 return {"$ne": expression.operand.accept(self)}
             else:
-                raise ValueError(
-                    f"Unsupported expression in unary operand: {expression.operand}"
-                )
+                raise ValueError(f"Unsupported expression in unary operand: {expression.operand}")
         elif expression.operator == Operator.EXISTS:
             return {expression.operand.accept(self): {"$exists": True}}
         else:
@@ -128,9 +128,7 @@ class MongoExpressionVisitor(ExpressionVisitor):
                     ]
                 }
             case Operator.OR:
-                return {
-                    "$or": [expression.left.accept(self), expression.right.accept(self)]
-                }
+                return {"$or": [expression.left.accept(self), expression.right.accept(self)]}
             case _:
                 return {
                     expression.left.accept(self): {
@@ -178,6 +176,7 @@ class MongoDBStorage(BaseStorage):
     :param kwargs: Additional keyword arguments to pass to the
         :class:`motor.motor_asyncio.AsyncIOMotorClient` constructor.
     """
+
     def __init__(self, uri: str, db_name: str, **kwargs):
         super().__init__()
 
@@ -228,9 +227,7 @@ class MongoDBStorage(BaseStorage):
 
     @staticmethod
     def _deserialize_doc(document_type: type[Document], data: dict) -> dict:
-        return document_type.load(
-            {"_doc_id_": data.pop("_id"), **SPECIAL_CHARS.unescape(data)}
-        )
+        return document_type.load({"_doc_id_": data.pop("_id"), **SPECIAL_CHARS.unescape(data)})
 
     async def _insert(self, documents: list[Document]) -> None:
         async def __insert(doc):
@@ -253,9 +250,7 @@ class MongoDBStorage(BaseStorage):
         async def __update(doc):
             collection = self._get_collection(doc)
             try:
-                await collection.replace_one(
-                    {"_id": doc._doc_id_}, self._serialize_doc(doc)
-                )
+                await collection.replace_one({"_id": doc._doc_id_}, self._serialize_doc(doc))
             except PymongoWriteError as e:
                 raise WriteError(str(e))
 
@@ -277,9 +272,7 @@ class MongoDBStorage(BaseStorage):
 
         if sort:
             field, direction = sort
-            cursor = cursor.sort(
-                field, ASCENDING if direction == SortDirection.ASC else DESCENDING
-            )
+            cursor = cursor.sort(field, ASCENDING if direction == SortDirection.ASC else DESCENDING)
 
         if skip:
             cursor = cursor.skip(skip)
@@ -289,9 +282,7 @@ class MongoDBStorage(BaseStorage):
 
         return [self._deserialize_doc(document_type, data) async for data in cursor]
 
-    async def _get(
-        self, document_type: type[Document], document_uid: UUID
-    ) -> Document | None:
+    async def _get(self, document_type: type[Document], document_uid: UUID) -> Document | None:
         collection = self._get_collection(document_type)
         result = await collection.find_one({"_id": document_uid})
 
@@ -304,10 +295,7 @@ class MongoDBStorage(BaseStorage):
         collection = self._get_collection(document_type)
         cursor = collection.find({})
 
-        return [
-            self._deserialize_doc(document_type, data)
-            for data in (await cursor.to_list(None))
-        ]
+        return [self._deserialize_doc(document_type, data) for data in (await cursor.to_list(None))]
 
     async def list_collections(self) -> list[str]:
         return await self._db.list_collection_names()
@@ -331,9 +319,7 @@ class MongoDBStorage(BaseStorage):
         )
 
     async def drop_field(self, collection: str, field: str):
-        await self._db[collection].update_many(
-            {field: {"$exists": True}}, {"$unset": {field: 1}}
-        )
+        await self._db[collection].update_many({field: {"$exists": True}}, {"$unset": {field: 1}})
 
     async def rename_field(self, collection: str, field: str, new_name: str):
         await self._db[collection].update_many(

@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from crontab import CronTab
 
 
@@ -17,9 +18,7 @@ def validate_cron_schedule(schedule: str):
 
 
 def is_ready_to_run(
-    next_run_time: datetime,
-    last_run_time: datetime,
-    now: datetime | None = None
+    next_run_time: datetime, last_run_time: datetime, now: datetime | None = None
 ) -> bool:
     """
     Determines whether a cron is ready to run based on its next scheduled run time,
@@ -37,10 +36,7 @@ def is_ready_to_run(
         return False
 
 
-def get_next_run_datetime(
-    cron_schedule: str,
-    now: datetime | None = None
-) -> datetime:
+def get_next_run_datetime(cron_schedule: str, now: datetime | None = None) -> datetime:
     """
     Given a cron schedule, determine the next datetime to run.
 

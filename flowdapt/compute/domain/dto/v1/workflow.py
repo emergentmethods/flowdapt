@@ -1,6 +1,6 @@
-from flowdapt.lib.utils.model import BaseModel, model_dump
+from flowdapt.compute.domain.models.workflow import WORKFLOW_RESOURCE_KIND, WorkflowResource
 from flowdapt.lib.domain.dto.v1.base import V1Alpha1ResourceMetadata
-from flowdapt.compute.domain.models.workflow import WorkflowResource, WORKFLOW_RESOURCE_KIND
+from flowdapt.lib.utils.model import BaseModel, model_dump
 
 
 class V1Alpha1WorkflowStage(BaseModel):

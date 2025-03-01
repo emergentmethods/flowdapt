@@ -1,7 +1,8 @@
-from uuid import UUID, uuid4
 from datetime import datetime
+from uuid import UUID, uuid4
 
-from flowdapt.lib.utils.model import BaseModel, Field as PydanticField
+from flowdapt.lib.utils.model import BaseModel
+from flowdapt.lib.utils.model import Field as PydanticField
 
 
 class V1Alpha1ResourceMetadata(BaseModel):

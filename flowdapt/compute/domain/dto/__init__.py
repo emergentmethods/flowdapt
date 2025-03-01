@@ -1,20 +1,21 @@
+from flowdapt.compute.domain.dto.v1.config import (
+    V1Alpha1ConfigResourceCreateRequest,
+    V1Alpha1ConfigResourceCreateResponse,
+    V1Alpha1ConfigResourceReadResponse,
+    V1Alpha1ConfigResourceUpdateRequest,
+    V1Alpha1ConfigResourceUpdateResponse,
+)
 from flowdapt.compute.domain.dto.v1.workflow import (
     V1Alpha1WorkflowResourceCreateRequest,
     V1Alpha1WorkflowResourceCreateResponse,
+    V1Alpha1WorkflowResourceReadResponse,
     V1Alpha1WorkflowResourceUpdateRequest,
     V1Alpha1WorkflowResourceUpdateResponse,
-    V1Alpha1WorkflowResourceReadResponse,
 )
 from flowdapt.compute.domain.dto.v1.workflowrun import (
     V1Alpha1WorkflowRunReadResponse,
 )
-from flowdapt.compute.domain.dto.v1.config import (
-    V1Alpha1ConfigResourceCreateRequest,
-    V1Alpha1ConfigResourceCreateResponse,
-    V1Alpha1ConfigResourceUpdateRequest,
-    V1Alpha1ConfigResourceUpdateResponse,
-    V1Alpha1ConfigResourceReadResponse,
-)
+
 
 WorkflowResourceCreateRequest = V1Alpha1WorkflowResourceCreateRequest
 WorkflowResourceCreateResponse = V1Alpha1WorkflowResourceCreateResponse
@@ -29,50 +30,29 @@ ConfigResourceUpdateResponse = V1Alpha1ConfigResourceUpdateResponse
 ConfigResourceReadResponse = V1Alpha1ConfigResourceReadResponse
 
 WorkflowResourceCreateDTOs = {
-    "v1alpha1": (
-        V1Alpha1WorkflowResourceCreateRequest,
-        V1Alpha1WorkflowResourceCreateResponse
-    ),
+    "v1alpha1": (V1Alpha1WorkflowResourceCreateRequest, V1Alpha1WorkflowResourceCreateResponse),
 }
 
 WorkflowResourceReadDTOs = {
-    "v1alpha1": (
-        None,
-        V1Alpha1WorkflowResourceReadResponse
-    ),
+    "v1alpha1": (None, V1Alpha1WorkflowResourceReadResponse),
 }
 
 WorkflowResourceUpdateDTOs = {
-    "v1alpha1": (
-        V1Alpha1WorkflowResourceUpdateRequest,
-        V1Alpha1WorkflowResourceUpdateResponse
-    ),
+    "v1alpha1": (V1Alpha1WorkflowResourceUpdateRequest, V1Alpha1WorkflowResourceUpdateResponse),
 }
 
 WorkflowRunReadDTOs = {
-    "v1alpha1": (
-        None,
-        V1Alpha1WorkflowRunReadResponse
-    ),
+    "v1alpha1": (None, V1Alpha1WorkflowRunReadResponse),
 }
 
 ConfigResourceCreateDTOs = {
-    "v1alpha1": (
-        V1Alpha1ConfigResourceCreateRequest,
-        V1Alpha1ConfigResourceCreateResponse
-    ),
+    "v1alpha1": (V1Alpha1ConfigResourceCreateRequest, V1Alpha1ConfigResourceCreateResponse),
 }
 
 ConfigResourceUpdateDTOs = {
-    "v1alpha1": (
-        V1Alpha1ConfigResourceUpdateRequest,
-        V1Alpha1ConfigResourceUpdateResponse
-    ),
+    "v1alpha1": (V1Alpha1ConfigResourceUpdateRequest, V1Alpha1ConfigResourceUpdateResponse),
 }
 
 ConfigResourceReadDTOs = {
-    "v1alpha1": (
-        None,
-        V1Alpha1ConfigResourceReadResponse
-    ),
+    "v1alpha1": (None, V1Alpha1ConfigResourceReadResponse),
 }

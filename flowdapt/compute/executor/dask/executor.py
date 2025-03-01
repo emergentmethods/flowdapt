@@ -2,41 +2,42 @@ import logging
 import warnings
 from copy import copy
 from functools import partial
-from typing import Literal, Any, Callable, Iterable
+from typing import Any, Callable, Iterable, Literal
+
 from dask import delayed
 from dask.base import tokenize
-from distributed import SpecCluster, Client, worker_client
-from distributed.scheduler import Scheduler
+from distributed import Client, SpecCluster, worker_client
 from distributed.nanny import Nanny
+from distributed.scheduler import Scheduler
 from distributed.versions import VersionMismatchWarning
 
+from flowdapt.compute.domain.models.workflow import WorkflowResource
+from flowdapt.compute.domain.models.workflowrun import WorkflowRun
 from flowdapt.compute.executor.base import Executor
 from flowdapt.compute.executor.dask.gpu_cluster import GPUCluster
 from flowdapt.compute.executor.dask.plugins import (
+    Environ,
     PipInstall,
+    SetupPluginRequirements,
     UploadDirectory,
     UploadPlugins,
-    SetupPluginRequirements,
-    Environ
 )
-from flowdapt.compute.domain.models.workflow import WorkflowResource
-from flowdapt.compute.domain.models.workflowrun import WorkflowRun
-from flowdapt.compute.resources.workflow.graph import WorkflowGraph, to_graph
 from flowdapt.compute.resources.workflow.context import WorkflowRunContext
+from flowdapt.compute.resources.workflow.graph import WorkflowGraph, to_graph
 from flowdapt.compute.resources.workflow.stage import BaseStage
 from flowdapt.compute.utils import (
     get_available_cores,
     get_total_memory,
 )
-from flowdapt.lib.logger import get_logger
 from flowdapt.lib.config import get_configuration
-from flowdapt.lib.utils.model import model_dump
-from flowdapt.lib.utils.misc import parse_bytes, dict_to_env_vars, normalize_env_vars
+from flowdapt.lib.logger import get_logger
 from flowdapt.lib.plugins import (
-    list_plugins,
     get_user_modules_dir,
     has_plugins,
+    list_plugins,
 )
+from flowdapt.lib.utils.misc import dict_to_env_vars, normalize_env_vars, parse_bytes
+from flowdapt.lib.utils.model import model_dump
 
 
 # Ignore Dask version mismatch warnings
@@ -45,6 +46,7 @@ from flowdapt.lib.plugins import (
 # raise an error.
 warnings.filterwarnings("ignore", category=VersionMismatchWarning)
 logger = get_logger(__name__)
+
 
 # Keep the inners in module scope so they can be pickled
 # because Dask's pickling is funny and can't do method locals
@@ -67,16 +69,12 @@ def map_inner(func: Callable, name: str, resources: dict, iterable: Iterable, *a
                 **{
                     **kwargs,
                     "dask_key_name": f"{name}-{tokenize(item)}",
-                }
+                },
             )
             for item in iterable
         ]
 
-        return client.compute(
-            futs,
-            resources=resources,
-            sync=True
-        )
+        return client.compute(futs, resources=resources, sync=True)
 
 
 class DaskExecutor(Executor):
@@ -116,6 +114,7 @@ class DaskExecutor(Executor):
     :param upload_plugins: Whether to upload plugins to the workers. This is ignored if running an
     in-process cluster. Defaults to False.
     """
+
     kind: str = "dask"
     client: Client
 
@@ -139,16 +138,22 @@ class DaskExecutor(Executor):
         _app_config = get_configuration()
 
         match cpus:
-            case "auto": actual_cpus = get_available_cores()
-            case _: actual_cpus = min(cpus, get_available_cores())
+            case "auto":
+                actual_cpus = get_available_cores()
+            case _:
+                actual_cpus = min(cpus, get_available_cores())
 
         match threads:
-            case "auto": actual_threads = get_available_cores()
-            case _: actual_threads = threads
+            case "auto":
+                actual_threads = get_available_cores()
+            case _:
+                actual_threads = threads
 
         match memory:
-            case "auto": actual_memory = int(get_total_memory() / actual_cpus)
-            case _: actual_memory = parse_bytes(memory)
+            case "auto":
+                actual_memory = int(get_total_memory() / actual_cpus)
+            case _:
+                actual_memory = parse_bytes(memory)
 
         self._config: dict[str, Any] = {
             "cluster_address": cluster_address,
@@ -163,30 +168,21 @@ class DaskExecutor(Executor):
             "pip": pip,
             "env_vars": {
                 **dict_to_env_vars(
-                    model_dump(_app_config.logging, exclude_none=True),
-                    path="logging"
+                    model_dump(_app_config.logging, exclude_none=True), path="logging"
                 ),
                 **dict_to_env_vars(
-                    model_dump(_app_config.storage, exclude_none=True),
-                    path="storage"
+                    model_dump(_app_config.storage, exclude_none=True), path="storage"
                 ),
                 **normalize_env_vars(env_vars or {}),
             },
             "adaptive": adaptive,
-            "resource_labels": {
-                str(k): parse_bytes(v)
-                for k, v in resources.items()
-            },
+            "resource_labels": {str(k): parse_bytes(v) for k, v in resources.items()},
             "upload_plugins": upload_plugins,
         }
 
         # Update resource labels with actual resources
         self._config["resource_labels"].update(
-            {
-                "cpus": actual_cpus,
-                "memory": actual_memory,
-                "threads": actual_threads
-            }
+            {"cpus": actual_cpus, "memory": actual_memory, "threads": actual_threads}
         )
 
         self._cluster: SpecCluster | str
@@ -203,10 +199,10 @@ class DaskExecutor(Executor):
             "options": {
                 "dashboard": True,
                 "dashboard_address": f":{self._config['dashboard_port']}",
-                "host": self._config['scheduler_host'],
-                "port": self._config['scheduler_port'],
-                "protocol": self._config['scheduler_scheme'],
-            }
+                "host": self._config["scheduler_host"],
+                "port": self._config["scheduler_port"],
+                "protocol": self._config["scheduler_scheme"],
+            },
         }
         worker_spec = {
             "cls": Nanny,
@@ -216,7 +212,7 @@ class DaskExecutor(Executor):
                 "nthreads": self._config["threads"],
                 "resources": self._config["resource_labels"],
                 "memory_limit": self._config["memory"],
-            }
+            },
         }
 
         return await GPUCluster(
@@ -231,11 +227,7 @@ class DaskExecutor(Executor):
         # Register environment variables first
         if env_vars := copy(self._config["env_vars"]):
             await logger.ainfo("RegisteringDaskPlugin", plugin="EnvironmentVariables")
-            await self.client.register_worker_plugin(
-                Environ(env_vars),
-                name="env_vars",
-                nanny=True
-            )
+            await self.client.register_worker_plugin(Environ(env_vars), name="env_vars", nanny=True)
 
         if pip_packages:
             await logger.ainfo("RegisteringDaskPlugin", plugin="PipInstall")
@@ -254,10 +246,10 @@ class DaskExecutor(Executor):
                     str(user_modules_dir),
                     skip=(lambda filename: filename.endswith(".py") is False,),
                     restart=False,
-                    update_path=True
+                    update_path=True,
                 ),
                 name="upload_user_modules",
-                nanny=True
+                nanny=True,
             )
 
         # If we don't have an plugin dir then we don't have any plugins to add
@@ -268,26 +260,21 @@ class DaskExecutor(Executor):
             await self.client.register_worker_plugin(
                 SetupPluginRequirements(plugins=plugins_list),
                 name="setup_plugin_requirements",
-                nanny=True
+                nanny=True,
             )
 
             await logger.ainfo("RegisteringDaskPlugin", plugin="UploadPlugins")
             await self.client.register_worker_plugin(
-                UploadPlugins(plugins=plugins_list),
-                name="upload_plugins",
-                nanny=True
+                UploadPlugins(plugins=plugins_list), name="upload_plugins", nanny=True
             )
 
     async def start(self) -> None:
         global logger
-        logger = logger.bind(
-            kind=self.kind
-        )
+        logger = logger.bind(kind=self.kind)
 
         if self._config["cluster_address"]:
             await logger.ainfo(
-                "UsingExternalCluster",
-                cluster_address=self._config["cluster_address"]
+                "UsingExternalCluster", cluster_address=self._config["cluster_address"]
             )
             self._cluster = self._config["cluster_address"]
         else:
@@ -297,15 +284,9 @@ class DaskExecutor(Executor):
             # If we're set to auto then start the adaptive
             if self._config["adaptive"]:
                 await logger.ainfo(
-                    "InitializingAdaptiveScaling",
-                    minimum=1,
-                    maximum=self._config["cpus"]
+                    "InitializingAdaptiveScaling", minimum=1, maximum=self._config["cpus"]
                 )
-                self._cluster.adapt(
-                    minimum=1,
-                    maximum=self._config["cpus"],
-                    interval='1s'
-                )
+                self._cluster.adapt(minimum=1, maximum=self._config["cpus"], interval="1s")
             # Otherwise just scale to that amount right away
             else:
                 await logger.ainfo("InitializingStaticScaling", number=self._config["cpus"])
@@ -316,7 +297,7 @@ class DaskExecutor(Executor):
             "InitializingDriver",
             cluster=self._cluster
             if isinstance(self._cluster, str)
-            else self._cluster.__class__.__name__
+            else self._cluster.__class__.__name__,
         )
         self.client = await Client(self._cluster, asynchronous=True)
 
@@ -375,10 +356,7 @@ class DaskExecutor(Executor):
                     )
 
     async def __call__(
-        self,
-        definition: WorkflowResource,
-        run: WorkflowRun,
-        context: WorkflowRunContext
+        self, definition: WorkflowResource, run: WorkflowRun, context: WorkflowRunContext
     ):
         if not self.client:
             raise RuntimeError("DaskExecutor has not been started.")
@@ -392,9 +370,7 @@ class DaskExecutor(Executor):
         return await self.client.compute(list(dask_graph.values())[-1])
 
     def _build_dask_graph(
-        self,
-        workflow_graph: WorkflowGraph,
-        context: WorkflowRunContext
+        self, workflow_graph: WorkflowGraph, context: WorkflowRunContext
     ) -> dict[str, Any]:
         dask_graph: dict[str, Callable[..., Any]] = {}
 
@@ -413,10 +389,7 @@ class DaskExecutor(Executor):
                     kwargs.update(context.input)
 
                 dask_graph[stage_name] = stage.get_partial(
-                    executor=self,
-                    context=context,
-                    args=args,
-                    kwargs=kwargs
+                    executor=self, context=context, args=args, kwargs=kwargs
                 )
 
         return dask_graph
@@ -429,10 +402,5 @@ class DaskExecutor(Executor):
 
     def mapped_lazy(self, stage: BaseStage):
         return delayed(
-            partial(
-                map_inner,
-                stage.get_stage_fn(),
-                stage.name,
-                stage.get_required_resources()
-            )
+            partial(map_inner, stage.get_stage_fn(), stage.name, stage.get_required_resources())
         )

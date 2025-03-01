@@ -1,11 +1,13 @@
 from contextlib import AsyncExitStack
-from typing import Callable, Any, ParamSpec, TypeVar
+from typing import Any, Callable, ParamSpec, TypeVar
 
-from flowdapt.lib.utils.asynctools import is_async_context_manager, is_async_callable
+from flowdapt.lib.utils.asynctools import is_async_callable, is_async_context_manager
 from flowdapt.lib.utils.di import inject
+
 
 P = ParamSpec("P")
 R = TypeVar("R")
+
 
 class ApplicationContext:
     """
@@ -13,6 +15,7 @@ class ApplicationContext:
     while allowing to automatically enter async
     contexts held in the state
     """
+
     _state: dict[Any, Any]
     _stack: AsyncExitStack
 
@@ -50,7 +53,6 @@ class ApplicationContext:
 
     async def __aenter__(self):
         async with AsyncExitStack() as stack:
-
             for state, val in self._state.items():
                 if is_async_context_manager(val):
                     self._state[state] = await stack.enter_async_context(val)
@@ -73,6 +75,7 @@ def get_context() -> ApplicationContext:
     global _context
     return _context
 
+
 def create_context(state: dict[Any, Any]):
     global _context
 
@@ -81,10 +84,12 @@ def create_context(state: dict[Any, Any]):
 
     return _context
 
+
 def inject_context(func: Callable[P, R], container: dict = {}) -> Callable[P, Any]:
     """
     Inject the ApplicationContext into the function
     """
+
     # We use a decorator to ensure the func is injected at
     # runtime instead of when imported
     def _wrapper(*args: P.args, **kwargs: P.kwargs) -> R:

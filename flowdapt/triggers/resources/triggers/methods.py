@@ -1,19 +1,21 @@
 import asyncio
-from uuid import UUID
 from datetime import datetime
 from typing import AsyncIterator
+from uuid import UUID
 
 from flowdapt.lib.context import inject_context
 from flowdapt.lib.database.base import BaseStorage
 from flowdapt.lib.errors import ResourceNotFoundError
-from flowdapt.lib.telemetry import get_tracer
 from flowdapt.lib.logger import get_logger
+from flowdapt.lib.telemetry import get_tracer
 from flowdapt.lib.utils.model import model_dump
 from flowdapt.triggers.domain.models.triggerrule import TriggerRuleResource, TriggerRuleType
 from flowdapt.triggers.resources.triggers.cron import get_next_run_datetime, is_ready_to_run
 
+
 tracer = get_tracer(__name__)
 logger = get_logger("flowdapt.triggers.service")
+
 
 async def _get_trigger(identifier: str | UUID, database: BaseStorage) -> TriggerRuleResource:
     trigger = await TriggerRuleResource.get(database, identifier)
@@ -27,8 +29,7 @@ async def _get_trigger(identifier: str | UUID, database: BaseStorage) -> Trigger
 @tracer.start_as_current_span("list_triggers")
 @inject_context
 async def list_triggers(
-    database: BaseStorage,
-    type: TriggerRuleType | None = None
+    database: BaseStorage, type: TriggerRuleType | None = None
 ) -> list[TriggerRuleResource]:
     """
     List all TriggerRuleResources.
@@ -63,8 +64,7 @@ async def get_trigger(identifier: str | UUID, database: BaseStorage) -> TriggerR
 @tracer.start_as_current_span("create_trigger")
 @inject_context
 async def create_trigger(
-    payload: TriggerRuleResource,
-    database: BaseStorage
+    payload: TriggerRuleResource, database: BaseStorage
 ) -> TriggerRuleResource:
     """
     Create a TriggerRuleResource given a payload.
@@ -112,17 +112,14 @@ async def update_trigger(
     async with database.transaction():
         trigger = await _get_trigger(identifier, database)
         await trigger.update(
-            database,
-            model_dump(payload, exclude={"metadata": {"uid", "created_at", "updated_at"}})
+            database, model_dump(payload, exclude={"metadata": {"uid", "created_at", "updated_at"}})
         )
         return trigger
 
 
 @inject_context
 async def set_last_run(
-    resource: TriggerRuleResource,
-    database: BaseStorage,
-    last_run: datetime | None = None
+    resource: TriggerRuleResource, database: BaseStorage, last_run: datetime | None = None
 ):
     """
     Set the last_run annotation on a TriggerRuleResource.
@@ -141,13 +138,11 @@ async def set_last_run(
 
 @inject_context
 async def _get_next_scheduled_triggers(
-    database: BaseStorage,
-    last_checked: datetime | None
+    database: BaseStorage, last_checked: datetime | None
 ) -> list[TriggerRuleResource]:
     to_run = []
     triggers: list[TriggerRuleResource] = await list_triggers(
-        database,
-        type=TriggerRuleType.schedule
+        database, type=TriggerRuleType.schedule
     )
 
     for trigger in triggers:
@@ -166,7 +161,7 @@ async def _get_next_scheduled_triggers(
                 trigger=trigger.metadata.name,
                 next_run=next_run,
                 last_run=last_run,
-                schedule=schedule
+                schedule=schedule,
             )
 
             if is_ready_to_run(next_run, last_run, now=datetime.utcnow()):

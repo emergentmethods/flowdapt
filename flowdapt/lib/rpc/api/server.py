@@ -1,20 +1,22 @@
 import asyncio
 import warnings
 from typing import Any
+
+from fastapi import APIRouter, FastAPI, HTTPException
+from fastapi.responses import ORJSONResponse
 from typing_extensions import TypedDict
 from uvicorn import Config as UvicornConfig
 from uvicorn.server import Server as UvicornServer
-from fastapi import FastAPI, APIRouter, HTTPException
-from fastapi.responses import ORJSONResponse
 
 from flowdapt import __version__
-from flowdapt.lib.rpc.version import __api_version__
 from flowdapt.lib.logger import get_logger
 from flowdapt.lib.rpc.api.utils import (
     generate_custom_openapi_operation_id,
     openapi_generator,
     use_route_names_as_operation_ids,
 )
+from flowdapt.lib.rpc.version import __api_version__
+
 
 logger = get_logger(__name__)
 
@@ -31,12 +33,7 @@ class APIServer:
     """
 
     def __init__(
-        self,
-        host: str = "127.0.0.1",
-        port: int = 8080,
-        *args,
-        servers: list[dict] = [],
-        **kwargs
+        self, host: str = "127.0.0.1", port: int = 8080, *args, servers: list[dict] = [], **kwargs
     ):
         assert asyncio.get_running_loop(), "APIServer must be instantiated with an active loop"
 
@@ -81,9 +78,8 @@ class APIServer:
             "/",
             name="ping",
             response_model=TypedDict(
-                "PingResponse",
-                {"app": str, "version": str, "api_version": str}
-            )
+                "PingResponse", {"app": str, "version": str, "api_version": str}
+            ),
         )
         async def ping():
             return {"app": "flowdapt", "version": __version__, "api_version": __api_version__}
@@ -94,14 +90,8 @@ class APIServer:
         self._setup_exception_handlers()
 
         # https://github.com/tiangolo/fastapi/issues/617
-        self._application.add_event_handler(
-            event_type="startup",
-            func=self._api_startup_event
-        )
-        self._application.add_event_handler(
-            event_type="shutdown",
-            func=self._api_shutdown_event
-        )
+        self._application.add_event_handler(event_type="startup", func=self._api_startup_event)
+        self._application.add_event_handler(event_type="shutdown", func=self._api_shutdown_event)
 
         # Prevent FastAPI from adding the root path to the servers in OpenAPI spec
         self._application.root_path_in_servers = False
@@ -111,6 +101,7 @@ class APIServer:
         cors_settings: dict[str, Any] = {},
     ) -> None:
         from fastapi.middleware.cors import CORSMiddleware
+
         from flowdapt.lib.rpc.api.middleware.logging import AccessLoggerMiddleware
         from flowdapt.lib.rpc.api.middleware.readiness import ServiceReadyMiddleware
         from flowdapt.lib.rpc.api.middleware.telemetry import TelemetryMiddleware
@@ -125,27 +116,14 @@ class APIServer:
         self._application.add_middleware(
             CORSMiddleware,
             allow_origins=cors_settings.get(
-                "allow_origins",
-                [
-                    "http://localhost:3030",
-                    "http://127.0.0.1:3030"
-                ]
+                "allow_origins", ["http://localhost:3030", "http://127.0.0.1:3030"]
             ),
             allow_origin_regex=cors_settings.get(
-                "allow_origin_regex",
-                r'http://localhost:\d+|http://127.0.0.1:\d+'
+                "allow_origin_regex", r"http://localhost:\d+|http://127.0.0.1:\d+"
             ),
-            allow_credentials=cors_settings.get(
-                "allow_credentials",
-                True
-            ),
-            allow_methods=cors_settings.get(
-                "allow_methods",
-                ["*"]
-            ),
-            allow_headers=cors_settings.get(
-                "allow_headers", ["*"]
-            )
+            allow_credentials=cors_settings.get("allow_credentials", True),
+            allow_methods=cors_settings.get("allow_methods", ["*"]),
+            allow_headers=cors_settings.get("allow_headers", ["*"]),
         )
 
         # Add access logs
@@ -155,16 +133,12 @@ class APIServer:
         )
 
         # Add tracing
-        self._application.add_middleware(
-            TelemetryMiddleware
-        )
+        self._application.add_middleware(TelemetryMiddleware)
 
     def _setup_exception_handlers(self) -> None:
         from fastapi.exceptions import RequestValidationError
-        from flowdapt.lib.rpc.api.exception_handlers import (
-            HTTPErrorHandler,
-            ValueErrorHandler
-        )
+
+        from flowdapt.lib.rpc.api.exception_handlers import HTTPErrorHandler, ValueErrorHandler
 
         self._application.exception_handlers = {
             ValueError: ValueErrorHandler,
@@ -196,9 +170,7 @@ class APIServer:
             access_log=False,
             lifespan="on",
             loop="none",
-            headers=[
-                ("server", f"flowdapt-{__version__}-uvicorn")
-            ]
+            headers=[("server", f"flowdapt-{__version__}-uvicorn")],
         )
         self.server = NoSignalServer(self.server_config)
 

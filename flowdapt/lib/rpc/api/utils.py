@@ -1,21 +1,23 @@
 import re
 from typing import Any, Callable, TypeVar
-from fastapi import FastAPI, Request, Response, Header
-from fastapi.responses import ORJSONResponse
+
+from fastapi import FastAPI, Header, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.openapi.utils import get_openapi
+from fastapi.responses import ORJSONResponse
 from fastapi.routing import APIRoute
 
-from flowdapt.lib.errors import APIErrorModel, BadRequestError
-from flowdapt.lib.domain.dto.protocol import RequestDTO, ResponseDTO, DTOMapping
-from flowdapt.lib.domain.models.base import Resource
+from flowdapt.lib.domain.dto.protocol import DTOMapping, RequestDTO, ResponseDTO
 from flowdapt.lib.domain.dto.utils import (
-    from_model,
-    register_schema,
-    ref_schema,
-    schema_registry,
     SupportedVersions,
+    from_model,
+    ref_schema,
+    register_schema,
+    schema_registry,
 )
+from flowdapt.lib.domain.models.base import Resource
+from flowdapt.lib.errors import APIErrorModel, BadRequestError
+
 
 CallableT = TypeVar("CallableT", bound=Callable[..., Any])
 HeaderAccept = "Accept"
@@ -23,12 +25,8 @@ HeaderAPIVersion = "X-API-Version"
 APINamespace = "flowdapt.ai"
 
 default_response_models = {
-    405: {
-        "model": APIErrorModel
-    },
-    403: {
-        "model": APIErrorModel
-    },
+    405: {"model": APIErrorModel},
+    403: {"model": APIErrorModel},
 }
 
 
@@ -65,8 +63,8 @@ def extract_version(request_headers: dict, resource_type: str) -> set[str]:
     api_version_header = request_headers.get(HeaderAPIVersion)
     accept_header = request_headers.get(HeaderAccept)
 
-    api_version_header_regex = fr"{resource_type}\.(v\d+(alpha\d+|beta\d+|\.\d+)?)"
-    accept_header_regex = fr"application/vnd\.{APINamespace}\.{resource_type}\.(v[0-9a-z]+)\+json;?\s*(?:q=([0-9\.]+))?"  # noqa: E501
+    api_version_header_regex = rf"{resource_type}\.(v\d+(alpha\d+|beta\d+|\.\d+)?)"
+    accept_header_regex = rf"application/vnd\.{APINamespace}\.{resource_type}\.(v[0-9a-z]+)\+json;?\s*(?:q=([0-9\.]+))?"  # noqa: E501
 
     if api_version_header:
         if matched := re.match(api_version_header_regex, api_version_header):
@@ -77,11 +75,7 @@ def extract_version(request_headers: dict, resource_type: str) -> set[str]:
     if matches := re.findall(accept_header_regex, accept_header):
         return {
             version[0]
-            for version in sorted(
-                matches,
-                key=lambda x: float(x[1]) if x[1] else 1.0,
-                reverse=True
-            )
+            for version in sorted(matches, key=lambda x: float(x[1]) if x[1] else 1.0, reverse=True)
         }
 
     return set()
@@ -118,7 +112,7 @@ def build_response(
     model_kind: str,
     version: str,
     headers: dict = {},
-    recursive: bool = False
+    recursive: bool = False,
 ) -> Response:
     """
     Build a response from a response content for the given DTO and model_kind.
@@ -129,6 +123,7 @@ def build_response(
     :param version: The version of the DTO
     :return: Response
     """
+
     def _process_response_content(response: Any, recursive: bool):
         if isinstance(response, list) and recursive:
             return [from_model(model, dto) for model in response]
@@ -136,17 +131,14 @@ def build_response(
             return from_model(response, dto)
 
     return ORJSONResponse(
-        content=jsonable_encoder(
-            _process_response_content(response, recursive)
-        ),
+        content=jsonable_encoder(_process_response_content(response, recursive)),
         headers={**headers, HeaderAPIVersion: version},
-        media_type=compose_content_type(model_kind, version)
+        media_type=compose_content_type(model_kind, version),
     )
 
 
 def get_versioned_dto(
-    dtos: DTOMapping,
-    resource_type: str
+    dtos: DTOMapping, resource_type: str
 ) -> Callable[[Request], tuple[Resource, str]]:
     """
     Get the best versioned DTO for the given resource_type.
@@ -155,6 +147,7 @@ def get_versioned_dto(
     :param resource_type: Resource type
     :return: Versioned DTO, version
     """
+
     async def inner(
         request: Request,
         x_api_version: str | None = Header(None),  # Add this to ensure it is included in spec
@@ -170,6 +163,7 @@ def get_versioned_dto(
 
         version = get_best_version(supported_versions, requested_versions)
         return dtos[version], version
+
     return inner
 
 
@@ -194,10 +188,7 @@ def requests_from_dtos(dtos: DTOMapping, resource_type: str) -> dict:
 
 
 def responses_from_dtos(
-    dtos: DTOMapping,
-    resource_type: str,
-    is_array: bool = False,
-    ok_status: int = 200
+    dtos: DTOMapping, resource_type: str, is_array: bool = False, ok_status: int = 200
 ) -> dict:
     """
     Create a responses dict from a DTOMapping for the given resource_type.
@@ -213,18 +204,13 @@ def responses_from_dtos(
         register_schema(response_dto)
 
         if is_array:
-            schema = {
-                "type": "array",
-                "items": ref_schema(response_dto)
-            }
+            schema = {"type": "array", "items": ref_schema(response_dto)}
         else:
             schema = ref_schema(response_dto)
 
-        responses[ok_status]["content"].update({
-            compose_content_type(resource_type, version): {
-                "schema": schema
-            }
-        })
+        responses[ok_status]["content"].update(
+            {compose_content_type(resource_type, version): {"schema": schema}}
+        )
 
     return responses
 
@@ -244,6 +230,7 @@ def openapi_generator(
     :param description: API description
     :return: OpenAPI schema generator method
     """
+
     def gen_openapi(openapi_version: str = "3.0.2"):
         if app.openapi_schema:
             return app.openapi_schema

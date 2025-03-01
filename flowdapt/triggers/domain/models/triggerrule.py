@@ -1,20 +1,22 @@
 from __future__ import annotations
+
 from enum import Enum
 
-from flowdapt.triggers.resources.triggers.conditions import check_condition
-from flowdapt.triggers.resources.triggers.cron import validate_cron_schedule
+from flowdapt.lib.context import inject_context
+from flowdapt.lib.database.base import BaseStorage, Field
 from flowdapt.lib.domain.models import Resource
+from flowdapt.lib.utils.misc import import_from_string
 from flowdapt.lib.utils.model import (
     BaseModel,
     pre_validator,
 )
-from flowdapt.lib.database.base import BaseStorage, Field
-from flowdapt.lib.utils.misc import import_from_string
-from flowdapt.lib.context import inject_context
+from flowdapt.triggers.resources.triggers.conditions import check_condition
+from flowdapt.triggers.resources.triggers.cron import validate_cron_schedule
 
 
 TRIGGER_RESOURCE_KIND = "trigger_rule"
 ACTIONS_IMPORT_PATH = "flowdapt.triggers.resources.triggers.actions.{target}"
+
 
 class TriggerRuleType(str, Enum):
     schedule = "schedule"
@@ -61,11 +63,13 @@ class TriggerRuleSpec(BaseModel):
     @pre_validator()
     @classmethod
     def validate_rule(cls, values: dict):
-        if (values.get("type") == TriggerRuleType.condition) and \
-           (not values.get("rule") or not isinstance(values.get("rule"), dict)):
+        if (values.get("type") == TriggerRuleType.condition) and (
+            not values.get("rule") or not isinstance(values.get("rule"), dict)
+        ):
             raise ValueError("Condition rule must be a dictionary and is required")
-        elif (values.get("type") == TriggerRuleType.schedule) and \
-             (not values.get("rule") or not isinstance(values.get("rule"), list)):
+        elif (values.get("type") == TriggerRuleType.schedule) and (
+            not values.get("rule") or not isinstance(values.get("rule"), list)
+        ):
             raise ValueError("Schedule rule must be a list of strings and is required")
 
         if values.get("type") == TriggerRuleType.schedule:

@@ -1,6 +1,7 @@
 from typing import Any
-from semver import VersionInfo as Version
+
 from packaging.version import Version as PyPIVersion
+from semver import VersionInfo as Version
 
 from flowdapt.lib.utils.model import IS_V1
 
@@ -29,12 +30,12 @@ if IS_V1:
                 ]
             )
 else:
-    from pydantic_core import CoreSchema, core_schema
     from pydantic import (
         GetCoreSchemaHandler,
         GetJsonSchemaHandler,
     )
     from pydantic.json_schema import JsonSchemaValue  # type: ignore
+    from pydantic_core import CoreSchema, core_schema
 
     class PydanticVersion(Version):
         @classmethod
@@ -43,7 +44,9 @@ else:
 
         @classmethod
         def __get_pydantic_json_schema__(
-            cls, _core_schema: core_schema.JsonSchema, handler: GetJsonSchemaHandler,
+            cls,
+            _core_schema: core_schema.JsonSchema,
+            handler: GetJsonSchemaHandler,
         ) -> JsonSchemaValue:
             schema = handler(core_schema.str_schema())
             schema.update(
@@ -57,11 +60,11 @@ else:
 
         @classmethod
         def __get_pydantic_core_schema__(
-            cls, source_type: Any, handler: GetCoreSchemaHandler,
+            cls,
+            source_type: Any,
+            handler: GetCoreSchemaHandler,
         ) -> CoreSchema:
-            return core_schema.general_plain_validator_function(
-                cls._parse
-            )
+            return core_schema.general_plain_validator_function(cls._parse)
 
 
 def parse_version(version: str, optional_minor_and_patch: bool = False) -> Version:
@@ -97,9 +100,7 @@ def satisfies_constraints(version: str | Version, constraints: str) -> bool:
 
 
 def compare_versions(
-    left: str | Version,
-    right: str | Version,
-    optional_minor_and_patch: bool = False
+    left: str | Version, right: str | Version, optional_minor_and_patch: bool = False
 ) -> int:
     """
     Compare two versions.

@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class TelemetryProtocol(str, Enum):
     grpc = "grpc"
     http = "http"

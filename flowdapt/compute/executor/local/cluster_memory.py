@@ -1,24 +1,21 @@
 # server.py
 import asyncio
 import os
-from typing import Type, Any
-from contextlib import suppress
 from collections import defaultdict
+from contextlib import suppress
+from typing import Any, Type
 
-from flowdapt.lib.serializers import (
-    Serializer,
-    CloudPickleSerializer
-)
-from flowdapt.lib.utils.asynctools import syncify, run_in_thread
-from flowdapt.lib.utils.taskset import TaskSet
 from flowdapt.compute.cluster_memory.base import ClusterMemory
+from flowdapt.lib.serializers import CloudPickleSerializer, Serializer
+from flowdapt.lib.utils.asynctools import run_in_thread, syncify
+from flowdapt.lib.utils.taskset import TaskSet
 
 
-SOCKET_PATH = '/tmp/flowdapt-cluster-memory.sock'
+SOCKET_PATH = "/tmp/flowdapt-cluster-memory.sock"
 LENGTH_BYTE_SIZE = 4
 MAX_QUEUE_SIZE = 1000
 
-CLOSE_CONNECTION_BYTES = b'CLOSE'
+CLOSE_CONNECTION_BYTES = b"CLOSE"
 
 CONTROL_PACKETS = {
     CLOSE_CONNECTION_BYTES,
@@ -39,7 +36,7 @@ class Response:
 
 class CommunicationMixin:
     async def send_message(self, writer: asyncio.StreamWriter, message: bytes) -> None:
-        message_length = len(message).to_bytes(LENGTH_BYTE_SIZE, 'big')
+        message_length = len(message).to_bytes(LENGTH_BYTE_SIZE, "big")
         writer.write(message_length + message)
         await writer.drain()
 
@@ -55,7 +52,7 @@ class CommunicationMixin:
             # If we can't read the message length, then the connection was closed.
             return CLOSE_CONNECTION_BYTES
 
-        message_length = int.from_bytes(message_length_bytes, 'big')
+        message_length = int.from_bytes(message_length_bytes, "big")
         message = await reader.readexactly(message_length)
         return message
 
@@ -114,7 +111,7 @@ class ClusterMemoryServer(CommunicationMixin):
 
                 response = await run_in_thread(self._process_request, request_bytes)
                 await self.send_message(writer, response)
-        except (ConnectionResetError):
+        except ConnectionResetError:
             pass
         finally:
             writer.close()
@@ -135,16 +132,16 @@ class ClusterMemoryServer(CommunicationMixin):
 
     def _perform_operation(self, request: Request):
         match request.operation:
-            case 'get':
+            case "get":
                 return self._handle_get(*request.args)
-            case 'put':
+            case "put":
                 return self._handle_put(*request.args)
-            case 'delete':
+            case "delete":
                 return self._handle_delete(*request.args)
-            case 'clear':
+            case "clear":
                 return self._handle_clear()
             case _:
-                raise ValueError(f'Invalid operation: {request.operation}')
+                raise ValueError(f"Invalid operation: {request.operation}")
 
     def _handle_get(self, key: str, namespace: str = "default"):
         return self._store[namespace][key]

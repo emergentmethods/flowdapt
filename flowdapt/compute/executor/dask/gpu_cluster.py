@@ -1,9 +1,11 @@
 import logging
 from copy import deepcopy
+
 from distributed import SpecCluster
 
 from flowdapt.compute.utils import parse_gpu_input
 from flowdapt.lib.logger import get_logger
+
 
 logger = get_logger(__name__)
 
@@ -17,7 +19,7 @@ class GPUCluster(SpecCluster):
             {
                 # "shutdown_on_close": False,
                 "silence_logs": logging.CRITICAL,
-                "asynchronous": True
+                "asynchronous": True,
             }
         )
         super().__init__(*args, **kwargs)

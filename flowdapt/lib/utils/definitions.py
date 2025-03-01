@@ -1,16 +1,13 @@
 from manifest import Manifest
 
-from flowdapt.lib.utils.model import BaseModel, ValidationError
 from flowdapt.lib.plugins import Plugin
+from flowdapt.lib.utils.model import BaseModel, ValidationError
 
 
 KNOWN_DEFINITION_EXTS = [".yaml", ".yml", ".json"]
 
 
-async def get_valid_definitions(
-    plugins: list[Plugin],
-    model: type[BaseModel]
-) -> list[Manifest]:
+async def get_valid_definitions(plugins: list[Plugin], model: type[BaseModel]) -> list[Manifest]:
     """
     Get all valid definitions from a plugin manifest.
     """
@@ -26,9 +23,7 @@ async def get_valid_definitions(
 
         for file in plugin_files:
             try:
-                definitions.append(
-                    await definition_model.from_file(file_path=file)
-                )
+                definitions.append(await definition_model.from_file(file_path=file))
             except ValidationError:
                 pass
 

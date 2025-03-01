@@ -1,15 +1,16 @@
 import asyncio
 from typing import Tuple
 
-from flowdapt.lib.utils.model import model_dump
 from flowdapt.lib.rpc.eventbus.brokers.base import Broker
 from flowdapt.lib.rpc.eventbus.event import BaseEvent
+from flowdapt.lib.utils.model import model_dump
 
 
 class MemoryBroker(Broker):
     """
     An in-memory queue broker
     """
+
     _channels: set[str] = set()
     _consumer: asyncio.Queue[tuple[str, dict]]
 

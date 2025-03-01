@@ -1,20 +1,22 @@
 from typing import Any
+
 from distributed import get_client
 
-from flowdapt.lib.utils.misc import get_full_path_type
 from flowdapt.compute.cluster_memory.base import ClusterMemory
 from flowdapt.compute.executor.dask.collections import (
-    DaskDataFrame,
     DaskArray,
-    PandasDataFrame,
+    DaskDataFrame,
     NumpyArray,
+    PandasDataFrame,
     simple_collection_from_dask,
     simple_collection_to_dask,
 )
+from flowdapt.lib.utils.misc import get_full_path_type
+
 
 # TODO: Dask's Actor API is incredibly lack luster. It's not possible to get a ref to an Actor
 # that's been submitted from a different client. Also Dask does not submit Actor's to each worker
-# like Ray does, also we can't use an actor per worker to keep shared memory between all
+# like Ray does, and we can't use an actor per worker to keep shared memory between all
 # workers. Until that can change, DaskClusterMemory only supports dask collections and their
 # simpler types. This also means namespaces are directly prepended to the key instead of
 # keeping the data separate.

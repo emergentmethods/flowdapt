@@ -1,5 +1,6 @@
-import msgpack
 from typing import Any
+
+import msgpack
 
 from flowdapt.lib.serializers.base import Serializer
 

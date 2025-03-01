@@ -1,17 +1,18 @@
 import asyncio
 
+from flowdapt.compute.domain.models.workflowrun import WorkflowRun
+from flowdapt.compute.rpc import register_rpc
+from flowdapt.lib.config import Configuration
 from flowdapt.lib.database.base import BaseStorage
 from flowdapt.lib.logger import get_logger
-from flowdapt.lib.service import Service
-from flowdapt.lib.config import Configuration
 from flowdapt.lib.rpc import RPC
-from flowdapt.lib.utils.misc import get_full_path_type
+from flowdapt.lib.service import Service
 from flowdapt.lib.utils.asynctools import cancel_task
-from flowdapt.compute.rpc import register_rpc
-from flowdapt.compute.domain.models.workflowrun import WorkflowRun
+from flowdapt.lib.utils.misc import get_full_path_type
 
 
 logger = get_logger(__name__, service="compute")
+
 
 class ComputeService(Service):
     """

@@ -1,6 +1,7 @@
-import rapidjson
-import orjson
 from typing import Any
+
+import orjson
+import rapidjson
 
 from flowdapt.lib.serializers.base import Serializer
 
@@ -9,11 +10,11 @@ class JSONSerializer(Serializer):
     """
     Serializer for JSON data.
     """
+
     @staticmethod
     def loads(data: bytes) -> Any:
         return rapidjson.loads(
-            data,
-            parse_mode=rapidjson.PM_COMMENTS | rapidjson.PM_TRAILING_COMMAS
+            data, parse_mode=rapidjson.PM_COMMENTS | rapidjson.PM_TRAILING_COMMAS
         )
 
     @staticmethod
@@ -25,6 +26,7 @@ class ORJSONSerializer(Serializer):
     """
     Serializer for JSON data using ORJSON.
     """
+
     @staticmethod
     def loads(data: bytes) -> Any:
         if isinstance(data, str):
@@ -36,7 +38,4 @@ class ORJSONSerializer(Serializer):
 
     @staticmethod
     def dumps(data: Any) -> bytes:
-        return orjson.dumps(
-            data,
-            option=orjson.OPT_NAIVE_UTC | orjson.OPT_SERIALIZE_NUMPY
-        )
+        return orjson.dumps(data, option=orjson.OPT_NAIVE_UTC | orjson.OPT_SERIALIZE_NUMPY)

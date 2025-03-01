@@ -1,22 +1,23 @@
-from fastapi import status, Depends, Response
 from datetime import datetime, timezone
 
-from flowdapt.lib.telemetry import get_metrics_container
+from fastapi import Depends, Response, status
+
+from flowdapt.core.domain.dto import MetricsReadDTOs, MetricsResponse
+from flowdapt.lib.domain.dto.protocol import DTOPair
 from flowdapt.lib.rpc import RPCRouter
 from flowdapt.lib.rpc.api.utils import (
-    build_responses_dict,
-    responses_from_dtos,
-    get_versioned_dto,
     build_response,
+    build_responses_dict,
+    get_versioned_dto,
+    responses_from_dtos,
 )
-from flowdapt.lib.domain.dto.protocol import DTOPair
-from flowdapt.core.domain.dto import MetricsResponse, MetricsReadDTOs
+from flowdapt.lib.telemetry import get_metrics_container
+
 
 METRICS_RESOURCE_TYPE = "metrics"
 
-router = RPCRouter(
-    tags=["health"]
-)
+router = RPCRouter(tags=["health"])
+
 
 @router.add_api_route(
     "/metrics",
@@ -25,11 +26,9 @@ router = RPCRouter(
     summary="Current system metrics",
     response_description="System metrics",
     status_code=status.HTTP_200_OK,
-    responses=build_responses_dict(
-        responses_from_dtos(MetricsReadDTOs, METRICS_RESOURCE_TYPE)
-    ),
+    responses=build_responses_dict(responses_from_dtos(MetricsReadDTOs, METRICS_RESOURCE_TYPE)),
     response_class=Response,
-    name="metrics"
+    name="metrics",
 )
 async def get_metrics(
     name: str | None = None,
@@ -37,11 +36,8 @@ async def get_metrics(
     end_time: datetime | None = None,
     max_length: int | None = None,
     versioned_dto: tuple[DTOPair, str] = Depends(
-        get_versioned_dto(
-            MetricsReadDTOs,
-            resource_type=METRICS_RESOURCE_TYPE
-        )
-    )
+        get_versioned_dto(MetricsReadDTOs, resource_type=METRICS_RESOURCE_TYPE)
+    ),
 ):
     (_, response_dto), version = versioned_dto
 
@@ -63,7 +59,7 @@ async def get_metrics(
                 metric=name,
                 start_time=start_time_unix_nano,
                 end_time=end_time_unix_nano,
-                max_length=max_length
+                max_length=max_length,
             )
         }
     else:
@@ -72,7 +68,7 @@ async def get_metrics(
                 metric=metric,
                 start_time=start_time_unix_nano,
                 end_time=end_time_unix_nano,
-                max_length=max_length
+                max_length=max_length,
             )
             for metric in container.get_available_metrics()
         }

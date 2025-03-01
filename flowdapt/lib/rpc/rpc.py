@@ -1,22 +1,19 @@
 import asyncio
-from enum import Enum
-from typing import Callable, Any, Type
 from contextlib import suppress
+from enum import Enum
+from typing import Any, Callable, Type
 
-from flowdapt.lib.rpc.api import APIServer, APIRouter
-from flowdapt.lib.rpc.eventbus import EventBus, CallbackGroup, Event
+from flowdapt.lib.rpc.api import APIRouter, APIServer
+from flowdapt.lib.rpc.eventbus import CallbackGroup, Event, EventBus
 from flowdapt.lib.utils.misc import import_from_string
+
 
 class RPC:
     """
     Main Service RPC manager object
     """
 
-    def __init__(
-        self,
-        api_server: APIServer,
-        event_bus: EventBus
-    ) -> None:
+    def __init__(self, api_server: APIServer, event_bus: EventBus) -> None:
         assert asyncio.get_running_loop(), "RPC must be initialized inside an async method"
 
         self._api_server = api_server
@@ -80,11 +77,7 @@ class RPCRouter:
     EventBus callbacks into a single interface.
     """
 
-    def __init__(
-        self,
-        *args,
-        **kwargs
-    ):
+    def __init__(self, *args, **kwargs):
         self._api_router = APIRouter(*args, **kwargs)
         self._event_group = CallbackGroup(*args, **kwargs)
 
@@ -114,7 +107,7 @@ class RPCRouter:
         description: str | None = None,
         response_description: str = "Successful Response",
         responses: dict[int | str, dict[str, Any]] | None = None,
-        **kwargs
+        **kwargs,
     ):
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
             self._api_router.add_api_route(
@@ -128,9 +121,10 @@ class RPCRouter:
                 response_description=response_description,
                 responses=responses,
                 methods=[method],
-                **kwargs
+                **kwargs,
             )
             return func
+
         return decorator
 
     def add_event_callback(self, event: Type[Event] = Event, all: bool = False):

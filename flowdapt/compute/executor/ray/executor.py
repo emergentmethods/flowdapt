@@ -1,29 +1,28 @@
 import asyncio
-import ray
 import logging
 from enum import Enum
-from ray import ObjectRef, exceptions as ray_exc
 from functools import partial
-from typing import Callable, Any, AsyncIterator
+from typing import Any, AsyncIterator, Callable
 
-from flowdapt.lib.logger import get_logger
-from flowdapt.lib.utils.misc import (
-    import_from_string,
-    dict_to_env_vars,
-    normalize_env_vars
-)
-from flowdapt.lib.utils.model import model_dump
-from flowdapt.lib.plugins import list_plugins, get_user_modules_dir
-from flowdapt.lib.config import get_app_dir, get_configuration
-from flowdapt.compute.executor.base import Executor
+import ray
+from ray import ObjectRef
+from ray import exceptions as ray_exc
+
 from flowdapt.compute.domain.models.workflow import WorkflowResource
 from flowdapt.compute.domain.models.workflowrun import WorkflowRun
-from flowdapt.compute.resources.workflow.graph import to_graph
-from flowdapt.compute.resources.workflow.stage import BaseStage
-from flowdapt.compute.resources.workflow.errors import WorkflowExecutionError
-from flowdapt.compute.resources.workflow.context import WorkflowRunContext
+from flowdapt.compute.executor.base import Executor
 from flowdapt.compute.executor.ray.cluster_memory import RayClusterMemoryActor
 from flowdapt.compute.executor.ray.utils import objectref_to_future
+from flowdapt.compute.resources.workflow.context import WorkflowRunContext
+from flowdapt.compute.resources.workflow.errors import WorkflowExecutionError
+from flowdapt.compute.resources.workflow.graph import to_graph
+from flowdapt.compute.resources.workflow.stage import BaseStage
+from flowdapt.lib.config import get_app_dir, get_configuration
+from flowdapt.lib.logger import get_logger
+from flowdapt.lib.plugins import get_user_modules_dir, list_plugins
+from flowdapt.lib.utils.misc import dict_to_env_vars, import_from_string, normalize_env_vars
+from flowdapt.lib.utils.model import model_dump
+
 
 logger = get_logger(__name__)
 
@@ -32,6 +31,7 @@ class ExecuteStrategy(str, Enum):
     """
     The execution strategy to use for the RayExecutor.
     """
+
     # Submit each stage group to Ray as a separate task
     GROUP_BY_GROUP = "group_by_group"
     # Submit the entire graph to Ray as a single task
@@ -88,6 +88,7 @@ class RayExecutor(Executor):
     For available options, see
     https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_env.RuntimeEnvConfig.html.
     """
+
     kind: str = "ray"
 
     def __init__(
@@ -96,7 +97,7 @@ class RayExecutor(Executor):
         strategy: str = ExecuteStrategy.GROUP_BY_GROUP,
         cpus: int | str = "auto",
         gpus: int | str | None = None,
-        resources: dict[str, float] = {},
+        resources: dict[str, float] | None = None,
         object_store_memory: int | None = None,
         dashboard_host: str = "127.0.0.1",
         dashboard_port: int = 9969,
@@ -112,7 +113,7 @@ class RayExecutor(Executor):
         upload_plugins: bool = True,
         cluster_memory_actor: dict[str, Any] | None = None,
         runtime_env_config: dict[str, Any] | None = None,
-        **kwargs
+        **kwargs,
     ):
         _app_config = get_configuration()
 
@@ -121,7 +122,7 @@ class RayExecutor(Executor):
             "strategy": strategy,
             "cpus": cpus,
             "gpus": gpus,
-            "resources": resources,
+            "resources": resources or {},
             "object_store_memory": int(float(object_store_memory)) if object_store_memory else None,
             "dashboard_host": dashboard_host,
             "dashboard_port": dashboard_port,
@@ -134,18 +135,17 @@ class RayExecutor(Executor):
             "conda": conda,
             "env_vars": {
                 **dict_to_env_vars(
-                    model_dump(_app_config.logging, exclude_none=True),
-                    path="logging"
+                    model_dump(_app_config.logging, exclude_none=True), path="logging"
                 ),
                 **dict_to_env_vars(
-                    model_dump(_app_config.storage, exclude_none=True),
-                    path="storage"
+                    model_dump(_app_config.storage, exclude_none=True), path="storage"
                 ),
                 **normalize_env_vars(env_vars or {}),
             },
             "container": container,
             "upload_plugins": upload_plugins,
-            "cluster_memory_actor": cluster_memory_actor or {
+            "cluster_memory_actor": cluster_memory_actor
+            or {
                 "name": "RayClusterMemoryActor",
                 "num_cpus": 1,
                 "max_concurrency": 1000,
@@ -168,8 +168,9 @@ class RayExecutor(Executor):
                 self._config["storage_dir"] = "/tmp/data"
 
         self._ray_context = None
-        self._is_local = self._config["cluster_address"] is None or \
-            self._config["cluster_address"] == "local"
+        self._is_local = (
+            self._config["cluster_address"] is None or self._config["cluster_address"] == "local"
+        )
         self._running_workflows: list[ObjectRef] = []
 
         if strategy == ExecuteStrategy.GROUP_BY_GROUP:
@@ -196,9 +197,7 @@ class RayExecutor(Executor):
         if get_user_modules_dir():
             # Upload the user modules module to the worker
             # if it exists
-            py_modules.append(
-                import_from_string("user_modules", is_module=True)
-            )
+            py_modules.append(import_from_string("user_modules", is_module=True))
 
         env = {
             "conda": self._config["conda"],
@@ -210,7 +209,7 @@ class RayExecutor(Executor):
         if py_modules:
             env["py_modules"] = py_modules
         if pip:
-            env["pip"] = {"packages": pip, "pip_check": False}
+            env["uv"] = {"packages": pip}
 
         if self._config["runtime_env_config"]:
             env["config"] = self._config["runtime_env_config"]
@@ -262,7 +261,7 @@ class RayExecutor(Executor):
             kind=self.kind,
             is_local=self._is_local,
             cluster_address=self._config["cluster_address"],
-            strategy=self._config["strategy"]
+            strategy=self._config["strategy"],
         )
 
         await logger.ainfo("InitializingDriver")
@@ -270,8 +269,7 @@ class RayExecutor(Executor):
 
         await logger.ainfo("StartingClusterMemory")
         RayClusterMemoryActor.start(
-            self._config["cluster_memory_actor"].pop("name"),
-            **self._config["cluster_memory_actor"]
+            self._config["cluster_memory_actor"].pop("name"), **self._config["cluster_memory_actor"]
         )
         await logger.ainfo("StartedClusterMemory")
 
@@ -305,7 +303,7 @@ class RayExecutor(Executor):
             # resolved:
             # https://github.com/ray-project/ray/issues/36833
             # "gcs_address": runtime_context.gcs_address,
-            "nodes": ray.nodes()
+            "nodes": ray.nodes(),
         }
 
     def _check_resources(self, stage: BaseStage):
@@ -318,7 +316,7 @@ class RayExecutor(Executor):
             "CPU": stage_resources.pop("cpus", 0.0),
             "GPU": stage_resources.pop("gpus", 0.0),
             "memory": stage_resources.pop("memory", 0.0),
-            **stage_resources
+            **stage_resources,
         }
         available_resources = [node["Resources"] for node in ray.nodes()]
 
@@ -371,16 +369,13 @@ class RayExecutor(Executor):
 
             return ray.get([wrapped.remote(item, *args, **kwargs) for item in iterable])
 
-        return getattr(
-            self._create_lazy(map_inner, resources={"mappers": 1}),
-            self._call_attr
-        )
+        return getattr(self._create_lazy(map_inner, resources={"mappers": 1}), self._call_attr)
 
     async def _generate_partials(
         self,
         definition: WorkflowResource,
         context: WorkflowRunContext,
-        include_output: bool = False
+        include_output: bool = False,
     ) -> AsyncIterator[Any]:
         workflow_graph = to_graph(definition)
         ray_graph: dict = {}
@@ -407,10 +402,7 @@ class RayExecutor(Executor):
                     kwargs.update(context.input)
 
                 stage_partial = stage.get_partial(
-                    executor=self,
-                    context=context,
-                    args=args,
-                    kwargs=kwargs
+                    executor=self, context=context, args=args, kwargs=kwargs
                 )
 
                 ray_graph[stage_name] = group_partials[stage_name] = stage_partial
@@ -418,9 +410,7 @@ class RayExecutor(Executor):
             yield group_partials
 
     async def _execute_group_by_group(
-        self,
-        definition: WorkflowResource,
-        context: WorkflowRunContext
+        self, definition: WorkflowResource, context: WorkflowRunContext
     ):
         results: dict = {}
 
@@ -435,10 +425,12 @@ class RayExecutor(Executor):
             # It's slightly slower than submitting all stages at once, but it's
             # more robust. Meant for testing and debugging.
             try:
-                group_results = dict(zip(stage_names, await asyncio.gather(*group_partials)))
+                group_results = dict(
+                    zip(stage_names, await asyncio.gather(*group_partials), strict=False)
+                )
             except (ray_exc.TaskCancelledError, asyncio.CancelledError, ray_exc.RayTaskError) as e:
                 raise WorkflowExecutionError("Workflow cancelled") from e
-            except (ConnectionError) as e:
+            except ConnectionError as e:
                 raise WorkflowExecutionError("Lost connection to Executor") from e
             except BaseException as e:
                 raise WorkflowExecutionError(f"Unknown error occurred: {str(e)}") from e
@@ -454,21 +446,15 @@ class RayExecutor(Executor):
             result = results[stage_names[0]]
         return result
 
-    async def _execute_all_at_once(
-        self,
-        definition: WorkflowResource,
-        context: WorkflowRunContext
-    ):
+    async def _execute_all_at_once(self, definition: WorkflowResource, context: WorkflowRunContext):
         async for stage_group in self._generate_partials(definition, context):
             final_group = stage_group
 
         object_refs = [
-            (stage_name, output_node.execute())
-            for stage_name, output_node in final_group.items()
+            (stage_name, output_node.execute()) for stage_name, output_node in final_group.items()
         ]
         futures = [
-            (stage_name, objectref_to_future(object_ref))
-            for stage_name, object_ref in object_refs
+            (stage_name, objectref_to_future(object_ref)) for stage_name, object_ref in object_refs
         ]
 
         self._running_workflows.extend(object_refs)
@@ -480,22 +466,19 @@ class RayExecutor(Executor):
             else:
                 return result
 
-        except (ray_exc.TaskCancelledError, asyncio.CancelledError, ConnectionError):
-            raise WorkflowExecutionError("Workflow cancelled")
-        except (ray_exc.RayTaskError) as e:
-            raise WorkflowExecutionError(str(e))
+        except (ray_exc.TaskCancelledError, asyncio.CancelledError, ConnectionError) as e:
+            raise WorkflowExecutionError("Workflow cancelled") from e
+        except ray_exc.RayTaskError as e:
+            raise WorkflowExecutionError(str(e)) from e
         except BaseException as e:
-            raise WorkflowExecutionError(f"Unknown error occurred: {str(e)}")
+            raise WorkflowExecutionError(f"Unknown error occurred: {str(e)}") from e
         finally:
             for object_ref in object_refs:
                 if object_ref in self._running_workflows:
                     self._running_workflows.remove(object_ref)
 
     async def __call__(
-        self,
-        definition: WorkflowResource,
-        run: WorkflowRun,
-        context: WorkflowRunContext
+        self, definition: WorkflowResource, run: WorkflowRun, context: WorkflowRunContext
     ):
         """
         Execute a Workflow given a definition, run and a payload.

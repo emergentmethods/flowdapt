@@ -1,9 +1,9 @@
-from typing import Any, AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator
 
-from flowdapt.compute.executor.base import Executor
 from flowdapt.compute.domain.models.workflow import WorkflowResource
 from flowdapt.compute.domain.models.workflowrun import WorkflowRun, WorkflowRunState
+from flowdapt.compute.executor.base import Executor
 from flowdapt.compute.resources.workflow.context import WorkflowRunContext
 
 
@@ -32,7 +32,7 @@ async def execute_workflow(
     run: WorkflowRun | None = None,
     executor: Executor | None = None,
     config: dict = {},
-    **params
+    **params,
 ) -> WorkflowRun | Any:
     """
     Execute a Workflow locally for debugging purposes.
@@ -86,11 +86,13 @@ async def execute_workflow(
         definition = workflow
 
     # Create a basic WorkflowRun, this is not persisted.
-    run = WorkflowRun(
-        state=WorkflowRunState.running,
-        workflow=definition.metadata.name,
-        source="manual"
-    ) if not run else run
+    run = (
+        WorkflowRun(
+            state=WorkflowRunState.running, workflow=definition.metadata.name, source="manual"
+        )
+        if not run
+        else run
+    )
 
     # Create a WorkflowRunContext for the stages to access in case they
     # use any of the information during execution.

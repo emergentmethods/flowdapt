@@ -1,5 +1,6 @@
-from fastapi import HTTPException
 from typing import Optional
+
+from fastapi import HTTPException
 from pydantic import BaseModel
 
 
@@ -12,19 +13,12 @@ class APIError(HTTPException):
     status_code: int = 500
     detail: str = "Internal Server Error"
 
-    def __init__(
-        self,
-        status_code: Optional[int] = None,
-        detail: Optional[str] = None,
-        **kwargs
-    ):
+    def __init__(self, status_code: Optional[int] = None, detail: Optional[str] = None, **kwargs):
         kwargs.pop("status_code", None)
         kwargs.pop("detail", None)
 
         super().__init__(
-            status_code=status_code or self.status_code,
-            detail=detail or self.detail,
-            **kwargs
+            status_code=status_code or self.status_code, detail=detail or self.detail, **kwargs
         )
 
 

@@ -1,11 +1,10 @@
 from time import process_time_ns
+
 from asgiref.typing import ASGIApplication
 
-from flowdapt.lib.telemetry import (
-    TelemetryMiddleware as OpenTelemetryMiddleware,
-    get_meter,
-    get_trace_id
-)
+from flowdapt.lib.telemetry import TelemetryMiddleware as OpenTelemetryMiddleware
+from flowdapt.lib.telemetry import get_meter, get_trace_id
+
 
 meter = get_meter(__name__)
 

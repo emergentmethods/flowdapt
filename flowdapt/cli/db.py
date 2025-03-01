@@ -1,37 +1,29 @@
 """
 Utility commands for the database
 """
+
 import typer
 
 from flowdapt import __version__
 from flowdapt.cli._internal import AsyncTyper
 from flowdapt.cli.main import cli
-from flowdapt.lib.logger import get_logger, disable_logging
+from flowdapt.lib.logger import disable_logging, get_logger
 
 
 logger = get_logger(__name__, version=__version__)
-db_cli = AsyncTyper(
-    name="db",
-    short_help="Commands for the database.",
-    help=__doc__
-)
+db_cli = AsyncTyper(name="db", short_help="Commands for the database.", help=__doc__)
 cli.add_typer(db_cli)
 
 
 @db_cli.command()
 async def upgrade(
     typer_context: typer.Context,
-    revision: str = typer.Option(
-        "head",
-        "--rev",
-        "-r",
-        help="The revision ID to upgrade to."
-    )
+    revision: str = typer.Option("head", "--rev", "-r", help="The revision ID to upgrade to."),
 ) -> None:
     """
     Upgrade the database to the specified revision.
     """
-    from flowdapt.cli.utils import render_result_panel, render_error_panel
+    from flowdapt.cli.utils import render_error_panel, render_result_panel
     from flowdapt.lib.database import create_database_from_config
     from flowdapt.lib.database.migrate import run_upgrade_from_dir
 
@@ -50,17 +42,12 @@ async def upgrade(
 @db_cli.command()
 async def downgrade(
     typer_context: typer.Context,
-    revision: str = typer.Option(
-        ...,
-        "--rev",
-        "-r",
-        help="The revision ID to downgrade to."
-    )
+    revision: str = typer.Option(..., "--rev", "-r", help="The revision ID to downgrade to."),
 ) -> None:
     """
     Downgrade the database to the specified revision.
     """
-    from flowdapt.cli.utils import render_result_panel, render_error_panel
+    from flowdapt.cli.utils import render_error_panel, render_result_panel
     from flowdapt.lib.database import create_database_from_config
     from flowdapt.lib.database.migrate import run_downgrade_from_dir
 
@@ -79,12 +66,7 @@ async def downgrade(
 @db_cli.command()
 async def generate(
     typer_context: typer.Context,
-    title: str = typer.Option(
-        ...,
-        "--title",
-        "-t",
-        help="The revision title."
-    )
+    title: str = typer.Option(..., "--title", "-t", help="The revision title."),
 ) -> None:
     """
     Generate a database revision

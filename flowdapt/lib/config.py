@@ -1,26 +1,27 @@
 from __future__ import annotations
 
-from typing import Literal, Annotated, Any
-from pathlib import Path
-from manifest import Manifest, Instantiable
-from functools import cache
 from datetime import timedelta
-from pytimeparse.timeparse import timeparse as parse_duration
-from pydantic import PlainSerializer
+from functools import cache
+from pathlib import Path
+from typing import Annotated, Any, Literal
 
-from flowdapt.lib.utils.model import (
-    BaseModel,
-    Field,
-    ConfigDict,
-    pre_validator,
-    after_validator,
-    IS_V1,
-)
-from flowdapt.lib.database.base import BaseStorage
-from flowdapt.lib.utils.misc import generate_name
-from flowdapt.lib.utils.asynctools import async_cache
-from flowdapt.lib.enum import TelemetryProtocol, TelemetryCompression
+from manifest import Instantiable, Manifest
+from pydantic import PlainSerializer
+from pytimeparse.timeparse import timeparse as parse_duration
+
 from flowdapt.compute.executor.base import Executor
+from flowdapt.lib.database.base import BaseStorage
+from flowdapt.lib.enum import TelemetryCompression, TelemetryProtocol
+from flowdapt.lib.utils.asynctools import async_cache
+from flowdapt.lib.utils.misc import generate_name
+from flowdapt.lib.utils.model import (
+    IS_V1,
+    BaseModel,
+    ConfigDict,
+    Field,
+    after_validator,
+    pre_validator,
+)
 
 
 _CONFIG = None
@@ -51,6 +52,7 @@ class TelemetrySettings(BaseModel):
     if not IS_V1:
         model_config = ConfigDict(use_enum_values=True, validate_default=True)
     else:
+
         class Config:
             use_enum_values = True
 
@@ -90,6 +92,7 @@ class StorageSettings(BaseModel):
 
 # ---------------------------- LOGGING ---------------------------
 
+
 class LoggingSettings(BaseModel):
     level: str = "info"
     format: str = "console"
@@ -103,7 +106,9 @@ class LoggingSettings(BaseModel):
         value.level = value.level.upper()
         return value
 
+
 # ------------------------------ RPC -----------------------------
+
 
 class EventBusSettings(BaseModel):
     url: str = "memory://"
@@ -125,17 +130,17 @@ class RPCSettings(BaseModel):
 
 # ------------------------- DATABASE ------------------------------
 
+
 class DatabaseSettings(Instantiable[BaseStorage]):
     target: str = Field(
-        alias="__target__",
-        default="flowdapt.lib.database.storage.tdb.TinyDBStorage"
+        alias="__target__", default="flowdapt.lib.database.storage.tdb.TinyDBStorage"
     )
+
 
 # --------------------- SERVICE SETTINGS -----------------------------
 
 
-class BaseServiceSettings(BaseModel):
-    ...
+class BaseServiceSettings(BaseModel): ...
 
 
 class ComputeSettings(BaseServiceSettings):
@@ -143,8 +148,7 @@ class ComputeSettings(BaseServiceSettings):
     # target, params, or both
     class DefaultComputeExecutor(Instantiable[Executor]):
         target: str = Field(
-            alias="__target__",
-            default="flowdapt.compute.executor.local.LocalExecutor"
+            alias="__target__", default="flowdapt.compute.executor.local.LocalExecutor"
         )
 
     executor: Instantiable = DefaultComputeExecutor()
@@ -153,10 +157,8 @@ class ComputeSettings(BaseServiceSettings):
     run_retention_duration: Annotated[
         timedelta | int | str,
         PlainSerializer(
-            lambda v: str(v) if v != -1 else v,
-            return_type=str | int,
-            when_used='always'
-        )
+            lambda v: str(v) if v != -1 else v, return_type=str | int, when_used="always"
+        ),
     ] = -1
 
     @pre_validator()
@@ -168,8 +170,7 @@ class ComputeSettings(BaseServiceSettings):
 
             if not seconds:
                 raise ValueError(
-                    f"Invalid duration '{run_retention_duration}' for "
-                    f"run_retention_duration"
+                    f"Invalid duration '{run_retention_duration}' for run_retention_duration"
                 )
 
             values["run_retention_duration"] = timedelta(seconds=seconds)
@@ -186,6 +187,7 @@ class ServiceSettings(BaseModel):
 
 
 # ---------------------- MAIN MODEL --------------------------------
+
 
 class Configuration(Manifest):
     config_file: Path | None = Field(None, exclude=True)
@@ -208,9 +210,7 @@ def get_temp_config() -> Configuration:
 
 @async_cache
 async def config_from_env(
-    dotenv_files: list[str] = [],
-    env_prefix: str = "FLOWDAPT",
-    **kwargs
+    dotenv_files: list[str] = [], env_prefix: str = "FLOWDAPT", **kwargs
 ) -> Configuration:
     return await Configuration.from_env(dotenv_files=dotenv_files, env_prefix=env_prefix, **kwargs)
 

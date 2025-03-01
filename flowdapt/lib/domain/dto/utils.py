@@ -1,11 +1,12 @@
+from flowdapt.lib.domain.dto.protocol import RequestDTO, ResponseDTO
+from flowdapt.lib.domain.models.base import Resource
 from flowdapt.lib.utils.model import (
     BaseModel,
-    model_schema,
     get_fields,
     is_pydantic_model,
+    model_schema,
 )
-from flowdapt.lib.domain.models.base import Resource
-from flowdapt.lib.domain.dto.protocol import RequestDTO, ResponseDTO
+
 
 schema_registry = {}
 REF_TEMPLATE = "#/components/schemas/{model}"

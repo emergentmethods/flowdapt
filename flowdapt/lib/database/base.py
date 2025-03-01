@@ -1,18 +1,19 @@
 from __future__ import annotations
 
-import re
 import asyncio
-from functools import reduce
-from typing import Any
-from enum import Enum
+import re
 from abc import ABC, abstractmethod
-from uuid import UUID, uuid4
-from pydantic import PrivateAttr
 from contextlib import asynccontextmanager
 from contextvars import ContextVar
+from enum import Enum
+from functools import reduce
+from typing import Any
+from uuid import UUID, uuid4
 
-from flowdapt.lib.utils.model import BaseModel
+from pydantic import PrivateAttr
+
 from flowdapt.lib.database.utils import classproperty, find_immutable_fields, merge
+from flowdapt.lib.utils.model import BaseModel
 
 
 class SortDirection(str, Enum):
@@ -179,10 +180,7 @@ class FieldExpression(Expression):
 
         :param other: The list of values to match.
         """
-        return reduce(
-            lambda a, b: a | b,
-            [self == value for value in other]
-        )
+        return reduce(lambda a, b: a | b, [self == value for value in other])
 
     def one_of(self, other: list[Any]) -> Query:
         """
@@ -203,10 +201,7 @@ class FieldExpression(Expression):
                 Operator.ANY,
                 [
                     self,
-                    *(
-                        other.expression if isinstance(other, Query) else other
-                        for other in others
-                    ),
+                    *(other.expression if isinstance(other, Query) else other for other in others),
                 ],
             )
         )
@@ -222,10 +217,7 @@ class FieldExpression(Expression):
                 Operator.ALL,
                 [
                     self,
-                    *(
-                        other.expression if isinstance(other, Query) else other
-                        for other in others
-                    ),
+                    *(other.expression if isinstance(other, Query) else other for other in others),
                 ],
             )
         )
@@ -257,9 +249,7 @@ class FieldExpression(Expression):
 class UnaryExpression(Expression):
     def __init__(self, operator: Operator, operand: Expression):
         self.operator = operator
-        self.operand = (
-            operand if isinstance(operand, Expression) else LiteralExpression(operand)
-        )
+        self.operand = operand if isinstance(operand, Expression) else LiteralExpression(operand)
 
     def __str__(self) -> str:
         return f"({self.operator.value} {self.operand})"
@@ -275,9 +265,7 @@ class BinaryExpression(Expression):
     def __init__(self, operator: Operator, left: FieldExpression, right: Expression):
         self.operator = operator
         self.left = left
-        self.right = (
-            right if isinstance(right, Expression) else LiteralExpression(right)
-        )
+        self.right = right if isinstance(right, Expression) else LiteralExpression(right)
 
     def __str__(self) -> str:
         return f"({self.left} {self.operator.value} {self.right})"
@@ -439,8 +427,7 @@ class DeleteOperation(TransactionOperation):
 class UpdateOperation(TransactionOperation):
     async def commit(self, database: BaseStorage) -> None:
         self.prev_view = [
-            await database._get(type(document), document._doc_id_)
-            for document in self.documents
+            await database._get(type(document), document._doc_id_) for document in self.documents
         ]
         await database._update(self.documents)
 
@@ -467,9 +454,7 @@ class Transaction:
         :param operation_type: The operation type.
         :param documents: The documents to perform the operation on.
         """
-        assert isinstance(operation_type, type) and issubclass(
-            operation_type, TransactionOperation
-        )
+        assert isinstance(operation_type, type) and issubclass(operation_type, TransactionOperation)
         self._operations.append(operation_type(documents))
 
     async def commit(self) -> None:
@@ -477,7 +462,7 @@ class Transaction:
         Commit the transaction.
         """
         if self.parent is not None:
-            self.parent._operations.extend(self._operations[self._savepoint:])
+            self.parent._operations.extend(self._operations[self._savepoint :])
         elif not self._applied:
             try:
                 for operation in self._operations:
@@ -491,9 +476,9 @@ class Transaction:
         """
         Rollback the transaction.
         """
-        for operation in reversed(self._applied[self._savepoint:]):
+        for operation in reversed(self._applied[self._savepoint :]):
             await operation.rollback(self.database)
-        del self._applied[self._savepoint:]
+        del self._applied[self._savepoint :]
 
 
 class BaseStorage(ABC):
@@ -517,8 +502,7 @@ class BaseStorage(ABC):
         return document.collection_name
 
     @abstractmethod
-    def _get_visitor(self) -> ExpressionVisitor:
-        ...
+    def _get_visitor(self) -> ExpressionVisitor: ...
 
     @abstractmethod
     async def start(self) -> None:
@@ -549,16 +533,13 @@ class BaseStorage(ABC):
         ...
 
     @abstractmethod
-    async def _insert(self, documents: list[Document]) -> None:
-        ...
+    async def _insert(self, documents: list[Document]) -> None: ...
 
     @abstractmethod
-    async def _delete(self, documents: list[Document]) -> None:
-        ...
+    async def _delete(self, documents: list[Document]) -> None: ...
 
     @abstractmethod
-    async def _update(self, documents: list[Document]) -> None:
-        ...
+    async def _update(self, documents: list[Document]) -> None: ...
 
     @abstractmethod
     async def _find(
@@ -569,50 +550,37 @@ class BaseStorage(ABC):
         limit: int = -1,
         skip: int = 0,
         sort: tuple[str, SortDirection] | None = None,
-    ) -> list[Document]:
-        ...
+    ) -> list[Document]: ...
 
     @abstractmethod
-    async def _get(
-        self, document_type: type[Document], document_uid: UUID
-    ) -> Document | None:
-        ...
+    async def _get(self, document_type: type[Document], document_uid: UUID) -> Document | None: ...
 
     @abstractmethod
-    async def _get_all(self, document_type: type[Document]) -> list[Document]:
-        ...
+    async def _get_all(self, document_type: type[Document]) -> list[Document]: ...
 
     @abstractmethod
-    async def create_collection(self, name: str):
-        ...
+    async def create_collection(self, name: str): ...
 
     @abstractmethod
-    async def drop_collection(self, name: str):
-        ...
+    async def drop_collection(self, name: str): ...
 
     @abstractmethod
-    async def add_field(self, collection: str, field: str, default: Any = None):
-        ...
+    async def add_field(self, collection: str, field: str, default: Any = None): ...
 
     @abstractmethod
-    async def drop_field(self, collection: str, field: str):
-        ...
+    async def drop_field(self, collection: str, field: str): ...
 
     @abstractmethod
-    async def rename_field(self, collection: str, field: str, new_name: str):
-        ...
+    async def rename_field(self, collection: str, field: str, new_name: str): ...
 
     @abstractmethod
-    async def add_index(self, collection: str, field: str, unique: bool = False):
-        ...
+    async def add_index(self, collection: str, field: str, unique: bool = False): ...
 
     @abstractmethod
-    async def drop_index(self, collection: str, field: str):
-        ...
+    async def drop_index(self, collection: str, field: str): ...
 
     @abstractmethod
-    async def list_collections(self) -> list[str]:
-        ...
+    async def list_collections(self) -> list[str]: ...
 
     async def insert(self, documents: list[Document]) -> None:
         """
@@ -644,9 +612,7 @@ class BaseStorage(ABC):
             async with self._lock:
                 await self._update(documents)
 
-    async def get(
-        self, document_type: type[Document], document_uid: UUID
-    ) -> Document | None:
+    async def get(self, document_type: type[Document], document_uid: UUID) -> Document | None:
         """
         Retrieves a single document by its UID.
         """

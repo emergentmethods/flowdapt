@@ -1,0 +1,241 @@
+.stages: &stages
+  stages:
+    - lint
+    - test
+    - setup
+    - bump
+    - sync
+    - build
+    - release
+    - migrations
+    - deploy
+
+default:
+  cache: &global_cache
+    key: "$CI_COMMIT_BRANCH"
+    paths:
+      - .cache/uv
+      - .cache/pip
+      - .venv/
+      - ./task
+    policy: pull-push
+
+.use_cache: &use_cache
+  cache:
+    <<: *global_cache
+    policy: pull
+
+.no_cache: &no_cache
+  cache: {}
+
+.global_before_script: &global_before_script
+  before_script:
+    - export GOPATH=${CI_PROJECT_DIR}/.cache
+    - export PATH=${GOPATH}/bin:${PATH}
+    - export PATH=$PATH:$(pwd)
+
+before_script: !reference [.global_before_script, before_script]
+
+.activate_venv: &activate_venv
+  before_script:
+    - !reference [.global_before_script, before_script]
+    - source .venv/bin/activate
+
+.is_tag_pipeline:
+  if: $CI_COMMIT_TAG != null && $CI_COMMIT_TAG != ""
+
+.is_not_tag_pipeline:
+  if: $CI_COMMIT_TAG == null || $CI_COMMIT_TAG == ""
+
+.is_main_branch:
+  if: $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_TAG == null
+
+.is_not_main_branch:
+  if: $CI_COMMIT_BRANCH != "main"
+
+.is_side_branch:
+  if: $CI_COMMIT_BRANCH != "main" && $CI_COMMIT_BRANCH != "dev" && ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
+
+.is_dev_branch:
+  if: $CI_COMMIT_BRANCH == "dev" && $CI_COMMIT_TAG == null
+
+.docker_job:
+  image: docker:latest
+  services:
+    - docker:dind
+
+.build_docker_base: &build_docker_base
+  extends: .docker_job
+  stage: build
+  script:
+    - export COMMIT_TAG=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - echo $CI_GHCR_PAT | docker login $CI_GHCR_REGISTRY -u $CI_GHCR_USER --password-stdin
+    - task build-docker-base IMAGE_NAME=$CI_GHCR_IMAGE IMAGE_TAG=$COMMIT_TAG PYTHON_VERSION=3.11 DOCKER_BUILD_ARGS="--pull"
+    - if [ -n "$CI_COMMIT_TAG" ]; then
+        docker tag "$CI_GHCR_IMAGE:$COMMIT_TAG" "$CI_GHCR_IMAGE:latest";
+      fi
+    - docker push "$CI_GHCR_IMAGE" --all-tags
+
+.build_docker_full: &build_docker_full
+  extends: .docker_job
+  stage: build
+  script:
+    - export COMMIT_TAG=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - echo $CI_GHCR_PAT | docker login $CI_GHCR_REGISTRY -u $CI_GHCR_USER --password-stdin
+    - task build-docker-full IMAGE_NAME=$CI_GHCR_IMAGE IMAGE_TAG=$COMMIT_TAG PYTHON_VERSION=3.11 DOCKER_BUILD_ARGS="--pull"
+    - if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        docker tag "$CI_GHCR_IMAGE:$COMMIT_TAG" "$CI_GHCR_IMAGE:latest";
+      fi
+    - docker push "$CI_GHCR_IMAGE" --all-tags
+
+.build_docker_gpu: &build_docker_gpu
+  extends: .docker_job
+  stage: build
+  script:
+    - export COMMIT_TAG=${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}
+    - echo $CI_GHCR_PAT | docker login $CI_GHCR_REGISTRY -u $CI_GHCR_USER --password-stdin
+    - task build-docker-gpu IMAGE_NAME=$CI_GHCR_IMAGE IMAGE_TAG=$COMMIT_TAG PYTHON_VERSION=3.11 DOCKER_BUILD_ARGS="--pull"
+    - if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        docker tag "$CI_GHCR_IMAGE:$COMMIT_TAG" "$CI_GHCR_IMAGE:latest";
+      fi
+    - docker push "$CI_GHCR_IMAGE" --all-tags
+
+.build_docker_docs: &build_docker_docs
+  extends: .docker_job
+  stage: build
+  script:
+    - echo $CI_GHCR_PAT | docker login $CI_GHCR_REGISTRY -u $CI_GHCR_USER --password-stdin
+    - task build-docker-docs IMAGE_NAME=$CI_GHCR_IMAGE IMAGE_TAG=$CI_COMMIT_SHORT_SHA PYTHON_VERSION=3.11 DOCKER_BUILD_ARGS="--pull"
+    - docker push "$CI_GHCR_IMAGE" --all-tags
+
+.build_docs: &build_docs
+  extends:
+    - .use_cache
+    - .activate_venv
+  stage: build
+  script:
+    - task build-docs
+  artifacts:
+    paths:
+      - site/
+    expire_in: 1 week
+
+.build_wheel: &build_wheel
+  extends:
+    - .use_cache
+    - .activate_venv
+  stage: build
+  script:
+    - task build-whl
+  artifacts:
+    name: dist
+    paths:
+      - dist/
+
+.publish_wheel: &publish_wheel
+  extends:
+    - .use_cache
+    - .activate_venv
+  stage: release
+  script:
+    - UV_PUBLISH_TOKEN=$PYPI_TOKEN uv publish
+
+.get_version: &get_version
+  cache: !reference [.use_cache, cache]
+  stage: setup
+  script:
+    - export PROJECT_VERSION=$(task version)
+    - echo $PROJECT_VERSION
+    - echo "PROJECT_VERSION=$PROJECT_VERSION" > $VERSION_ENV_FILE
+  artifacts:
+    reports:
+      dotenv:
+        - $VERSION_ENV_FILE
+
+.lint_commit: &lint_commit
+  stage: .pre
+  image: python:3.11
+  script:
+    - |
+      # Get the commit message of the last commit
+      commit_message=$(git log -1 --pretty=format:%s)
+
+      # If the commit message starts with "Merge branch", it is a merge commit, so skip the linting.
+      if [[ $commit_message == 'Merge branch'* ]]; then
+        echo "Merge commit detected, skipping lint."
+        exit 0
+      fi
+
+      pip install gitlint
+      # Ensure the commit message is valid
+      # We should always pass this as long as the pusher has the pre-commit hooks installed
+      # but just as a sanity check we'll run it here
+      git log -1 --pretty=%B | gitlint
+
+.lint_code: &lint_code
+  extends:
+    - .use_cache
+    - .activate_venv
+  stage: lint
+  script:
+    - task lint
+
+.unit_tests: &unit_tests
+  extends:
+    - .use_cache
+    - .activate_venv
+  stage: test
+  script:
+    - task unit-tests
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+      junit: report.xml
+    paths:
+      - coverage-report/
+
+.k8s_job:
+  image: dtzar/helm-kubectl:3.12
+  cache: {}
+  before_script:
+    - kubectl config use-context $AGENT_CONFIG
+    - kubectl version
+    - helm version
+
+.deploy_common:
+  extends: .k8s_job
+  stage: deploy
+  # variables:
+  #   DEPLOY_HOSTS
+  #   NAMESPACE
+  #   RELEASE_NAME
+  #   REPLICAS
+  #   CHART_PATH
+  #   IMAGE_TAG (optional)
+  script:
+    - TLS_SECRET="$RELEASE_NAME-tls"
+    - HOSTS_ARR=(${DEPLOY_HOSTS//,/ })
+    # If Tag is set use that, if not use CI_COMMIT_TAG or CI_COMMIT_SHORT_SHA if the CI tag isn't available
+    - IMAGE_TAG=${IMAGE_TAG:-${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}}
+    - HELM_SET_ARGS="--set image.tag=${IMAGE_TAG} --set image.repository=$CI_GHCR_IMAGE --set ingress.tlsSecretName=$TLS_SECRET --set replicas=$REPLICAS"
+    - |
+      for i in "${!HOSTS_ARR[@]}"; do
+        HELM_SET_ARGS="$HELM_SET_ARGS --set ingress.hosts[$i]=${HOSTS_ARR[$i]}"
+      done
+    - helm upgrade --install --namespace $NAMESPACE $HELM_SET_ARGS $RELEASE_NAME $CHART_PATH
+    - kubectl wait --namespace $NAMESPACE --for=condition=available --timeout=180s deployment/$RELEASE_NAME
+
+.destroy_common:
+  extends: .k8s_job
+  script:
+    - "export RELEASE_INSTALLED=$(helm status --namespace $NAMESPACE $RELEASE_NAME 2>&1 | grep -c 'STATUS: deployed')"
+    - |
+      if [ $RELEASE_INSTALLED -eq 1 ]; then
+        helm uninstall --namespace $NAMESPACE $RELEASE_NAME
+        echo "Uninstalled Release $RELEASE_NAME"
+      else
+        echo "Release $RELEASE_NAME not installed"
+      fi
