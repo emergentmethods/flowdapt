@@ -1,4 +1,14 @@
 
+<a name="0.1.23"></a>
+## [0.1.23](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.22...0.1.23)
+
+> 2025-03-02
+
+### Fix
+
+* Add unit tests job dep to build docs docker
+
+
 <a name="0.1.22"></a>
 ## [0.1.22](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.21...0.1.22)
 
@@ -95,17 +105,7 @@
 
 
 <a name="0.1.13"></a>
-## [0.1.13](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.12...0.1.13)
-
-> 2024-08-26
-
-### Fix
-
-* add libz-dev to apt-get install
-
-
-<a name="0.1.12"></a>
-## 0.1.12
+## 0.1.13
 
 > 2024-08-26
 
