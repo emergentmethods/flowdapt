@@ -1,4 +1,14 @@
 
+<a name="0.1.22"></a>
+## [0.1.22](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.21...0.1.22)
+
+> 2025-03-02
+
+### Fix
+
+* Add deps between build docs jobs
+
+
 <a name="0.1.21"></a>
 ## [0.1.21](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.20...0.1.21)
 
@@ -95,17 +105,7 @@
 
 
 <a name="0.1.12"></a>
-## [0.1.12](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.11...0.1.12)
-
-> 2024-08-26
-
-### Fix
-
-* bump pyarrow
-
-
-<a name="0.1.11"></a>
-## 0.1.11
+## 0.1.12
 
 > 2024-08-26
 
