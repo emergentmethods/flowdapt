@@ -47,9 +47,11 @@ build_docs:
 
 build_docs_docker:
   extends: .build_docker_docs
+  needs: ["build_docs"]
 
 deploy_docs:
   extends: .deploy_common
+  needs: ["build_docs_docker"]
   variables:
     DEPLOY_HOSTS: docs.flowdapt.ai
     RELEASE_NAME: flowdapt-docs
