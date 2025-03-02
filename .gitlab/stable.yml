@@ -47,7 +47,7 @@ build_docs:
 
 build_docs_docker:
   extends: .build_docker_docs
-  needs: ["build_docs"]
+  needs: ["build_docs", "unit_tests"]
 
 deploy_docs:
   extends: .deploy_common
