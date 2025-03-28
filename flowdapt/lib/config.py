@@ -225,7 +225,5 @@ def get_configuration(use_temp: bool = True) -> Configuration:
 
     if not _CONFIG and use_temp:
         return get_temp_config()
-    elif not _CONFIG:
-        raise ValueError("Configuration not set")
 
     return _CONFIG
