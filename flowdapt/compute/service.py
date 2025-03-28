@@ -49,18 +49,23 @@ class ComputeService(Service):
         retention_duration = self._config.services.compute.run_retention_duration
 
         while not self._stopped.is_set():
-            if retention_duration <= 0:
+            try:
+                if retention_duration <= 0:
+                    return
+
+                if runs := await WorkflowRun.get_by_age(self._db, retention_duration):
+                    await logger.ainfo(
+                        "ExpiringWorkflowRuns",
+                        num_runs=len(runs),
+                        retention_duration=retention_duration,
+                    )
+                    await self._db.delete(runs)
+            except asyncio.CancelledError:
                 return
-
-            if runs := await WorkflowRun.get_by_age(self._db, retention_duration):
-                await logger.ainfo(
-                    "ExpiringWorkflowRuns",
-                    num_runs=len(runs),
-                    retention_duration=retention_duration,
-                )
-                await self._db.delete(runs)
-
-            await asyncio.sleep(15)
+            except Exception as e:
+                await logger.aerror("ExceptionOccurred", error=str(e))
+            finally:
+                await asyncio.sleep(15)
 
     async def __startup__(self):
         global logger
@@ -79,9 +84,9 @@ class ComputeService(Service):
         await logger.ainfo("ServiceStarted")
 
     async def __shutdown__(self):
-        self._stopped.set()
-
         await logger.ainfo("ServiceStopping")
+
+        self._stopped.set()
         await self._executor.close()
 
         if self._expire_task:

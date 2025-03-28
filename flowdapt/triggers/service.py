@@ -23,19 +23,21 @@ class TriggerService(Service):
         self._rpc: RPC = self._context.rpc
 
         self._schedule_task = None
+        self._stopped = asyncio.Event()
 
         register_rpc(self._rpc)
 
     async def _run_scheduled_triggers(self):
-        try:
-            async for trigger in get_next_scheduled_triggers():
-                await logger.ainfo("RunningScheduledTrigger", trigger=trigger.metadata.name)
-                await set_last_run(trigger)
-                await trigger.spec.action.run()
-        except asyncio.CancelledError:
-            pass
-        except Exception as e:
-            await logger.aerror("ExceptionOccurred", error=str(e))
+        while not self._stopped.is_set():
+            try:
+                async for trigger in get_next_scheduled_triggers():
+                    await logger.ainfo("RunningScheduledTrigger", trigger=trigger.metadata.name)
+                    await set_last_run(trigger)
+                    await trigger.spec.action.run()
+            except asyncio.CancelledError:
+                return
+            except Exception as e:
+                await logger.aerror("ExceptionOccurred", error=str(e))
 
     async def __startup__(self):
         await logger.ainfo("ServiceStarting")
@@ -43,10 +45,14 @@ class TriggerService(Service):
         if not self._schedule_task:
             self._schedule_task = asyncio.create_task(self._run_scheduled_triggers())
 
+        self._stopped.clear()
+
         await logger.ainfo("ServiceStarted")
 
     async def __shutdown__(self):
         await logger.ainfo("ServiceStopping")
+
+        self._stopped.set()
 
         if self._schedule_task:
             self._schedule_task.cancel()

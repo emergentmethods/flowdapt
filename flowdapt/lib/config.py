@@ -151,7 +151,7 @@ class ComputeSettings(BaseServiceSettings):
             alias="__target__", default="flowdapt.compute.executor.local.LocalExecutor"
         )
 
-    executor: Instantiable = DefaultComputeExecutor()
+    executor: Instantiable[Executor] = DefaultComputeExecutor()
     default_namespace: str = "default"
     default_os_strategy: Literal["fallback", "artifact", "cluster_memory"] = "fallback"
     run_retention_duration: Annotated[
@@ -225,5 +225,7 @@ def get_configuration(use_temp: bool = True) -> Configuration:
 
     if not _CONFIG and use_temp:
         return get_temp_config()
+    elif not _CONFIG:
+        raise ValueError("Configuration not set")
 
     return _CONFIG
