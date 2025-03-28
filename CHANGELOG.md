@@ -1,4 +1,14 @@
 
+<a name="0.1.24"></a>
+## [0.1.24](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.23...0.1.24)
+
+> 2025-03-28
+
+### Fix
+
+* Better handling of connection errors in DB operations at service level
+
+
 <a name="0.1.23"></a>
 ## [0.1.23](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.22...0.1.23)
 
@@ -85,27 +95,11 @@
 
 
 <a name="0.1.15"></a>
-## [0.1.15](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.14...0.1.15)
+## 0.1.15
 
 > 2024-08-27
 
 ### Fix
 
 * Bump mkdocstrings and ensure runtime image uses bookworm
-
-
-<a name="0.1.14"></a>
-## [0.1.14](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.13...0.1.14)
-
-> 2024-08-27
-
-### Fix
-
-* Update to bookworm base docker image
-
-
-<a name="0.1.13"></a>
-## 0.1.13
-
-> 2024-08-26
 
