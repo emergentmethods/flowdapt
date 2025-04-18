@@ -11,6 +11,18 @@ from flowdapt.lib.utils.model import BaseModel, Field
 
 _ENTRYPOINT_GROUP = "flowdapt.plugins"
 PLUGIN_RESOURCE_KIND = "plugin"
+DEFAULT_SKIP_WORDS = [
+    "__pycache__",
+    ".pyc",
+    ".py",
+    ".egg-info",
+    ".dist-info",
+    ".git",
+    ".github",
+    ".pytest_cache",
+    "tests",
+    "docs",
+]
 
 
 class PluginMetadata(BaseModel):
@@ -46,18 +58,7 @@ class Plugin(BaseModel):
 
     async def list_datafiles(
         self,
-        skip_words: list[str] = [
-            "__pycache__",
-            ".pyc",
-            ".py",
-            ".egg-info",
-            ".dist-info",
-            ".git",
-            ".github",
-            ".pytest_cache",
-            "tests",
-            "docs",
-        ],
+        skip_words: list[str] = DEFAULT_SKIP_WORDS,
     ) -> list[Path]:
         """
         Get a list of datafiles bundled with the plugin.
@@ -100,7 +101,7 @@ class PluginManifest:
     root: dict[str, Plugin] = {}
 
     async def load_plugins(self):
-        for entrypoint in entry_points().get(_ENTRYPOINT_GROUP, []):
+        for entrypoint in list(entry_points(group=_ENTRYPOINT_GROUP)):
             plugin = Plugin.from_entrypoint(entrypoint)
             self.root[plugin.name] = plugin
 

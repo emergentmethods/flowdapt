@@ -7,7 +7,7 @@ authors = [
     {name = "Emergent Methods, LLC", email = "contact@emergentmethods.ai"},
 ]
 license = {text = "Apache-2.0"}
-requires-python = "<4.0,>=3.11"
+requires-python = ">=3.11"
 dependencies = [
     "rich>=13.7.0",
     "uvicorn==0.34.0",
