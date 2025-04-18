@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.12
 # First stage: build environment
 FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
 

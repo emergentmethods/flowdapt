@@ -258,13 +258,13 @@ def stage_wrapper(stage_definition: dict):
         if not get_configuration(use_temp=False):
             set_configuration(to_sync(config_from_env)())
 
-        # Call setup logging to configure the logger in the worker
-        setup_logging()
-
         stage = BaseStage.from_definition(stage_definition)
 
         # Import the executor code
         import_from_string(__executor_imports[context.executor], is_module=True, use_cache=True)
+
+        # Call setup logging to configure the logger in the worker
+        setup_logging()
 
         # Set the WorkflowRunContext ContextVar for this stage
         token = set_run_context(context)

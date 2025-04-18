@@ -4,19 +4,21 @@ import time
 from contextlib import contextmanager
 from io import StringIO
 from types import TracebackType
-from typing import IO, Callable, Iterator, Optional, Type
+from typing import IO, Callable, Iterator, Optional, Type, TypeAlias
 
 import structlog
 from rich.console import Console
 from rich.traceback import Traceback
+from structlog._log_levels import NAME_TO_LEVEL
 from structlog.processors import ExceptionDictTransformer, ExceptionRenderer
 from structlog.testing import capture_logs
+from structlog.typing import EventDict, Processor
 
 from flowdapt.lib.utils.misc import hash_map
 from flowdapt.lib.utils.model import model_dump
 
 
-LoggerType = structlog.BoundLoggerBase
+LoggerType: TypeAlias = structlog.stdlib.BoundLogger
 ExcInfo = tuple[Type[BaseException], BaseException, Optional[TracebackType]]
 
 _COLORS = {
@@ -31,7 +33,7 @@ _COLORS = {
     "VALUE": "sky_blue3",
 }
 
-_last_log_times = {}
+_last_log_times: dict[int, float] = {}
 
 
 def _get_color(name: str) -> str:
@@ -50,7 +52,7 @@ def log_once(log_method: Callable, event: str, interval_seconds=60, **kwargs):
         return None
 
 
-def inject_trace_id(logger: LoggerType, method_name: str, event_dict: dict) -> dict:
+def inject_trace_id(logger: LoggerType, method_name: str, event_dict: EventDict) -> dict:
     from flowdapt.lib.telemetry import get_trace_id
 
     if not event_dict.get("trace_id"):
@@ -108,7 +110,7 @@ class ConsoleRenderer:
         self._traceback_max_frames = traceback_max_frames
         self._exc_transformer = exception_transformer
 
-    def __call__(self, logger: structlog.typing.WrappedLogger, name: str, event_dict: dict) -> str:
+    def __call__(self, logger: structlog.typing.WrappedLogger, name: str, event_dict: EventDict) -> str:
         output = ""
 
         timestamp = event_dict.pop("timestamp", None)
@@ -160,6 +162,18 @@ def get_logger(name: str, **kwargs) -> LoggerType:
     return structlog.get_logger(logger_name=name, **kwargs)
 
 
+def get_logging_level(level: str) -> int:
+    """
+    Get the logging level from a string.
+
+    :param level: The logging level.
+    :type level: str
+    :return: The logging level.
+    :rtype: int
+    """
+    return NAME_TO_LEVEL.get(level.lower(), logging.INFO)
+
+
 def configure_logger(
     level: str = "INFO",
     format: str = "console",
@@ -168,7 +182,9 @@ def configure_logger(
     traceback_show_locals: bool = False,
     traceback_max_frames: int = 10,
 ):
-    shared_processors = [
+    print("LOGGING LEVEL:", level)
+    output_processors: list[Processor]
+    shared_processors: list[Processor] = [
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.UnicodeDecoder(),
@@ -204,7 +220,10 @@ def configure_logger(
         logger_factory=RichPrintLoggerFactory(),
         processors=shared_processors + output_processors,
         context_class=dict,
-        wrapper_class=structlog.make_filtering_bound_logger(logging.getLevelName(level)),
+        wrapper_class=structlog.make_filtering_bound_logger(
+            get_logging_level(level)
+        ),
+        cache_logger_on_first_use=False,
     )
 
 

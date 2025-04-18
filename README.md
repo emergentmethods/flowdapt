@@ -3,7 +3,6 @@
 *Flowdapt is a platform designed to help developers deploy adaptive and reactive Artificial Intelligence based applications at large-scale. It is equipped with a set of tools to automatically orchestrate and run dynamic and adaptive machine learning workflows.*
 
 ---
-![Gitlab code coverage (specific job)](https://img.shields.io/gitlab/pipeline-coverage/emergentmethods/flowdapt?branch=main&job_name=unit-tests&style=flat-square)
 ![GitLab Release (latest by SemVer)](https://img.shields.io/gitlab/v/release/emergentmethods/flowdapt?style=flat-square)
 ![GitLab](https://img.shields.io/gitlab/license/emergentmethods/flowdapt?style=flat-square)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/flowdapt?style=flat-square)
