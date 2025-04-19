@@ -1,4 +1,14 @@
 
+<a name="0.1.25"></a>
+## [0.1.25](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.24...0.1.25)
+
+> 2025-04-18
+
+### Fix
+
+* Fix bug in py 3.12, setup logging in stage wrapper after stage import
+
+
 <a name="0.1.24"></a>
 ## [0.1.24](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.23...0.1.24)
 
@@ -85,21 +95,7 @@
 
 
 <a name="0.1.16"></a>
-## [0.1.16](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.15...0.1.16)
+## 0.1.16
 
 > 2024-08-29
-
-### Fix
-
-* if user is skipping DB, then user also doesnt care about the response cap
-
-
-<a name="0.1.15"></a>
-## 0.1.15
-
-> 2024-08-27
-
-### Fix
-
-* Bump mkdocstrings and ensure runtime image uses bookworm
 
