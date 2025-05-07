@@ -30,8 +30,14 @@ FROM python:${PYTHON_VERSION}-slim-bookworm AS production
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install -y build-essential libz-dev && \
-    apt-get install -y python3-dev && \
+    apt-get install -y \
+        build-essential \
+        libz-dev \
+        python3-dev \
+        wget \
+        tzdata \
+        git \
+        libjemalloc-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
