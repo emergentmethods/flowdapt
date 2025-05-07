@@ -1,8 +1,18 @@
 
+<a name="0.1.26"></a>
+## [0.1.26](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.25...0.1.26)
+
+> 2025-05-07
+
+### Fix
+
+* Ensure wget available in docker image
+
+
 <a name="0.1.25"></a>
 ## [0.1.25](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.24...0.1.25)
 
-> 2025-04-18
+> 2025-04-19
 
 ### Fix
 
@@ -85,17 +95,11 @@
 
 
 <a name="0.1.17"></a>
-## [0.1.17](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.16...0.1.17)
+## 0.1.17
 
 > 2024-10-03
 
 ### Fix
 
 * Support passing runtime env config for ray executor
-
-
-<a name="0.1.16"></a>
-## 0.1.16
-
-> 2024-08-29
 
