@@ -1,4 +1,5 @@
 import os
+import platform
 
 import psutil
 import pynvml
@@ -14,11 +15,22 @@ def get_available_cores():
     Get the available cores for this machine using
     CPU affinity.
     """
-    # https://stackoverflow.com/a/55423170
-    # We want to use affinity because some cluster solutions
-    # can limit CPU's. psutil offers a solution that works on
-    # Unix and Windows
-    return len(psutil.Process().cpu_affinity()) - 1
+    try:
+        match platform.system().lower():
+            case "linux" | "windows":
+                # https://stackoverflow.com/a/55423170
+                # We want to use affinity because some cluster solutions
+                # can limit CPU's. psutil offers a solution that works on
+                # Unix and Windows
+                return len(psutil.Process().cpu_affinity()) - 1
+            case "darwin":
+                # On MacOS, we can use the number of logical cores
+                # as a proxy for available cores.
+                return psutil.cpu_count(logical=True) - 1
+    except Exception:
+        # If we can't get the CPU affinity, we can use the number of logical cores
+        # as a proxy for available cores.
+        return psutil.cpu_count(logical=True) - 1
 
 
 def get_available_gpus():
@@ -67,7 +79,7 @@ def parse_cuda_visible_device(dev):
             raise ValueError(
                 "Devices in CUDA_VISIBLE_DEVICES must be comma-separated integers "
                 "or strings beginning with 'GPU-' or 'MIG-' prefixes."
-            )
+            ) from None
 
 
 def cuda_visible_devices(i, visible=None):
