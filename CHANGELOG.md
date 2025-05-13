@@ -1,4 +1,14 @@
 
+<a name="0.1.28"></a>
+## [0.1.28](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.27...0.1.28)
+
+> 2025-05-13
+
+### Fix
+
+* Fix compute util breaking in darwin machines
+
+
 <a name="0.1.27"></a>
 ## [0.1.27](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.26...0.1.27)
 
@@ -84,17 +94,7 @@
 
 
 <a name="0.1.19"></a>
-## [0.1.19](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.18...0.1.19)
+## 0.1.19
 
 > 2025-01-25
-
-### Fix
-
-* Update crontab dependency
-
-
-<a name="0.1.18"></a>
-## 0.1.18
-
-> 2024-11-20
 
