@@ -18,7 +18,7 @@ operations: dict[str, Callable[..., Any]] = {
     # And
     "and": lambda *args: reduce(lambda a, b: a and b, args, True),
     # Or
-    "or": lambda *args: reduce(lambda a, b: a and b, args, False),
+    "or": lambda *args: reduce(lambda a, b: a or b, args, False),
     # Not
     "not": lambda a: not a,
     # Bool
@@ -70,11 +70,3 @@ def check_condition(conditions: dict | None, data: dict):
         return _get_value(data, *values)
 
     return operations[root](*values)
-
-
-if __name__ == "__main__":
-    test_data = {"t": {"v": 5}}
-
-    conditions = {"==": [{"$": "t.v"}, 5]}
-
-    print(check_condition(conditions, test_data))

@@ -283,7 +283,7 @@ async def _run_workflow(
 
         await _logger.ainfo("WorkflowRunFinished")
 
-        return run
+    return run
 
 
 @tracer.start_as_current_span("get_recent_workflow_runs")

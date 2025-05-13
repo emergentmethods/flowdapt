@@ -19,6 +19,8 @@ nav:
         - concepts/configs/index.md
       - Triggers:
         - concepts/triggers/index.md
+        - Rules: concepts/triggers/rules.md
+        - Actions: concepts/triggers/actions.md
       - Executors:
         - concepts/executor/index.md
         - Ray: concepts/executor/ray.md
