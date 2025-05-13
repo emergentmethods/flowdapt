@@ -1,4 +1,14 @@
 
+<a name="0.1.27"></a>
+## [0.1.27](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.26...0.1.27)
+
+> 2025-05-13
+
+### Fix
+
+* Improve trigger docs and fix or operator in conditions
+
+
 <a name="0.1.26"></a>
 ## [0.1.26](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.25...0.1.26)
 
@@ -84,22 +94,7 @@
 
 
 <a name="0.1.18"></a>
-## [0.1.18](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.17...0.1.18)
+## 0.1.18
 
 > 2024-11-20
-
-### Fix
-
-* Remove result size check
-* Ensure metrics data points sorted by timestamp
-
-
-<a name="0.1.17"></a>
-## 0.1.17
-
-> 2024-10-03
-
-### Fix
-
-* Support passing runtime env config for ray executor
 
