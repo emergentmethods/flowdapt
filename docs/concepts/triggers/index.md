@@ -3,7 +3,7 @@
 ???+ note "Tools"
     For documentation purposes it is assumed the reader has `flowctl` installed. To see how, please see the repo [README](../../flowctl/index.md#installation). For more information on the trigger commands, see the [trigger](../../flowctl/cli.md#flowctl-trigger) command documentation in `flowctl`.
 
-Flowdat workflows can be triggered according to custom criteria with the Flowdapt `trigger` service. A trigger resource is defined in its own `yaml` file and follows the same general kubernetes schema as workflows and configs:
+Flowdapt workflows can be triggered according to custom criteria with the Flowdapt `trigger` service. A trigger resource is defined in its own `yaml` file and follows the same general kubernetes schema as workflows and configs:
 
 
 ```yaml
@@ -70,3 +70,5 @@ flowctl apply -p /path/to/schedule_trigger.yaml
 ```
 
 Once it is applied, the schedule becomes activated. The schedule can be removed by deleting the trigger with `flowctl delete -p path/to/schedule_trigger`.
+
+For more information about rules and actions, please see the [rules](../../concepts/triggers/rules.md) and [actions](../../concepts/triggers/actions.md) documentation.

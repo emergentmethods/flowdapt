@@ -25,13 +25,13 @@ async def executor_lifespan(executor: Executor) -> AsyncIterator[Executor]:
 
 async def execute_workflow(
     workflow: dict | WorkflowResource,
-    input: dict = {},
+    input: dict | None = None,
     *,
     namespace: str = "default",
     return_result: bool = False,
     run: WorkflowRun | None = None,
     executor: Executor | None = None,
-    config: dict = {},
+    config: dict | None = None,
     **params,
 ) -> WorkflowRun | Any:
     """
@@ -97,12 +97,12 @@ async def execute_workflow(
     # Create a WorkflowRunContext for the stages to access in case they
     # use any of the information during execution.
     context = WorkflowRunContext(
-        input=input,
+        input=input or {},
         namespace=namespace,
         executor=executor.kind,
         run=run.model_copy(deep=True),
         definition=definition.model_copy(deep=True),
-        config=config,
+        config=config or {},
     )
 
     try:
