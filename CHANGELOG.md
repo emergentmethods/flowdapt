@@ -1,4 +1,14 @@
 
+<a name="0.1.29"></a>
+## [0.1.29](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.28...0.1.29)
+
+> 2025-05-25
+
+### Fix
+
+* Default reconnect timeout in ray
+
+
 <a name="0.1.28"></a>
 ## [0.1.28](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.27...0.1.28)
 
@@ -84,17 +94,7 @@
 
 
 <a name="0.1.20"></a>
-## [0.1.20](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.19...0.1.20)
+## 0.1.20
 
 > 2025-02-06
-
-### Fix
-
-* Bump some dependencies for CVE fixes and pin anyio
-
-
-<a name="0.1.19"></a>
-## 0.1.19
-
-> 2025-01-25
 
