@@ -171,7 +171,7 @@ class RayExecutor(Executor):
         self._is_local = (
             self._config["cluster_address"] is None or self._config["cluster_address"] == "local"
         )
-        self._running_workflows: list[ObjectRef] = []
+        self._running_workflows: list[tuple[str, ObjectRef]] = []
 
         if strategy == ExecuteStrategy.GROUP_BY_GROUP:
             self._call_attr = "remote"

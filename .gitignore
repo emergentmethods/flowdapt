@@ -126,3 +126,4 @@ dmypy.json
 .pytest_cache/
 
 user_data/
+_test*.py

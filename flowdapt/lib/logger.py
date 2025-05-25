@@ -182,7 +182,6 @@ def configure_logger(
     traceback_show_locals: bool = False,
     traceback_max_frames: int = 10,
 ):
-    print("LOGGING LEVEL:", level)
     output_processors: list[Processor]
     shared_processors: list[Processor] = [
         structlog.processors.add_log_level,
