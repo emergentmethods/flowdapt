@@ -107,6 +107,7 @@ class LocalExecutor(Executor):
 
         await self._cm_server.start()
         self.running = True
+        self.connected = True
 
     async def close(self):
         if not self.running:
@@ -117,10 +118,7 @@ class LocalExecutor(Executor):
 
         await self._cm_server.close()
         self.running = False
-
-    async def reload_environment(self):
-        await self.close()
-        await self.start()
+        self.connected = False
 
     async def environment_info(self):
         return {

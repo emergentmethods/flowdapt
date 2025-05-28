@@ -7,6 +7,8 @@ from typing import Any, AsyncIterator, Callable
 import ray
 from ray import ObjectRef
 from ray import exceptions as ray_exc
+from ray._private.worker import RayContext
+from ray.client_builder import ClientContext
 
 from flowdapt.compute.domain.models.workflow import WorkflowResource
 from flowdapt.compute.domain.models.workflowrun import WorkflowRun
@@ -20,6 +22,7 @@ from flowdapt.compute.resources.workflow.stage import BaseStage
 from flowdapt.lib.config import get_app_dir, get_configuration
 from flowdapt.lib.logger import get_logger
 from flowdapt.lib.plugins import get_user_modules_dir, list_plugins
+from flowdapt.lib.utils.asynctools import cancel_task, retry
 from flowdapt.lib.utils.misc import dict_to_env_vars, import_from_string, normalize_env_vars
 from flowdapt.lib.utils.model import model_dump
 
@@ -87,6 +90,17 @@ class RayExecutor(Executor):
     :param runtime_env_config: A dictionary of options to use for the runtime environment config.
     For available options, see
     https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_env.RuntimeEnvConfig.html.
+    :param connection_monitor_interval: The interval in seconds to check the connection to the Ray
+    cluster. Defaults to 15 seconds. Only applies if connecting to an external cluster.
+    :param max_reconnect_retries: The maximum number of times to retry reconnecting to the Ray
+    cluster if the connection is lost. Defaults to 2048.
+    :param base_reconnect_delay: The base delay in seconds to use for the exponential backoff
+    when reconnecting to the Ray cluster. Defaults to 5 seconds.
+    :param max_reconnect_delay: The maximum delay in seconds to use for the exponential backoff
+    when reconnecting to the Ray cluster. Defaults to 60 seconds.
+    :param ping_timeout: The timeout in seconds to use when pinging the Ray cluster to check
+    if it's still alive. Defaults to 10 seconds.
+    :param kwargs: Additional keyword arguments to pass to ray.init().
     """
 
     kind: str = "ray"
@@ -113,6 +127,11 @@ class RayExecutor(Executor):
         upload_plugins: bool = True,
         cluster_memory_actor: dict[str, Any] | None = None,
         runtime_env_config: dict[str, Any] | None = None,
+        connection_monitor_interval: int = 15,
+        max_reconnect_retries: int = 2048,
+        base_reconnect_delay: float = 5.0,
+        max_reconnect_delay: float = 60.0,
+        ping_timeout: float = 10.0,
         **kwargs,
     ):
         _app_config = get_configuration()
@@ -167,8 +186,8 @@ class RayExecutor(Executor):
             elif not self._config["storage_dir"] and not app_dir:
                 self._config["storage_dir"] = "/tmp/data"
 
-        self._ray_context = None
-        self._is_local = (
+        self._ray_context: RayContext | ClientContext | None = None
+        self._is_local: bool = (
             self._config["cluster_address"] is None or self._config["cluster_address"] == "local"
         )
         self._running_workflows: list[tuple[str, ObjectRef]] = []
@@ -179,6 +198,13 @@ class RayExecutor(Executor):
             self._call_attr = "bind"
         else:
             raise ValueError(f"Invalid strategy: {strategy}")
+
+        self._connection_monitor_task: asyncio.Task | None = None
+        self._connection_monitor_interval = connection_monitor_interval
+        self._max_reconnect_retries = max_reconnect_retries
+        self._base_reconnect_delay = base_reconnect_delay
+        self._max_reconnect_delay = max_reconnect_delay
+        self._ping_timeout = ping_timeout
 
     def _get_runtime_env(self) -> dict:
         py_modules = self._config["py_modules"] or []
@@ -216,9 +242,10 @@ class RayExecutor(Executor):
 
         return env
 
-    async def _init_ray(self):
-        # We keep this method async so we can use async methods in the
-        # subclassed Executors
+    async def _init_ray(self) -> RayContext | ClientContext:
+        if self.connected and self._ray_context:
+            return self._ray_context
+
         if self._config["log_to_driver"]:
             logging.basicConfig(level=logging.INFO)
 
@@ -226,7 +253,8 @@ class RayExecutor(Executor):
             if "mappers" not in self._config["resources"]:
                 self._config["resources"]["mappers"] = 4
 
-            context = ray.init(
+            return await asyncio.to_thread(
+                ray.init,
                 storage=self._config["storage_dir"],
                 num_cpus=self._config["cpus"] if self._config["cpus"] != "auto" else None,
                 num_gpus=self._config["gpus"] if self._config["gpus"] != "auto" else None,
@@ -242,7 +270,8 @@ class RayExecutor(Executor):
                 ignore_reinit_error=True,
             )
         else:
-            context = ray.init(
+            return await asyncio.to_thread(
+                ray.init,
                 address=self._config["cluster_address"],
                 configure_logging=self._config["log_to_driver"],
                 namespace="flowdapt",
@@ -250,10 +279,86 @@ class RayExecutor(Executor):
                 ignore_reinit_error=True,
             )
 
-        return context
-
     async def _close_ray(self):
-        ray.shutdown()
+        await asyncio.to_thread(ray.shutdown)
+
+    async def _ping(self) -> bool:
+        # http://github.com/ray-project/ray/issues/21419
+        # This is a workaround due to the .remote() call freezing
+        # the python process if the ray client connection is lost.
+        # So we run it in a thread to ensure we aren't stuck until the
+        # connection is restored.
+        def _inner() -> bool:
+            objectref = (
+                ray.remote(lambda: True)
+                .options(
+                    max_retries=0,
+                    retry_exceptions=False
+                )
+                .remote()
+            )
+
+            try:
+                return ray.get(objectref)
+            finally:
+                ray.cancel(objectref)
+
+        try:
+            async with asyncio.timeout(self._ping_timeout):
+                return await asyncio.to_thread(_inner)
+        except (asyncio.TimeoutError, ray_exc.RayError, ConnectionError):
+            pass
+
+        return False
+
+    async def _reconnect(self) -> bool:
+        async def _inner() -> None:
+            if ray.is_initialized():
+                await self._close_ray()
+
+            self._ray_context = await self._init_ray()
+            # with self._ray_context:
+            if not await self._ping():
+                raise ConnectionError("Failed to reconnect to Ray cluster")
+
+        try:
+            await retry(
+                _inner,
+                should_retry=lambda e: isinstance(
+                    e,
+                    (RuntimeError, ray_exc.RayError, ConnectionError)
+                ),
+                max_retries=self._max_reconnect_retries,
+                base_delay=self._base_reconnect_delay,
+                max_delay=self._max_reconnect_delay,
+            )
+            return True
+        except Exception:
+            return False
+
+    async def _monitor_connection(self) -> None:
+        try:
+            while True:
+                await asyncio.sleep(self._connection_monitor_interval)
+                await logger.adebug("CheckingConnection")
+
+                if (
+                    (not self.connected or not self._ray_context)
+                    and await self._reconnect()
+                ):
+                    self.connected = True
+                    await logger.ainfo("ReconnectedToRayCluster")
+
+                try:
+                    if not await self._ping():
+                        self.connected = False
+                        await logger.awarning("PingFailed")
+                    else:
+                        await logger.adebug("PingSuccessful")
+                except asyncio.CancelledError:
+                    break
+        except Exception as e:
+            await logger.aexception("ConnectionMonitorError", exc_info=e)
 
     async def start(self):
         global logger
@@ -275,15 +380,21 @@ class RayExecutor(Executor):
 
         dashboard_url = self._ray_context.dashboard_url or None
         self.running = True
+        self.connected = True
+
+        if not self._is_local:
+            self._connection_monitor_task = asyncio.create_task(
+                self._monitor_connection()
+            )
 
         await logger.ainfo("DriverInitialized", dashboard=dashboard_url)
 
-    async def reload_environment(self):
-        await self.close()
-        await self.start()
-
     async def close(self):
         if self.running:
+            if self._connection_monitor_task:
+                await cancel_task(self._connection_monitor_task)
+                self._connection_monitor_task = None
+
             if ray.is_initialized():
                 # Cancel any running workflows we submitted if we're shutting down
                 for object_ref in self._running_workflows:
@@ -295,15 +406,24 @@ class RayExecutor(Executor):
 
             self._ray_context = None
             self.running = False
+            self.connected = False
 
     async def environment_info(self):
         return {
-            "dashboard_url": self._ray_context.dashboard_url,
+            "dashboard_url": (
+                self._ray_context.dashboard_url
+                if self._ray_context
+                else None
+            ),
             # We can't use gcs address until the following issue is
             # resolved:
             # https://github.com/ray-project/ray/issues/36833
             # "gcs_address": runtime_context.gcs_address,
-            "nodes": ray.nodes(),
+            "nodes": (
+                ray.nodes()
+                if self._ray_context
+                else []
+            )
         }
 
     def _check_resources(self, stage: BaseStage):
@@ -491,6 +611,9 @@ class RayExecutor(Executor):
         :type context: WorkflowRunContext
         :return: Workflow result
         """
+        if not self.connected or not self._ray_context:
+            raise RuntimeError("RayExecutor is not connected")
+
         match self._config["strategy"]:
             case ExecuteStrategy.GROUP_BY_GROUP:
                 return await self._execute_group_by_group(definition, context)

@@ -313,6 +313,7 @@ class DaskExecutor(Executor):
 
         dashboard_url = self.client.dashboard_link
         self.running = True
+        self.connected = True
 
         await logger.ainfo("DriverInitialized", dashboard=dashboard_url)
 
@@ -326,11 +327,7 @@ class DaskExecutor(Executor):
             await self._cluster.close()
 
         self.running = False
-
-    async def reload_environment(self):
-        # TODO: Actually implement this
-        await self.close()
-        await self.start()
+        self.connected = False
 
     async def environment_info(self):
         return {

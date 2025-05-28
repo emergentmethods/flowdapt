@@ -5,6 +5,7 @@ from typing import Any, Type
 
 from flowdapt.lib.context import ApplicationContext, create_context
 from flowdapt.lib.logger import get_logger, log_once
+from flowdapt.lib.utils.asynctools import cancel_task
 from flowdapt.lib.utils.taskset import TaskSet
 
 
@@ -61,7 +62,24 @@ class ServiceController:
 
         self._register_core_services()
 
-    async def get_service_status(self):
+        self._health_check_task = self._loop.create_task(self._check_service_health())
+
+    async def _check_service_health(self) -> None:
+        while not self._should_exit:
+            try:
+                statuses = await asyncio.wait_for(self.get_service_status(), timeout=10)
+                self._context.flags["services_ready"] = all(
+                    status.get("status") == "OK"
+                    for status in statuses.values()
+                )
+            except asyncio.TimeoutError:
+                self._context.flags["services_ready"] = False
+            except Exception:
+                self._context.flags["services_ready"] = False
+            finally:
+                await asyncio.sleep(5)
+
+    async def get_service_status(self) -> dict[str, dict[str, Any]]:
         """
         Get the status of every Service in the registry.
         """
@@ -176,6 +194,12 @@ class ServiceController:
         Run all shutdown methods on each Service
         """
         self._context.flags["services_ready"] = False
+        self._should_exit = True
+
+        if self._health_check_task:
+            await cancel_task(self._health_check_task)
+        self._health_check_task = None
+
         return await self._create_and_await_task_set("__shutdown__")
 
     async def run(self):

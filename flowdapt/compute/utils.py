@@ -10,7 +10,7 @@ from flowdapt.lib.logger import get_logger
 logger = get_logger(__name__)
 
 
-def get_available_cores():
+def get_available_cores() -> int | None:
     """
     Get the available cores for this machine using
     CPU affinity.
@@ -28,9 +28,11 @@ def get_available_cores():
                 # as a proxy for available cores.
                 return psutil.cpu_count(logical=True) - 1
     except Exception:
-        # If we can't get the CPU affinity, we can use the number of logical cores
-        # as a proxy for available cores.
-        return psutil.cpu_count(logical=True) - 1
+        pass
+
+    # If we can't get the CPU affinity, we can use the number of logical cores
+    # as a proxy for available cores.
+    return psutil.cpu_count(logical=True) - 1
 
 
 def get_available_gpus():

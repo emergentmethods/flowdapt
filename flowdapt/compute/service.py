@@ -40,7 +40,11 @@ class ComputeService(Service):
 
     async def get_status(self):
         return {
-            "status": "OK",
+            "status": (
+                "OK"
+                if self._executor.running and self._executor.connected
+                else "NOT_OK"
+            ),
             "executor": get_full_path_type(self._executor),
             "environment": await self._executor.environment_info(),
         }

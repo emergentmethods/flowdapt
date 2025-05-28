@@ -431,3 +431,63 @@ async def call_bash_command(
         )
 
     return process.returncode or 0, stdout
+
+
+def compute_exponential_backoff(
+    attempt: int,
+    base_delay: float = 1.0,
+    max_delay: float = 60.0,
+) -> float:
+    """
+    Compute the exponential backoff delay
+
+    :param attempt: The attempt number
+    :type attempt: int
+    :param base_delay: The base delay
+    :type base_delay: float
+    :param max_delay: The maximum delay
+    :type max_delay: float
+    :return: The exponential backoff delay
+    :rtype: float
+    """
+    return min(base_delay * (2 ** attempt), max_delay)
+
+
+async def retry(
+    func: Callable[..., Awaitable[R]],
+    should_retry: Callable[[Exception], bool],
+    max_retries: int = 3,
+    base_delay: float = 1.0,
+    max_delay: float = 60.0,
+) -> R:
+    """
+    Retry a function until it succeeds
+
+    :param func: The function to retry
+    :type func: Callable
+    :param should_retry: The function to determine if the function should be retried
+    :type should_retry: Callable
+    :param max_retries: The maximum number of retries
+    :type max_retries: int
+    :param base_delay: The base delay
+    :type base_delay: float
+    :param max_delay: The maximum delay
+    :type max_delay: float
+    :raises Exception: The exception
+    :return: The result of the function
+    :rtype: Any
+    """
+    max_retries = max(max_retries, 0)
+    retries = 0
+
+    while retries < max_retries:
+        try:
+            return await func()
+        except Exception as e:
+            if retries == max_retries - 1 or not should_retry(e):
+                raise
+
+            retries += 1
+            await asyncio.sleep(compute_exponential_backoff(retries, base_delay, max_delay))
+
+    raise RuntimeError("max retries exceeded")
