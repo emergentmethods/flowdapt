@@ -1,4 +1,14 @@
 
+<a name="0.1.30"></a>
+## [0.1.30](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.29...0.1.30)
+
+> 2025-05-28
+
+### Fix
+
+* Explicit reconnection handling for ray and service health tracking
+
+
 <a name="0.1.29"></a>
 ## [0.1.29](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.28...0.1.29)
 
@@ -80,21 +90,7 @@
 
 
 <a name="0.1.21"></a>
-## [0.1.21](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.20...0.1.21)
+## 0.1.21
 
 > 2025-03-01
-
-### Ci
-
-* Typo in unit tests job
-
-### Fix
-
-* Switch to uv and update dependencies
-
-
-<a name="0.1.20"></a>
-## 0.1.20
-
-> 2025-02-06
 
