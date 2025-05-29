@@ -5,14 +5,14 @@ from flowdapt.lib.utils.model import BaseModel, RootModel
 
 class V1Alpha1MetricsCountValue(BaseModel):
     attributes: dict[str, Any]
-    start_time_unix_nano: int
+    start_time_unix_nano: int | None
     time_unix_nano: int
     value: float | int
 
 
 class V1Alpha1MetricsBucketValue(BaseModel):
     attributes: dict[str, Any]
-    start_time_unix_nano: int
+    start_time_unix_nano: int | None
     time_unix_nano: int
     count: int
     bucket_counts: list[int]
