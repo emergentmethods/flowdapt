@@ -1,4 +1,14 @@
 
+<a name="0.1.31"></a>
+## [0.1.31](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.30...0.1.31)
+
+> 2025-05-29
+
+### Fix
+
+* Fix metrics dto models
+
+
 <a name="0.1.30"></a>
 ## [0.1.30](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.29...0.1.30)
 
@@ -80,17 +90,11 @@
 
 
 <a name="0.1.22"></a>
-## [0.1.22](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.21...0.1.22)
+## 0.1.22
 
 > 2025-03-02
 
 ### Fix
 
 * Add deps between build docs jobs
-
-
-<a name="0.1.21"></a>
-## 0.1.21
-
-> 2025-03-01
 
