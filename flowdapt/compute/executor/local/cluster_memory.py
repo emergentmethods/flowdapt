@@ -1,13 +1,14 @@
-# server.py
 import asyncio
 import os
 from collections import defaultdict
 from contextlib import suppress
 from typing import Any, Type
 
+from asyncer import syncify
+
 from flowdapt.compute.cluster_memory.base import ClusterMemory
 from flowdapt.lib.serializers import CloudPickleSerializer, Serializer
-from flowdapt.lib.utils.asynctools import run_in_thread, syncify
+from flowdapt.lib.utils.asynctools import run_in_thread
 from flowdapt.lib.utils.taskset import TaskSet
 
 

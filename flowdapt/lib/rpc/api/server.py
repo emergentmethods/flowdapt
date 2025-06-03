@@ -33,7 +33,12 @@ class APIServer:
     """
 
     def __init__(
-        self, host: str = "127.0.0.1", port: int = 8080, *args, servers: list[dict] = [], **kwargs
+        self,
+        host: str = "127.0.0.1",
+        port: int = 8080,
+        *args,
+        servers: list[dict] | None = None,
+        **kwargs
     ):
         assert asyncio.get_running_loop(), "APIServer must be instantiated with an active loop"
 
@@ -98,7 +103,7 @@ class APIServer:
 
     def _setup_middlewares(
         self,
-        cors_settings: dict[str, Any] = {},
+        cors_settings: dict[str, Any] | None = None,
     ) -> None:
         from fastapi.middleware.cors import CORSMiddleware
 
@@ -115,15 +120,15 @@ class APIServer:
         # By default we just allow localhost
         self._application.add_middleware(
             CORSMiddleware,
-            allow_origins=cors_settings.get(
+            allow_origins=(cors_settings or {}).get(
                 "allow_origins", ["http://localhost:3030", "http://127.0.0.1:3030"]
             ),
-            allow_origin_regex=cors_settings.get(
+            allow_origin_regex=(cors_settings or {}).get(
                 "allow_origin_regex", r"http://localhost:\d+|http://127.0.0.1:\d+"
             ),
-            allow_credentials=cors_settings.get("allow_credentials", True),
-            allow_methods=cors_settings.get("allow_methods", ["*"]),
-            allow_headers=cors_settings.get("allow_headers", ["*"]),
+            allow_credentials=(cors_settings or {}).get("allow_credentials", True),
+            allow_methods=(cors_settings or {}).get("allow_methods", ["*"]),
+            allow_headers=(cors_settings or {}).get("allow_headers", ["*"]),
         )
 
         # Add access logs
@@ -155,11 +160,11 @@ class APIServer:
         """
         self._application.include_router(router)
 
-    def generate_spec(self, version: str = "3.0.2"):
+    def generate_spec(self) -> dict[str, Any]:
         """
         Generate the OpenAPI spec for the application.
         """
-        return self._application.openapi(openapi_version=version)
+        return self._application.openapi()
 
     async def serve(self):
         self.server_config = UvicornConfig(

@@ -1,6 +1,7 @@
 import typer
+from asyncer import runnify
 
-from flowdapt.lib.utils.asynctools import is_async_callable, to_sync
+from flowdapt.lib.utils.asynctools import is_async_callable
 
 
 class AsyncTyper(typer.Typer):
@@ -14,7 +15,7 @@ class AsyncTyper(typer.Typer):
 
         def wrapper(fn):
             if is_async_callable(fn):
-                fn = to_sync(fn)
+                fn = runnify(fn)
             return decorator(fn)
         return wrapper
 
@@ -24,6 +25,6 @@ class AsyncTyper(typer.Typer):
 
         def wrapper(fn):
             if is_async_callable(fn):
-                fn = to_sync(fn)
+                fn = runnify(fn)
             return decorator(fn)
         return wrapper

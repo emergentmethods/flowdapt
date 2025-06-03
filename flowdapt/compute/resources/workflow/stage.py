@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import asyncio
 from inspect import Signature, getdoc, getsourcefile, iscoroutine, signature
-from typing import Callable, ClassVar, TypeVar
+from typing import Any, Awaitable, Callable, ClassVar, TypeVar
+
+from asyncer import runnify
 
 from flowdapt.compute.domain.models.workflow import WorkflowStage
 from flowdapt.compute.executor.base import Executor
@@ -13,7 +15,7 @@ from flowdapt.compute.resources.workflow.context import (
 )
 from flowdapt.lib.config import config_from_env, get_configuration, set_configuration
 from flowdapt.lib.logger import setup_logging
-from flowdapt.lib.utils.asynctools import is_async_callable, to_sync
+from flowdapt.lib.utils.asynctools import is_async_callable
 from flowdapt.lib.utils.misc import (
     filter_args,
     hash_file,
@@ -256,7 +258,8 @@ def stage_wrapper(stage_definition: dict):
     def wrapper(*args, context: WorkflowRunContext, **kwargs):
         # Set the configuration for this stage
         if not get_configuration(use_temp=False):
-            set_configuration(to_sync(config_from_env)())
+            config = runnify(config_from_env)()
+            set_configuration(config)
 
         stage = BaseStage.from_definition(stage_definition)
 
@@ -270,7 +273,7 @@ def stage_wrapper(stage_definition: dict):
         token = set_run_context(context)
         try:
             # Execute the stage
-            result = stage.fn(*args, **kwargs)
+            result: Any | Awaitable[Any] = stage.fn(*args, **kwargs)
 
             # If the result is a coroutine, run it. We could just let
             # the coroutine bubble up and have the executor's thread pool or

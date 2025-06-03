@@ -16,7 +16,6 @@ from typing import (
     Protocol,
     Tuple,
     TypeVar,
-    cast,
     runtime_checkable,
 )
 
@@ -77,58 +76,6 @@ async def run_in_thread(callable: Callable, *args, **kwargs):
     )
 
 
-def to_sync(func: Callable[P, Coroutine[Any, Any, R]]) -> Callable[P, R]:
-    """
-    Convert an async function to a sync function.
-
-    :param func: async function to convert
-    :return: sync function
-    """
-    if not is_async_callable(func):
-        return cast(Callable[P, R], func)
-
-    @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        try:
-            asyncio.get_running_loop()
-            # Already running in an event loop, run the function
-            # and leave it up to the caller to actually await the result
-            return func(*args, **kwargs)
-        except RuntimeError:
-            pass
-        return asyncio.run(func(*args, **kwargs))
-
-    return wrapper
-
-
-def to_async(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
-    """
-    Convert a sync function to an async function.
-
-    :param func: sync function to convert
-    :return: async function
-    """
-    if is_async_callable(func):
-        return cast(Callable[P, Coroutine[Any, Any, R]], func)
-
-    @wraps(func)
-    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        return await run_in_thread(func, *args, **kwargs)
-
-    return wrapper
-
-
-def syncify(func: Callable[P, Coroutine[Any, Any, R]]) -> Callable[P, R]:
-    """
-    Convert an async function to a sync function.
-
-    :param func: async function to convert
-    :return: sync function
-    """
-    # return async_to_sync(func)
-    return to_sync(func)
-
-
 async def cancel_task(task: asyncio.Task):
     """
     Cancel an asyncio task and wait for it to finish.
@@ -143,7 +90,7 @@ async def cancel_task(task: asyncio.Task):
             pass
 
 
-def async_cache(func: Callable[P, Coroutine[Any, Any, R]]) -> Callable[P, Awaitable[R]]:
+def async_cache(func: Callable[P, Coroutine[Any, Any, R]]) -> Callable[P, Coroutine[Any, Any, R]]:
     """
     Cache the result of an async function.
 
@@ -361,8 +308,8 @@ async def batch_streams(
 
 async def wait_for_value(
     condition: Callable,
-    terminating_values: list = [],
-    non_terminating_values: list = [],
+    terminating_values: list | None = None,
+    non_terminating_values: list | None = None,
     timeout: int = 10,
 ):
     """
@@ -381,9 +328,9 @@ async def wait_for_value(
     """
     start_time = asyncio.get_running_loop().time()
     if terminating_values:
-        full_condition = lambda: condition() not in terminating_values
+        full_condition = lambda: condition() not in (terminating_values or [])
     else:
-        full_condition = lambda: condition() in non_terminating_values
+        full_condition = lambda: condition() in (non_terminating_values or [])
 
     while value := full_condition():
         await asyncio.sleep(0.1)
@@ -394,7 +341,8 @@ async def wait_for_value(
 
 
 async def call_bash_command(
-    command: list, stream_callbacks: list[Callable[..., None]] = []
+    command: list,
+    stream_callbacks: list[Callable[..., None]] | None = None,
 ) -> tuple[int, str]:
     async def _read_stream(stream, callbacks):
         while True:
@@ -417,8 +365,8 @@ async def call_bash_command(
     stderr_lines: list[str] = []
 
     await asyncio.gather(
-        _read_stream(process.stdout, [stdout_lines.append] + stream_callbacks),
-        _read_stream(process.stderr, [stderr_lines.append] + stream_callbacks),
+        _read_stream(process.stdout, [stdout_lines.append] + (stream_callbacks or [])),
+        _read_stream(process.stderr, [stderr_lines.append] + (stream_callbacks or [])),
     )
     await process.wait()
 

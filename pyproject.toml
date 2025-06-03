@@ -53,6 +53,7 @@ dependencies = [
     "s3fs>=2023.12.1",
     "pympler>=1.0.1",
     "anyio>=4.8.0",
+    "asyncer>=0.0.8",
 ]
 
 [project.scripts]
