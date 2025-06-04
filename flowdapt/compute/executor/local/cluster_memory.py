@@ -174,20 +174,28 @@ class ClusterMemoryClient(CommunicationMixin):
         self._path = path
         self._serializer = serializer
 
-    @syncify
-    async def put(self, key: str, value: Any, *, namespace: str = "default"):
+    def get(self, key: str, *, namespace: str = "default"):
+        return syncify(self.aget, raise_sync_error=False)(key, namespace=namespace)
+
+    def put(self, key: str, value: Any, *, namespace: str = "default"):
+        return syncify(self.aput, raise_sync_error=False)(key, value, namespace=namespace)
+
+    def delete(self, key: str, *, namespace: str = "default"):
+        return syncify(self.adelete, raise_sync_error=False)(key, namespace=namespace)
+
+    def clear(self):
+        return syncify(self.aclear, raise_sync_error=False)()
+
+    async def aput(self, key: str, value: Any, *, namespace: str = "default"):
         return await self.send_request({"operation": "put", "args": [key, value, namespace]})
 
-    @syncify
-    async def get(self, key: str, *, namespace: str = "default"):
+    async def aget(self, key: str, *, namespace: str = "default"):
         return await self.send_request({"operation": "get", "args": [key, namespace]})
 
-    @syncify
-    async def delete(self, key: str, *, namespace: str = "default"):
+    async def adelete(self, key: str, *, namespace: str = "default"):
         return await self.send_request({"operation": "delete", "args": [key, namespace]})
 
-    @syncify
-    async def clear(self):
+    async def aclear(self):
         return await self.send_request({"operation": "clear", "args": []})
 
     async def send_request(self, request: dict):
