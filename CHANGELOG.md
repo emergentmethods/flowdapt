@@ -1,4 +1,18 @@
 
+<a name="0.1.32"></a>
+## [0.1.32](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.31...0.1.32)
+
+> 2025-06-04
+
+### Chore
+
+* Fix local executor cluster memory tests
+
+### Fix
+
+* Fix local executor cluster memory in async stages
+
+
 <a name="0.1.31"></a>
 ## [0.1.31](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.30...0.1.31)
 
@@ -80,21 +94,7 @@
 
 
 <a name="0.1.23"></a>
-## [0.1.23](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.22...0.1.23)
+## 0.1.23
 
 > 2025-03-02
-
-### Fix
-
-* Add unit tests job dep to build docs docker
-
-
-<a name="0.1.22"></a>
-## 0.1.22
-
-> 2025-03-02
-
-### Fix
-
-* Add deps between build docs jobs
 
