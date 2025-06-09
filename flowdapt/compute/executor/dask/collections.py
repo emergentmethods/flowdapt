@@ -1,5 +1,3 @@
-from typing import Any
-
 from dask import compute, delayed
 from dask.array import Array as DaskArray
 from dask.array import concatenate as concatenate_arrays
@@ -170,7 +168,7 @@ def dask_array_from_artifact(artifact: Artifact, format: str = "npy"):
     return concatenate_arrays(partitions, axis=axis)
 
 
-def simple_collection_to_dask(value: Any, **kwargs):
+def simple_collection_to_dask(value: PandasDataFrame | NumpyArray, **kwargs):
     if isinstance(value, PandasDataFrame):
         return from_pandas_dataframe(value, npartitions=kwargs.pop("npartitions", 1), **kwargs)
     elif isinstance(value, NumpyArray):
@@ -179,7 +177,7 @@ def simple_collection_to_dask(value: Any, **kwargs):
     raise TypeError(f"Cannot convert `{type(value)}` to a dask collection")
 
 
-def simple_collection_from_dask(value: Any, **kwargs):
+def simple_collection_from_dask(value: PandasDataFrame | NumpyArray, **kwargs):
     if isinstance(value, DaskDataFrame):
         return value.compute(**kwargs)
     elif isinstance(value, DaskArray):

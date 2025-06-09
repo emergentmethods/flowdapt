@@ -31,11 +31,11 @@ class DaskClusterMemory(ClusterMemory):
         value = self.client.get_dataset(full_key)
         value_type = self.client.get_metadata(f"{full_key}__type")
 
-        if value_type == get_full_path_type(PandasDataFrame):
-            # We need to convert to a pandas dataframe from dask
-            value = simple_collection_from_dask(value)
-        elif value_type == get_full_path_type(NumpyArray):
-            # We need to convert to a numpy array from dask
+        if value_type in [
+            get_full_path_type(PandasDataFrame),
+            get_full_path_type(NumpyArray),
+        ]:
+            # Convert the dask collection to its simpler type
             value = simple_collection_from_dask(value)
 
         return value
@@ -72,8 +72,49 @@ class DaskClusterMemory(ClusterMemory):
         # Not sure how else to delete metadata for a certain key
         self.client.set_metadata(f"{full_key}__type", "")
 
-    def clear(self):
+    def clear(self, namespace: str | None = None) -> None:
         for dataset in self.client.list_datasets():
+            if namespace:
+                # Only delete datasets that match the namespace
+                if not dataset.startswith(f"{namespace}__"):
+                    continue
+
             self.client.unpublish_dataset(dataset)
             # Not sure how else to delete metadata for a certain key
             self.client.set_metadata(f"{dataset}__type", "")
+
+    async def aget(self, key: str, *, namespace: str = "default") -> Any:
+        raise NotImplementedError(
+            "DaskClusterMemory does not support async operations. "
+            "Use the synchronous methods instead."
+        )
+
+    async def aput(self, key: str, value: Any, *, namespace: str = "default") -> None:
+        raise NotImplementedError(
+            "DaskClusterMemory does not support async operations. "
+            "Use the synchronous methods instead."
+        )
+
+    async def adelete(self, key: str, *, namespace: str = "default") -> None:
+        raise NotImplementedError(
+            "DaskClusterMemory does not support async operations. "
+            "Use the synchronous methods instead."
+        )
+
+    async def alist(self, prefix: str | None = None, *, namespace: str = "default") -> list[str]:
+        raise NotImplementedError(
+            "DaskClusterMemory does not support async operations. "
+            "Use the synchronous methods instead."
+        )
+
+    async def aexists(self, key: str, *, namespace: str = "default") -> bool:
+        raise NotImplementedError(
+            "DaskClusterMemory does not support async operations. "
+            "Use the synchronous methods instead."
+        )
+
+    async def aclear(self, *, namespace: str | None = None) -> None:
+        raise NotImplementedError(
+            "DaskClusterMemory does not support async operations. "
+            "Use the synchronous methods instead."
+        )

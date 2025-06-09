@@ -15,6 +15,7 @@ from typing import (
     ParamSpec,
     Protocol,
     Tuple,
+    TypeGuard,
     TypeVar,
     runtime_checkable,
 )
@@ -39,7 +40,7 @@ class AsyncFileLikeObject(Protocol):
     async def close(self) -> None: ...
 
 
-def is_async_callable(f: CallableType) -> bool:
+def is_async_callable(f: CallableType) -> TypeGuard[Callable[..., Awaitable[R]]]:
     """
     Test if the callable is an async callable
 

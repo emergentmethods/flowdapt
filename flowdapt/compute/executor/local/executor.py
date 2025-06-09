@@ -3,7 +3,9 @@ import sys
 from concurrent.futures import Executor as PoolExecutor
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from functools import partial
-from typing import Any, Callable, Iterable
+from typing import Any, Awaitable, Callable, Iterable, ParamSpec, TypeVar
+
+from asyncer import asyncify
 
 from flowdapt.compute.domain.models.workflow import WorkflowResource
 from flowdapt.compute.domain.models.workflowrun import WorkflowRun
@@ -19,15 +21,16 @@ from flowdapt.lib.serializers import CloudPickleSerializer
 from flowdapt.lib.utils.asynctools import is_async_callable, run_in_thread
 
 
-def lazy_func(func: Callable, pool: PoolExecutor):
-    async def _wrapper(*args, **kwargs):
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def lazy_func(func: Callable[P, R]) -> Callable[P, Awaitable[R]]:
+    async def _wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         if is_async_callable(func):
             return await func(*args, **kwargs)
         else:
-            return await asyncio.get_running_loop().run_in_executor(
-                pool, partial(func, *args, **kwargs)
-            )
-
+            return await asyncify(func)(*args, **kwargs)
     return _wrapper
 
 
@@ -85,7 +88,7 @@ class LocalExecutor(Executor):
 
         actual_cpus = get_available_cores() if cpus == "auto" else cpus
 
-        self._config = {
+        self._config: dict[str, Any] = {
             "use_processes": use_processes,
             "cpus": actual_cpus,
             "cluster_memory_socket_path": cluster_memory_socket_path,
@@ -173,11 +176,9 @@ class LocalExecutor(Executor):
         return results[stage_name]
 
     def lazy(self, stage: BaseStage):
-        return lazy_func(stage.get_stage_fn(), pool=self._pool)
+        return lazy_func(stage.get_stage_fn())
 
     def mapped_lazy(self, stage: BaseStage) -> Any:
-        part = partial(lazy_func, pool=self._pool)
-
         def map_inner(iterable: Iterable, *args, **kwargs):
             if not stage.is_async:
                 func = stage.get_stage_fn()
@@ -186,4 +187,4 @@ class LocalExecutor(Executor):
 
             return [func(item, *args, **kwargs) for item in iterable]
 
-        return part(map_inner)
+        return lazy_func(map_inner)

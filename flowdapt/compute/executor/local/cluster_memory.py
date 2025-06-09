@@ -4,8 +4,6 @@ from collections import defaultdict
 from contextlib import suppress
 from typing import Any, Type
 
-from asyncer import syncify
-
 from flowdapt.compute.cluster_memory.base import ClusterMemory
 from flowdapt.lib.serializers import CloudPickleSerializer, Serializer
 from flowdapt.lib.utils.asynctools import run_in_thread
@@ -72,7 +70,7 @@ class ClusterMemoryServer(CommunicationMixin):
     ) -> None:
         self._path = path
         self._serializer = serializer
-        self._store: dict[str, dict] = defaultdict(dict)
+        self._store: dict[str, dict[str, Any]] = defaultdict(dict)
         self._server: asyncio.AbstractServer | None = None
         self._tasks = TaskSet()
 
@@ -139,6 +137,10 @@ class ClusterMemoryServer(CommunicationMixin):
                 return self._handle_put(*request.args)
             case "delete":
                 return self._handle_delete(*request.args)
+            case "list":
+                return self._handle_list(*request.args)
+            case "exists":
+                return self._handle_exists(*request.args)
             case "clear":
                 return self._handle_clear()
             case _:
@@ -160,8 +162,29 @@ class ClusterMemoryServer(CommunicationMixin):
 
             return "OK"
 
-    def _handle_clear(self):
-        self._store = {}
+    def _handle_list(self, prefix: str | None = None, namespace: str = "default"):
+        if namespace not in self._store:
+            return []
+
+        if prefix is None:
+            return list(self._store[namespace].keys())
+
+        return [
+            key
+            for key in self._store[namespace]
+            if key.startswith(prefix)
+        ]
+
+    def _handle_exists(self, key: str, namespace: str = "default"):
+        return key in self._store.get(namespace, {})
+
+    def _handle_clear(self, namespace: str | None = None):
+        if namespace is not None:
+            if namespace in self._store:
+                del self._store[namespace]
+        else:
+            self._store = defaultdict(dict)
+
         return "OK"
 
 
@@ -174,31 +197,25 @@ class ClusterMemoryClient(CommunicationMixin):
         self._path = path
         self._serializer = serializer
 
-    def get(self, key: str, *, namespace: str = "default"):
-        return syncify(self.aget, raise_sync_error=False)(key, namespace=namespace)
-
-    def put(self, key: str, value: Any, *, namespace: str = "default"):
-        return syncify(self.aput, raise_sync_error=False)(key, value, namespace=namespace)
-
-    def delete(self, key: str, *, namespace: str = "default"):
-        return syncify(self.adelete, raise_sync_error=False)(key, namespace=namespace)
-
-    def clear(self):
-        return syncify(self.aclear, raise_sync_error=False)()
-
-    async def aput(self, key: str, value: Any, *, namespace: str = "default"):
+    async def put(self, key: str, value: Any, *, namespace: str = "default") -> None:
         return await self.send_request({"operation": "put", "args": [key, value, namespace]})
 
-    async def aget(self, key: str, *, namespace: str = "default"):
+    async def get(self, key: str, *, namespace: str = "default") -> Any:
         return await self.send_request({"operation": "get", "args": [key, namespace]})
 
-    async def adelete(self, key: str, *, namespace: str = "default"):
+    async def delete(self, key: str, *, namespace: str = "default") -> None:
         return await self.send_request({"operation": "delete", "args": [key, namespace]})
 
-    async def aclear(self):
-        return await self.send_request({"operation": "clear", "args": []})
+    async def list(self, prefix: str | None = None, *, namespace: str = "default") -> list[str]:
+        return await self.send_request({"operation": "list", "args": [prefix, namespace]})
 
-    async def send_request(self, request: dict):
+    async def exists(self, key: str, *, namespace: str = "default") -> bool:
+        return await self.send_request({"operation": "exists", "args": [key, namespace]})
+
+    async def clear(self, *, namespace: str | None = None) -> None:
+        return await self.send_request({"operation": "clear", "args": [namespace]})
+
+    async def send_request(self, request: dict[str, Any]) -> Any:
         # TODO: Avoid creating connection for every request, and instead use
         # the same connection the entire time of the stage. This will require
         # some machinery to handle closing the connection without the user explicitly
@@ -224,14 +241,20 @@ class LocalClusterMemory(ClusterMemory):
     def __init__(self):
         self._client = ClusterMemoryClient(SOCKET_PATH)
 
-    def get(self, key: str, *, namespace: str = "default"):
-        return self._client.get(key, namespace=namespace)
+    async def aget(self, key: str, *, namespace: str = "default") -> Any:
+        return await self._client.get(key, namespace=namespace)
 
-    def put(self, key: str, value: Any, *, namespace: str = "default"):
-        return self._client.put(key, value, namespace=namespace)
+    async def aput(self, key: str, value: Any, *, namespace: str = "default") -> None:
+        await self._client.put(key, value, namespace=namespace)
 
-    def delete(self, key: str, *, namespace: str = "default"):
-        return self._client.delete(key, namespace=namespace)
+    async def adelete(self, key: str, *, namespace: str = "default") -> None:
+        await self._client.delete(key, namespace=namespace)
 
-    def clear(self):
-        return self._client.clear()
+    async def alist(self, prefix: str | None = None, *, namespace: str = "default") -> list[str]:
+        return await self._client.list(prefix, namespace=namespace)
+
+    async def aexists(self, key: str, *, namespace: str = "default") -> bool:
+        return await self._client.exists(key, namespace=namespace)
+
+    async def aclear(self, *, namespace: str | None = None) -> None:
+        await self._client.clear(namespace=namespace)

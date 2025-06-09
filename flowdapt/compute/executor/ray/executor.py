@@ -549,6 +549,7 @@ class RayExecutor(Executor):
                     zip(stage_names, await asyncio.gather(*group_partials), strict=False)
                 )
             except (ray_exc.TaskCancelledError, asyncio.CancelledError, ray_exc.RayTaskError) as e:
+                print(e)
                 raise WorkflowExecutionError("Workflow cancelled") from e
             except ConnectionError as e:
                 raise WorkflowExecutionError("Lost connection to Executor") from e

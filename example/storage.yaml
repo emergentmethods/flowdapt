@@ -1,5 +1,3 @@
-version: "3.9"
-
 networks:
   flowdapt:
 
@@ -9,8 +7,8 @@ volumes:
 
 services:
   minio:
-    image: quay.io/minio/minio:RELEASE.2023-06-23T20-26-00Z
-    command: server --console-address ":9090" data
+    image: quay.io/minio/minio:RELEASE.2025-04-08T15-41-24Z
+    command: server --console-address ":9090" /data
     networks:
       - flowdapt
     ports:
@@ -19,6 +17,7 @@ services:
     environment:
       MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: miniokey
+      MINIO_DEFAULT_BUCKETS: test
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s

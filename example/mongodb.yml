@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongo:
     image: mongodb/mongodb-community-server:latest
