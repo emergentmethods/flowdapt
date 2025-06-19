@@ -31,6 +31,9 @@ class RayClusterMemoryActor:
     def clear(self):
         self._store = {}
 
+    def exists(self, key: str, namespace: str = "default") -> bool:
+        return key in self._store.get(namespace, {})
+
     @classmethod
     def start(cls, actor_name: str, **options):
         try:
@@ -58,3 +61,6 @@ class RayClusterMemory(ClusterMemory):
 
     def clear(self):
         get(self.actor.clear.remote())
+
+    def exists(self, key: str, *, namespace: str = "default") -> bool:
+        return get(self.actor.exists.remote(key, namespace=namespace))

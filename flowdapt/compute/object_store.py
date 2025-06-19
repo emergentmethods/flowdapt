@@ -1,11 +1,12 @@
 from enum import Enum
 from typing import Any, Callable, Type
 
-from flowdapt.compute.artifacts import Artifact, get_artifact
+from flowdapt.compute.artifacts import Artifact, get_artifact, check_if_artifact_exists
 from flowdapt.compute.cluster_memory import (
     delete_from_cluster_memory,
     get_from_cluster_memory,
     put_in_cluster_memory,
+    check_for_key_in_cluster_memory,
 )
 from flowdapt.lib.config import get_configuration
 from flowdapt.lib.logger import get_logger
@@ -253,3 +254,54 @@ def delete(
 
     _artifact = get_artifact(name=key, namespace=namespace, create=True, **artifact_params)
     _artifact.delete()
+
+
+def exists(
+    key: str,
+    *,
+    namespace: str = "",
+    artifact_only: bool = False,
+    strategy: Strategy | None = None,
+    executor: str | None = None,
+    load_artifact_hook: Callable[[Artifact], Any] = default_load_hook(),
+    cluster_memory_params: dict = {},
+    artifact_params: dict = {},
+) -> bool:
+    """
+    Check if an object exists in the object store.
+
+    This will search for the object in cluster memory first, and if not found
+    will fallback to searching for an Artifact with the given key.
+
+    :param key: The key to get the object from.
+    :param namespace: The namespace to get the object from, defaults to the namespace
+    of the current WorkflowRunContext.
+    :param artifact_only: If True, the strategy will be set to Artifact. *Deprecated* Use
+    the `strategy` parameter instead.
+    :param strategy: The strategy to use for storing the object, defaults to the Fallback strategy.
+    :param executor: The executor kind for cluster memory, defaults to the executor of
+    the current WorkflowRunContext.
+    :param load_artifact_hook: A callable that takes an Artifact and returns the value
+    stored in the Artifact.
+    :param cluster_memory_params: Additional parameters to pass to the cluster memory backend.
+    :param artifact_params: Additional parameters to pass to the Artifact.
+    """
+    if not strategy:
+        strategy = get_configuration().services.compute.default_os_strategy
+
+    if artifact_only:
+        logger.warning(
+            "DeprecationWarning",
+            message=(
+                "The `artifact_only` parameter is deprecated and will be removed in a "
+                "future version. Use the `strategy` parameter instead."
+            ),
+        )
+        strategy = Strategy.ARTIFACT
+
+    if strategy != Strategy.ARTIFACT:
+        return check_for_key_in_cluster_memory(
+                key=key, namespace=namespace, backend=executor, **cluster_memory_params
+            )
+    else:
+        return check_if_artifact_exists(name=key, namespace=namespace, **artifact_params)

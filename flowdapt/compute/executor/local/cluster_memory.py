@@ -235,3 +235,10 @@ class LocalClusterMemory(ClusterMemory):
 
     def clear(self):
         return self._client.clear()
+
+    def exists(self, key: str, *, namespace: str = "default") -> bool:
+        try:
+            self.get(key, namespace=namespace)
+            return True
+        except KeyError:
+            return False

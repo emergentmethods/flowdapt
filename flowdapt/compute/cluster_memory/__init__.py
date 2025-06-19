@@ -103,3 +103,29 @@ __all__ = (
     "ClusterMemory",
     "get_cluster_memory_backend",
 )
+
+
+def check_for_key_in_cluster_memory(
+    key: str,
+    *,
+    namespace: str = "",
+    backend: str | None = None,
+    **kwargs
+) -> Any:
+    """
+    Get an object from the ClusterMemory.
+
+    :param key: Key to get the object for.
+    :type key: str
+    :param namespace: Namespace to get the object from, defaults to the namespace of the current
+    WorkflowRunContext.
+    :type namespace: str, optional
+    :param backend: Backend to get the object from, if not specified it will be inferred from the
+    current WorkflowRunContext.
+    :type backend: str, optional
+    :param kwargs: Keyword arguments to pass to the ClusterMemory backend.
+    :return: Value for the key
+    """
+    backend, namespace = _get_values_from_context(backend, namespace)
+    _cluster_memory = get_cluster_memory_backend(backend, **kwargs)
+    return _cluster_memory.exists(key, namespace=namespace)

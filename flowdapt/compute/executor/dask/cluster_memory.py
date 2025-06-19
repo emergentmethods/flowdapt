@@ -77,3 +77,7 @@ class DaskClusterMemory(ClusterMemory):
             self.client.unpublish_dataset(dataset)
             # Not sure how else to delete metadata for a certain key
             self.client.set_metadata(f"{dataset}__type", "")
+
+    def exists(self, key: str, *, namespace: str = "default") -> bool:
+        full_key = f"{namespace}__{key}"
+        return full_key in self.client.list_datasets()
