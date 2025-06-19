@@ -264,7 +264,6 @@ def exists(
     artifact_only: bool = False,
     strategy: Strategy | None = None,
     executor: str | None = None,
-    load_artifact_hook: Callable[[Artifact], Any] = default_load_hook(),
     cluster_memory_params: dict | None = None,
     artifact_params: dict | None = None,
 ) -> bool:
