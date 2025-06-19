@@ -13,6 +13,9 @@ class RayClusterMemoryActor:
         self._store = defaultdict(dict)
 
     def put(self, key: str, value: Any, namespace: str = "default"):
+        if namespace not in self._store:
+            self._store[namespace] = {}
+
         self._store[namespace][key] = value
 
     def get(self, key: str, namespace: str = "default"):

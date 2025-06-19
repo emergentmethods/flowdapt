@@ -86,3 +86,20 @@ def test_dask_cluster_memory_clear(dask_local_cluster, cluster_memory: DaskClust
 
     with pytest.raises(Exception):
         cluster_memory.get('test_key3', namespace='test_namespace')
+
+
+def test_dask_cluster_memory_exists(dask_local_cluster, cluster_memory: DaskClusterMemory):
+    test_value = da.ones((1000, 1000), chunks=(100, 100))
+    test_value_small = da.ones((100, 100), chunks=(100, 100))
+
+    cluster_memory.put('test_key', test_value)
+    cluster_memory.put('test_key', test_value_small, namespace='test_namespace')
+
+    assert cluster_memory.exists('test_key')
+    assert cluster_memory.exists('test_key', namespace='test_namespace')
+
+    cluster_memory.delete('test_key')
+    assert not cluster_memory.exists('test_key')
+
+    value = cluster_memory.get('test_key', namespace='test_namespace').compute()
+    assert (value == test_value_small.compute()).all()

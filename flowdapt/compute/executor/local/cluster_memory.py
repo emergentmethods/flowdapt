@@ -141,6 +141,8 @@ class ClusterMemoryServer(CommunicationMixin):
                 return self._handle_delete(*request.args)
             case "clear":
                 return self._handle_clear()
+            case "exists":
+                return self._handle_exists(*request.args)
             case _:
                 raise ValueError(f"Invalid operation: {request.operation}")
 
@@ -159,6 +161,9 @@ class ClusterMemoryServer(CommunicationMixin):
                 del self._store[namespace]
 
             return "OK"
+
+    def _handle_exists(self, key: str, namespace: str = "default") -> bool:
+        return namespace in self._store and key in self._store[namespace]
 
     def _handle_clear(self):
         self._store = {}
@@ -186,6 +191,9 @@ class ClusterMemoryClient(CommunicationMixin):
     def clear(self):
         return syncify(self.aclear, raise_sync_error=False)()
 
+    def exists(self, key: str, *, namespace: str = "default") -> bool:
+        return syncify(self.aexists, raise_sync_error=False)(key, namespace=namespace)
+
     async def aput(self, key: str, value: Any, *, namespace: str = "default"):
         return await self.send_request({"operation": "put", "args": [key, value, namespace]})
 
@@ -197,6 +205,9 @@ class ClusterMemoryClient(CommunicationMixin):
 
     async def aclear(self):
         return await self.send_request({"operation": "clear", "args": []})
+
+    async def aexists(self, key: str, *, namespace: str = "default") -> bool:
+        return await self.send_request({"operation": "exists", "args": [key, namespace]})
 
     async def send_request(self, request: dict):
         # TODO: Avoid creating connection for every request, and instead use
@@ -237,8 +248,4 @@ class LocalClusterMemory(ClusterMemory):
         return self._client.clear()
 
     def exists(self, key: str, *, namespace: str = "default") -> bool:
-        try:
-            self.get(key, namespace=namespace)
-            return True
-        except KeyError:
-            return False
+        return self._client.exists(key, namespace=namespace)

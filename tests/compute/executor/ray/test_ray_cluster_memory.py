@@ -58,3 +58,16 @@ def test_ray_cluster_memory_clear(cluster_memory: RayClusterMemory):
 
     with pytest.raises(KeyError):
         cluster_memory.get('test_key3', namespace='test_namespace')
+
+
+def test_ray_cluster_memory_exists(cluster_memory: RayClusterMemory):
+    cluster_memory.put('test_key', 'test_value')
+    cluster_memory.put('test_key', 'test_value2', namespace='test_namespace')
+
+    assert cluster_memory.exists('test_key')
+    assert cluster_memory.exists('test_key', namespace='test_namespace')
+    cluster_memory.delete('test_key')
+    assert not cluster_memory.exists('test_key')
+
+    assert cluster_memory.get('test_key', namespace='test_namespace') == 'test_value2'
+

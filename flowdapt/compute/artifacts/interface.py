@@ -212,6 +212,26 @@ class Artifact:
             name=name, namespace=namespace, protocol=protocol, base_path=base_path, params=params
         )
 
+    @classmethod
+    def does_exist(
+        cls, name: str, namespace: str = "", protocol: str = "file", base_path: str = "", **params
+    ) -> bool:
+        """
+        Check if an artifact exists in the given namespace.
+
+        :param name: The name of the artifact.
+        :param namespace: The namespace to check.
+        :param protocol: The protocol to use for the artifact.
+        :param base_path: The base path to use for the artifact.
+        :param params: The parameters to pass to the filesystem.
+
+        :return: True if the artifact exists, False otherwise.
+        """
+        return cls._check_path_exists(
+            filesystem(protocol, **params),
+            cls._get_full_path(base_path, namespace or "default", name)
+        )
+
     @property
     def uri(self) -> str:
         return f"{self._fs.protocol}://{self.path}"

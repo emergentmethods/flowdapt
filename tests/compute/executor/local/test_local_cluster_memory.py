@@ -57,6 +57,18 @@ async def test_local_cluster_memory_clear(cluster_memory_server: ClusterMemorySe
         await cluster_memory_client.aget("test_key")
         await cluster_memory_client.aget("test_key2", namespace="test_namespace")
 
+
+@pytest.mark.asyncio
+async def test_local_cluster_memory_exists(cluster_memory_server: ClusterMemoryServer, cluster_memory_client: ClusterMemoryClient):
+    await cluster_memory_client.aput("test_key", "test_value")
+    assert await cluster_memory_client.aexists("test_key") is True
+    assert await cluster_memory_client.aexists("non_existent_key") is False
+
+    await cluster_memory_client.aput("test_key2", "test_value2", namespace="test_namespace")
+    assert await cluster_memory_client.aexists("test_key2", namespace="test_namespace") is True
+    assert await cluster_memory_client.aexists("non_existent_key2", namespace="test_namespace") is False
+
+
 @pytest.mark.asyncio
 async def test_local_cluster_memory_invalid_operation(cluster_memory_server: ClusterMemoryServer, cluster_memory_client: ClusterMemoryClient):
     with pytest.raises(ValueError) as e:

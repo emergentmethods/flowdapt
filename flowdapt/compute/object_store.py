@@ -86,8 +86,8 @@ def put(
     strategy: Strategy | None = None,
     executor: str | None = None,
     save_artifact_hook: Callable[[Artifact, Any], Any] = default_save_hook(),
-    cluster_memory_params: dict = {},
-    artifact_params: dict = {},
+    cluster_memory_params: dict | None = None,
+    artifact_params: dict | None = None,
 ) -> None:
     """
     Put an object into the object store.
@@ -125,7 +125,8 @@ def put(
     if strategy != Strategy.ARTIFACT:
         try:
             return put_in_cluster_memory(
-                key=key, value=value, namespace=namespace, backend=executor, **cluster_memory_params
+                key=key, value=value, namespace=namespace,
+                backend=executor, **(cluster_memory_params or {})
             )
         except Exception as e:
             if not isinstance(e, KeyError):
@@ -134,7 +135,7 @@ def put(
             if strategy == Strategy.CLUSTER_MEMORY:
                 raise
 
-    _artifact = get_artifact(name=key, namespace=namespace, create=True, **artifact_params)
+    _artifact = get_artifact(name=key, namespace=namespace, create=True, **(artifact_params or {}))
     save_artifact_hook(_artifact, value)
     return
 
@@ -147,8 +148,8 @@ def get(
     strategy: Strategy | None = None,
     executor: str | None = None,
     load_artifact_hook: Callable[[Artifact], Any] = default_load_hook(),
-    cluster_memory_params: dict = {},
-    artifact_params: dict = {},
+    cluster_memory_params: dict | None = None,
+    artifact_params: dict | None = None,
 ) -> Any:
     """
     Get an object from the object store.
@@ -185,7 +186,7 @@ def get(
     if strategy != Strategy.ARTIFACT:
         try:
             return get_from_cluster_memory(
-                key=key, namespace=namespace, backend=executor, **cluster_memory_params
+                key=key, namespace=namespace, backend=executor, **(cluster_memory_params or {})
             )
         except Exception as e:
             if not isinstance(e, KeyError):
@@ -194,7 +195,7 @@ def get(
             if strategy == Strategy.CLUSTER_MEMORY:
                 raise
 
-    _artifact = get_artifact(name=key, namespace=namespace, **artifact_params)
+    _artifact = get_artifact(name=key, namespace=namespace, **(artifact_params or {}))
     return load_artifact_hook(_artifact)
 
 
@@ -205,8 +206,8 @@ def delete(
     artifact_only: bool = False,
     strategy: Strategy | None = None,
     executor: str | None = None,
-    cluster_memory_params: dict = {},
-    artifact_params: dict = {},
+    cluster_memory_params: dict | None = None,
+    artifact_params: dict | None = None,
 ) -> Any:
     """
     Delete an object from the object store.
@@ -243,7 +244,7 @@ def delete(
     if strategy != Strategy.ARTIFACT:
         try:
             return delete_from_cluster_memory(
-                key=key, namespace=namespace, backend=executor, **cluster_memory_params
+                key=key, namespace=namespace, backend=executor, **(cluster_memory_params or {})
             )
         except Exception as e:
             if not isinstance(e, KeyError):
@@ -252,7 +253,7 @@ def delete(
             if strategy == Strategy.CLUSTER_MEMORY:
                 raise
 
-    _artifact = get_artifact(name=key, namespace=namespace, create=True, **artifact_params)
+    _artifact = get_artifact(name=key, namespace=namespace, create=True, **(artifact_params or {}))
     _artifact.delete()
 
 
@@ -264,8 +265,8 @@ def exists(
     strategy: Strategy | None = None,
     executor: str | None = None,
     load_artifact_hook: Callable[[Artifact], Any] = default_load_hook(),
-    cluster_memory_params: dict = {},
-    artifact_params: dict = {},
+    cluster_memory_params: dict | None = None,
+    artifact_params: dict | None = None,
 ) -> bool:
     """
     Check if an object exists in the object store.
@@ -301,7 +302,7 @@ def exists(
 
     if strategy != Strategy.ARTIFACT:
         return check_for_key_in_cluster_memory(
-                key=key, namespace=namespace, backend=executor, **cluster_memory_params
+                key=key, namespace=namespace, backend=executor, **(cluster_memory_params or {})
             )
     else:
-        return check_if_artifact_exists(name=key, namespace=namespace, **artifact_params)
+        return check_if_artifact_exists(name=key, namespace=namespace, **(artifact_params or {}))
