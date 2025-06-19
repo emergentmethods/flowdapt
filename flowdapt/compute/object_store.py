@@ -301,8 +301,9 @@ def exists(
         strategy = Strategy.ARTIFACT
 
     if strategy != Strategy.ARTIFACT:
-        return check_for_key_in_cluster_memory(
-                key=key, namespace=namespace, backend=executor, **(cluster_memory_params or {})
-            )
-    else:
-        return check_if_artifact_exists(name=key, namespace=namespace, **(artifact_params or {}))
+        if cm_exists := check_for_key_in_cluster_memory(
+            key=key, namespace=namespace, backend=executor, **(cluster_memory_params or {})
+        ):
+            return cm_exists
+
+    return check_if_artifact_exists(name=key, namespace=namespace, **(artifact_params or {}))
