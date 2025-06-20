@@ -43,3 +43,13 @@ class ClusterMemory(ABC):
         Clear the cluster memory.
         """
         pass
+
+    @abstractmethod
+    def exists(self, key: str, *, namespace: str = "default") -> bool:
+        """
+        Check if a key exists in the cluster memory.
+
+        :param key: Key to check.
+        :return: True if the key exists, False otherwise.
+        """
+        pass

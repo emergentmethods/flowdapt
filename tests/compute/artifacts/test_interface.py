@@ -55,6 +55,11 @@ def test_artifact_delete(artifact_params):
         artifact.new_file("test_file", "test_content")
 
 
+def test_artifact_does_exist(artifact_params, artifact):
+    assert Artifact.does_exist(artifact.name, **artifact_params) is True
+    assert Artifact.does_exist("non_existent_artifact", **artifact_params) is False
+
+
 @pytest.mark.parametrize(
     "file_name,content,expected_content",
     [

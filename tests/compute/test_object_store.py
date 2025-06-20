@@ -1,7 +1,7 @@
 import pytest
 
 from flowdapt.compute.resources.workflow.execute import execute_workflow
-from flowdapt.compute.object_store import put, get
+from flowdapt.compute.object_store import put, get, exists
 from flowdapt.compute.artifacts import list_artifacts
 
 

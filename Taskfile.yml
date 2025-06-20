@@ -351,7 +351,7 @@ tasks:
   # Run unit tests
   unit-tests:
     cmds:
-      - coverage run -m pytest --junitxml=report.xml
+      - coverage run -m pytest --junitxml=report.xml {{.CLI_ARGS}}
       - coverage report
       - coverage xml
       - coverage html -d coverage-report

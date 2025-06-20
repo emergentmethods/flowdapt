@@ -79,6 +79,25 @@ def new_artifact(
     )
 
 
+def check_if_artifact_exists(
+    name: str,
+    namespace: str = "",
+    protocol: str = "",
+    base_path: str = "",
+    **params,
+) -> bool:
+    """
+    Check if an Artifact with the given name and namespace exists.
+    """
+    namespace, protocol, base_path, params = _get_values_from_context(
+        namespace=namespace, protocol=protocol, base_path=base_path, **params
+    )
+
+    return Artifact.does_exist(
+        name=name, namespace=namespace, protocol=protocol, base_path=base_path, **params
+    )
+
+
 __all__ = (
     "Artifact",
     "ArtifactFile",

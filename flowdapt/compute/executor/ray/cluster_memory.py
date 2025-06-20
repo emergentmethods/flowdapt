@@ -13,6 +13,9 @@ class RayClusterMemoryActor:
         self._store = defaultdict(dict)
 
     def put(self, key: str, value: Any, namespace: str = "default"):
+        if namespace not in self._store:
+            self._store[namespace] = {}
+
         self._store[namespace][key] = value
 
     def get(self, key: str, namespace: str = "default"):
@@ -30,6 +33,9 @@ class RayClusterMemoryActor:
 
     def clear(self):
         self._store = {}
+
+    def exists(self, key: str, namespace: str = "default") -> bool:
+        return key in self._store.get(namespace, {})
 
     @classmethod
     def start(cls, actor_name: str, **options):
@@ -58,3 +64,6 @@ class RayClusterMemory(ClusterMemory):
 
     def clear(self):
         get(self.actor.clear.remote())
+
+    def exists(self, key: str, *, namespace: str = "default") -> bool:
+        return get(self.actor.exists.remote(key, namespace=namespace))
