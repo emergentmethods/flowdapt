@@ -1,4 +1,17 @@
 
+<a name="0.1.33"></a>
+## [0.1.33](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.32...0.1.33)
+
+> 2025-06-20
+
+### Fix
+
+* Remove unneeded parameter
+* Ensure exists actually falls back
+* Fix issues in new machinery and add unit tests
+* Introduce  wrapper for checking for the existence of objects
+
+
 <a name="0.1.32"></a>
 ## [0.1.32](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.31...0.1.32)
 
@@ -84,17 +97,7 @@
 
 
 <a name="0.1.24"></a>
-## [0.1.24](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.23...0.1.24)
+## 0.1.24
 
 > 2025-03-28
-
-### Fix
-
-* Better handling of connection errors in DB operations at service level
-
-
-<a name="0.1.23"></a>
-## 0.1.23
-
-> 2025-03-02
 
