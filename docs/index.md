@@ -8,12 +8,11 @@ title: Overview
 ??? note
     [Emergent Methods](https://emergentmethods.ai) has run Flowdapt at production-scale 24/7 for a variety of applications (e.g. https://asknews.app). However, like all open-source projects, the project is subject to revisions that may impact development. If you have any inquiries about Flowdapt or development, please email us at <contact@emergentmethods.ai>. 
 
-![Gitlab code coverage (specific job)](https://img.shields.io/gitlab/pipeline-coverage/emergentmethods/flowdapt?branch=main&job_name=unit-tests&style=flat-square)
 ![GitLab Release (latest by SemVer)](https://img.shields.io/gitlab/v/release/emergentmethods/flowdapt?style=flat-square)
 ![GitLab](https://img.shields.io/gitlab/license/emergentmethods/flowdapt?style=flat-square)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/flowdapt?style=flat-square)
+<!-- ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/flowdapt?style=flat-square) -->
 [![GitHub flowdapt](https://shields.io/badge/GitHub-flowdapt-green?style=flat-square&logo=github)](https://github.com/emergentmethods/flowdapt)
-[![Discord](https://dcbadge.vercel.app/api/server/P59QhpknEh)](https://discord.gg/P59QhpknEh)    
+[![Discord](https://dcbadge.limes.pink/api/server/P59QhpknEh)](https://discord.gg/P59QhpknEh)      
 
 
 Welcome to the official documentation for Flowdapt! Flowdapt is a platform designed to help developers deploy adaptive and reactive Artificial Intelligence (it's also good at orchestrating non-AI workflows as well) based applications at large-scale. It is equipped with a set of tools to automatically orchestrate and run dynamic and adaptive machine learning workflows.
