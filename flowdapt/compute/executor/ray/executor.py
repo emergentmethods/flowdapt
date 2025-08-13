@@ -91,7 +91,8 @@ class RayExecutor(Executor):
     For available options, see
     https://docs.ray.io/en/latest/ray-core/api/doc/ray.runtime_env.RuntimeEnvConfig.html.
     :param connection_monitor_interval: The interval in seconds to check the connection to the Ray
-    cluster. Defaults to 15 seconds. Only applies if connecting to an external cluster.
+    cluster. Defaults to 15 seconds. Only applies if connecting to an external cluster. Pass `None`
+    to disable the connection monitor altogether.
     :param max_reconnect_retries: The maximum number of times to retry reconnecting to the Ray
     cluster if the connection is lost. Defaults to 2048.
     :param base_reconnect_delay: The base delay in seconds to use for the exponential backoff
@@ -100,6 +101,8 @@ class RayExecutor(Executor):
     when reconnecting to the Ray cluster. Defaults to 60 seconds.
     :param ping_timeout: The timeout in seconds to use when pinging the Ray cluster to check
     if it's still alive. Defaults to 10 seconds.
+    :param ping_failure_threshold: The number of consecutive ping failures to allow before
+    considering the connection lost and attempting to reconnect. Defaults to 3.
     :param kwargs: Additional keyword arguments to pass to ray.init().
     """
 
@@ -127,11 +130,12 @@ class RayExecutor(Executor):
         upload_plugins: bool = True,
         cluster_memory_actor: dict[str, Any] | None = None,
         runtime_env_config: dict[str, Any] | None = None,
-        connection_monitor_interval: int = 15,
+        connection_monitor_interval: int | None = 15,
         max_reconnect_retries: int = 2048,
         base_reconnect_delay: float = 5.0,
         max_reconnect_delay: float = 60.0,
         ping_timeout: float = 10.0,
+        ping_failure_threshold: int = 3,
         **kwargs,
     ):
         _app_config = get_configuration()
@@ -205,6 +209,7 @@ class RayExecutor(Executor):
         self._base_reconnect_delay = base_reconnect_delay
         self._max_reconnect_delay = max_reconnect_delay
         self._ping_timeout = ping_timeout
+        self._ping_failure_threshold = ping_failure_threshold
 
     def _get_runtime_env(self) -> dict:
         py_modules = self._config["py_modules"] or []
@@ -317,7 +322,6 @@ class RayExecutor(Executor):
                 await self._close_ray()
 
             self._ray_context = await self._init_ray()
-            # with self._ray_context:
             if not await self._ping():
                 raise ConnectionError("Failed to reconnect to Ray cluster")
 
@@ -337,25 +341,55 @@ class RayExecutor(Executor):
             return False
 
     async def _monitor_connection(self) -> None:
+        assert (
+            self._connection_monitor_interval is not None
+            and self._connection_monitor_interval > 0
+        ), (
+            "Connection monitor interval must be set to a positive integer"
+        )
+
+        ping_attempts = 0
+
         try:
             while True:
                 await asyncio.sleep(self._connection_monitor_interval)
                 await logger.adebug("CheckingConnection")
 
-                if (
-                    (not self.connected or not self._ray_context)
-                    and await self._reconnect()
-                ):
-                    self.connected = True
-                    await logger.ainfo("ReconnectedToRayCluster")
-
                 try:
                     if not await self._ping():
+                        ping_attempts += 1
+                        # We immediately set connected to False to ensure
+                        # no more workflows are submitted after this point
+                        # until we reconnect
                         self.connected = False
-                        await logger.awarning("PingFailed")
+
+                        await logger.awarning(
+                            "PingFailed",
+                            ping_attempts=ping_attempts,
+                            ping_failure_threshold=self._ping_failure_threshold,
+                        )
+
+                        if ping_attempts >= self._ping_failure_threshold:
+                            await logger.awarning("ReconnectingToRayCluster")
+                            if (
+                                (not self.connected or not self._ray_context)
+                                and await self._reconnect()
+                            ):
+                                self.connected = True
+                                ping_attempts = 0
+                                await logger.ainfo("ReconnectedToRayCluster")
+                            else:
+                                await logger.aerror("FailedToReconnectToRayCluster")
+                        else:
+                            continue
                     else:
+                        # Always reset the ping attempts if the ping was successful
+                        # in case the connection was lost and then restored before
+                        # the ping failure threshold was reached
+                        ping_attempts = 0
                         await logger.adebug("PingSuccessful")
                 except asyncio.CancelledError:
+                    await logger.adebug("ConnectionMonitorCancelled")
                     break
         except Exception as e:
             await logger.aexception("ConnectionMonitorError", exc_info=e)
@@ -382,7 +416,7 @@ class RayExecutor(Executor):
         self.running = True
         self.connected = True
 
-        if not self._is_local:
+        if not self._is_local and self._connection_monitor_interval is not None:
             self._connection_monitor_task = asyncio.create_task(
                 self._monitor_connection()
             )

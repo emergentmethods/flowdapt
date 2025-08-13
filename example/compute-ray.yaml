@@ -41,7 +41,7 @@ services:
           memory: 3G
 
   # ray_worker_gpu:
-  #   # This needs to be built locally via `task build-docker-base` first
+  #   # This needs to be built locally via `task build-docker-gpu` first
   #   image: ghcr.io/emergentmethods/flowdapt:local-gpu
   #   networks:
   #     - flowdapt
