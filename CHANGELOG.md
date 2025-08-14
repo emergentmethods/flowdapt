@@ -1,4 +1,18 @@
 
+<a name="0.1.34"></a>
+## [0.1.34](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.33...0.1.34)
+
+> 2025-08-14
+
+### Chore
+
+* Fix markdown badges
+
+### Fix
+
+* Support deactivating connection monitor and ping failure threshold for ray executor
+
+
 <a name="0.1.33"></a>
 ## [0.1.33](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.32...0.1.33)
 
@@ -87,17 +101,7 @@
 
 
 <a name="0.1.25"></a>
-## [0.1.25](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.24...0.1.25)
+## 0.1.25
 
 > 2025-04-19
-
-### Fix
-
-* Fix bug in py 3.12, setup logging in stage wrapper after stage import
-
-
-<a name="0.1.24"></a>
-## 0.1.24
-
-> 2025-03-28
 
