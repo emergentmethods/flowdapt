@@ -61,6 +61,8 @@ before_script: !reference [.global_before_script, before_script]
 
 .docker_job:
   image: docker:latest
+  tags:
+    - dal
   services:
     - docker:dind
 
