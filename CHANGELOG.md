@@ -1,4 +1,14 @@
 
+<a name="0.1.35"></a>
+## [0.1.35](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.34...0.1.35)
+
+> 2025-08-14
+
+### Fix
+
+* Move docker build job
+
+
 <a name="0.1.34"></a>
 ## [0.1.34](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.33...0.1.34)
 
@@ -91,17 +101,7 @@
 
 
 <a name="0.1.26"></a>
-## [0.1.26](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.25...0.1.26)
+## 0.1.26
 
 > 2025-05-07
-
-### Fix
-
-* Ensure wget available in docker image
-
-
-<a name="0.1.25"></a>
-## 0.1.25
-
-> 2025-04-19
 

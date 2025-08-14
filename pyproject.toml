@@ -1,6 +1,6 @@
 [project]
 name = "flowdapt"
-version = "0.1.34"
+version = "0.1.35"
 description = "A generalized framework for robust modular deployments of large-scale, real-time adaptive modeling on chaotic data."
 readme = "README.md"
 authors = [
