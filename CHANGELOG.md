@@ -1,4 +1,14 @@
 
+<a name="0.1.36"></a>
+## [0.1.36](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.35...0.1.36)
+
+> 2025-08-26
+
+### Fix
+
+* Use Gitlab runners for dind
+
+
 <a name="0.1.35"></a>
 ## [0.1.35](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.34...0.1.35)
 
@@ -91,17 +101,7 @@
 
 
 <a name="0.1.27"></a>
-## [0.1.27](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.26...0.1.27)
+## 0.1.27
 
 > 2025-05-13
-
-### Fix
-
-* Improve trigger docs and fix or operator in conditions
-
-
-<a name="0.1.26"></a>
-## 0.1.26
-
-> 2025-05-07
 
