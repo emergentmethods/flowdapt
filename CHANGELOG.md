@@ -1,4 +1,14 @@
 
+<a name="0.1.37"></a>
+## [0.1.37](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.36...0.1.37)
+
+> 2025-10-13
+
+### Fix
+
+* Bump and relax constraints for some dependencies
+
+
 <a name="0.1.36"></a>
 ## [0.1.36](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.35...0.1.36)
 
@@ -91,17 +101,7 @@
 
 
 <a name="0.1.28"></a>
-## [0.1.28](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.27...0.1.28)
-
-> 2025-05-13
-
-### Fix
-
-* Fix compute util breaking in darwin machines
-
-
-<a name="0.1.27"></a>
-## 0.1.27
+## 0.1.28
 
 > 2025-05-13
 
