@@ -42,6 +42,15 @@ class MapperActor:
         wrapped = ray.remote(func).options(**options)
         return ray.get([wrapped.remote(item, *args, **kwargs) for item in iterable])
 
+    @classmethod
+    def start(cls, actor_name: str, **options):
+        try:
+            ray.get_actor(actor_name, namespace="flowdapt")
+        except ValueError:
+            MapperActor.options(
+                name=actor_name, lifetime="detached", namespace="flowdapt", **options
+            ).remote()
+
 
 class ExecuteStrategy(str, Enum):
     """
@@ -139,6 +148,7 @@ class RayExecutor(Executor):
         container: dict[str, str] | None = None,
         upload_plugins: bool = True,
         cluster_memory_actor: dict[str, Any] | None = None,
+        mapper_actor: dict[str, Any] | None = None,
         runtime_env_config: dict[str, Any] | None = None,
         connection_monitor_interval: int | None = 15,
         max_reconnect_retries: int = 2048,
@@ -180,6 +190,12 @@ class RayExecutor(Executor):
             or {
                 "name": "RayClusterMemoryActor",
                 "num_cpus": 1,
+                "max_concurrency": 1000,
+            },
+            "mapper_actor": mapper_actor
+            or {
+                "name": "MapperActor",
+                "num_cpus": 0,
                 "max_concurrency": 1000,
             },
             "runtime_env_config": runtime_env_config,
@@ -413,12 +429,9 @@ class RayExecutor(Executor):
         await logger.ainfo("StartedClusterMemory")
 
         await logger.ainfo("StartingMapperActor")
-        MapperActor.options(
-            name="MapperActor",
-            lifetime="detached",
-            num_cpus=0,
-            max_concurrency=1000,
-        ).remote()
+        _mapper_actor_opts = {**self._config["mapper_actor"]}
+        _mapper_actor_name = _mapper_actor_opts.pop("name")
+        MapperActor.start(_mapper_actor_name, **_mapper_actor_opts)
         await logger.ainfo("StartedMapperActor")
 
         dashboard_url = self._ray_context.dashboard_url or None
@@ -529,7 +542,7 @@ class RayExecutor(Executor):
                 "memory": stage.resources.memory,
             }
 
-            mapper = ray.get_actor("MapperActor")
+            mapper = ray.get_actor(self._config["mapper_actor"]["name"], namespace="flowdapt")
             return ray.get(mapper.run_map.remote(func, options, list(iterable), *args, **kwargs))
 
         return getattr(self._create_lazy(map_inner, resources={"mappers": 1}), self._call_attr)
