@@ -30,6 +30,19 @@ from flowdapt.lib.utils.model import model_dump
 logger = get_logger(__name__)
 
 
+@ray.remote
+class MapperActor:
+    """
+    A single long-lived actor that dispatches mapped ray tasks and
+    collects their results. This avoids each map call spinning up its
+    own worker process just to orchestrate sub-tasks.
+    """
+
+    def run_map(self, func, options, iterable, *args, **kwargs):
+        wrapped = ray.remote(func).options(**options)
+        return ray.get([wrapped.remote(item, *args, **kwargs) for item in iterable])
+
+
 class ExecuteStrategy(str, Enum):
     """
     The execution strategy to use for the RayExecutor.
@@ -75,8 +88,6 @@ class RayExecutor(Executor):
     connecting to an external cluster.
     :param log_to_driver: Whether to log to the driver or not.
     :param logging_level: The logging level to use.
-    :param storage_dir: The directory to use for storing Ray data. Defaults to
-    the app directory. Ignored if connecting to an external cluster.
     :param working_dir: The working directory to use in the runtime environment.
     :param py_modules: A list of Python modules to pass to the worker.
     :param pip: A list of pip packages to install on the worker.
@@ -120,7 +131,6 @@ class RayExecutor(Executor):
         dashboard_port: int = 9969,
         log_to_driver: bool = True,
         logging_level: str | None = None,
-        storage_dir: str | None = None,
         working_dir: str | None = None,
         py_modules: list[str] | None = None,
         pip: list[str] | None = None,
@@ -151,7 +161,6 @@ class RayExecutor(Executor):
             "dashboard_port": dashboard_port,
             "logging_level": logging_level or _app_config.logging.level,
             "log_to_driver": log_to_driver,
-            "storage_dir": storage_dir,
             "working_dir": working_dir,
             "py_modules": py_modules,
             "pip": pip,
@@ -181,14 +190,6 @@ class RayExecutor(Executor):
         # to the workflows
         assert self._config["cluster_memory_actor"]["name"], "Cluster memory actor name is required"
         self._config["env_vars"]["CM_ACTOR_NAME"] = self._config["cluster_memory_actor"]["name"]
-
-        if not self._config["cluster_address"] or self._config["cluster_address"] == "local":
-            # Set default storage dir to the app dir if not already specified
-            app_dir = get_app_dir()
-            if not self._config["storage_dir"] and app_dir:
-                self._config["storage_dir"] = str(app_dir / "executor" / "ray" / "data")
-            elif not self._config["storage_dir"] and not app_dir:
-                self._config["storage_dir"] = "/tmp/data"
 
         self._ray_context: RayContext | ClientContext | None = None
         self._is_local: bool = (
@@ -260,7 +261,6 @@ class RayExecutor(Executor):
 
             return await asyncio.to_thread(
                 ray.init,
-                storage=self._config["storage_dir"],
                 num_cpus=self._config["cpus"] if self._config["cpus"] != "auto" else None,
                 num_gpus=self._config["gpus"] if self._config["gpus"] != "auto" else None,
                 resources=self._config["resources"] if self._config["resources"] else None,
@@ -412,6 +412,15 @@ class RayExecutor(Executor):
         )
         await logger.ainfo("StartedClusterMemory")
 
+        await logger.ainfo("StartingMapperActor")
+        MapperActor.options(
+            name="MapperActor",
+            lifetime="detached",
+            num_cpus=0,
+            max_concurrency=1000,
+        ).remote()
+        await logger.ainfo("StartedMapperActor")
+
         dashboard_url = self._ray_context.dashboard_url or None
         self.running = True
         self.connected = True
@@ -507,10 +516,10 @@ class RayExecutor(Executor):
     def mapped_lazy(self, stage: BaseStage) -> Any:
         def map_inner(iterable, *args, **kwargs):
             """
-            Map a function to an iterable using ray.remote
+            Map a function to an iterable using a MapperActor to
+            dispatch ray tasks and collect results, reducing memory
+            overhead from the calling process.
             """
-            # Make sure we're keeping the same resource requirements
-            # for the inner function
             func = stage.get_stage_fn()
             options = {
                 "name": stage.name,
@@ -519,9 +528,9 @@ class RayExecutor(Executor):
                 "num_gpus": stage.resources.gpus,
                 "memory": stage.resources.memory,
             }
-            wrapped = ray.remote(func).options(**options)
 
-            return ray.get([wrapped.remote(item, *args, **kwargs) for item in iterable])
+            mapper = ray.get_actor("MapperActor")
+            return ray.get(mapper.run_map.remote(func, options, list(iterable), *args, **kwargs))
 
         return getattr(self._create_lazy(map_inner, resources={"mappers": 1}), self._call_attr)
 
