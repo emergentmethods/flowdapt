@@ -1,4 +1,14 @@
 
+<a name="0.1.39"></a>
+## [0.1.39](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.38...0.1.39)
+
+> 2026-04-09
+
+### Fix
+
+* Make the mapper actor not reliant on cluster resources
+
+
 <a name="0.1.38"></a>
 ## [0.1.38](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.37...0.1.38)
 
@@ -82,21 +92,11 @@
 
 
 <a name="0.1.31"></a>
-## [0.1.31](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.30...0.1.31)
+## 0.1.31
 
 > 2025-05-29
 
 ### Fix
 
 * Fix metrics dto models
-
-
-<a name="0.1.30"></a>
-## 0.1.30
-
-> 2025-05-28
-
-### Fix
-
-* Explicit reconnection handling for ray and service health tracking
 
