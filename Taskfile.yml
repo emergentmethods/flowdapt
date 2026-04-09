@@ -10,7 +10,8 @@ vars:
   IMAGE_REGISTRY: ghcr.io
   IMAGE_REPOSITORY: emergentmethods/flowdapt
   IMAGE_NAME: "{{.IMAGE_REGISTRY}}/{{.IMAGE_REPOSITORY}}"
-  IMAGE_TAG: local
+  IMAGE_TAG:
+    sh: echo "${IMAGE_TAG:-local}"
   DOCKER_BUILD_ARGS: ""
   PYTHON_VERSION: 3.12
 

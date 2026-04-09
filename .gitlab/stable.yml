@@ -19,7 +19,7 @@ bump_version:
     - .use_cache
   stage: bump
   variables:
-    REPO_URL: "https://release-token:${RELEASE_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    REPO_URL: "https://oauth2:${RELEASE_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
     LANGUAGE_VERSION_FILE: "pyproject.toml"
     LANGUAGE: "python"
   before_script:
