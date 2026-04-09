@@ -1,4 +1,15 @@
 
+<a name="0.1.38"></a>
+## [0.1.38](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.37...0.1.38)
+
+> 2026-04-09
+
+### Fix
+
+* Use personal access token
+* Optimize memory handling for mappers, bump ray
+
+
 <a name="0.1.37"></a>
 ## [0.1.37](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.36...0.1.37)
 
@@ -81,27 +92,11 @@
 
 
 <a name="0.1.30"></a>
-## [0.1.30](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.29...0.1.30)
+## 0.1.30
 
 > 2025-05-28
 
 ### Fix
 
 * Explicit reconnection handling for ray and service health tracking
-
-
-<a name="0.1.29"></a>
-## [0.1.29](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.28...0.1.29)
-
-> 2025-05-25
-
-### Fix
-
-* Default reconnect timeout in ray
-
-
-<a name="0.1.28"></a>
-## 0.1.28
-
-> 2025-05-13
 
