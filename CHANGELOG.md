@@ -1,4 +1,15 @@
 
+<a name="0.1.40"></a>
+## [0.1.40](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.39...0.1.40)
+
+> 2026-04-10
+
+### Fix
+
+* Group by Group
+* Improve mapper actor
+
+
 <a name="0.1.39"></a>
 ## [0.1.39](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.38...0.1.39)
 
@@ -73,30 +84,14 @@
 
 * Remove unneeded parameter
 * Ensure exists actually falls back
-* Fix issues in new machinery and add unit tests
-* Introduce  wrapper for checking for the existence of objects
 
 
 <a name="0.1.32"></a>
-## [0.1.32](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.31...0.1.32)
+## 0.1.32
 
 > 2025-06-04
 
 ### Chore
 
 * Fix local executor cluster memory tests
-
-### Fix
-
-* Fix local executor cluster memory in async stages
-
-
-<a name="0.1.31"></a>
-## 0.1.31
-
-> 2025-05-29
-
-### Fix
-
-* Fix metrics dto models
 
