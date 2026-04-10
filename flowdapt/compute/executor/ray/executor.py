@@ -536,7 +536,7 @@ class RayExecutor(Executor):
 
         if self._config["strategy"] == ExecuteStrategy.GROUP_BY_GROUP:
             def map_direct(iterable, *args, **kwargs):
-                return ray.get(mapper.run_map.remote(func, options, iterable, *args, **kwargs))
+                return mapper.run_map.remote(func, options, iterable, *args, **kwargs)
             return map_direct
         else:
             def map_bind(iterable, *args, **kwargs):
