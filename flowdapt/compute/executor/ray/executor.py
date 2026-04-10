@@ -40,7 +40,7 @@ class MapperActor:
 
     def run_map(self, func, options, iterable, *args, **kwargs):
         wrapped = ray.remote(func).options(**options)
-        return ray.get([wrapped.remote(item, *args, **kwargs) for item in iterable])
+        return ray.get([wrapped.remote(item, *args, **kwargs) for item in list(iterable)])
 
     @classmethod
     def start(cls, actor_name: str, **options):
@@ -272,9 +272,6 @@ class RayExecutor(Executor):
             logging.basicConfig(level=logging.INFO)
 
         if self._is_local:
-            if "mappers" not in self._config["resources"]:
-                self._config["resources"]["mappers"] = 4
-
             return await asyncio.to_thread(
                 ray.init,
                 num_cpus=self._config["cpus"] if self._config["cpus"] != "auto" else None,
@@ -527,25 +524,24 @@ class RayExecutor(Executor):
         return part(stage.get_stage_fn())
 
     def mapped_lazy(self, stage: BaseStage) -> Any:
-        def map_inner(iterable, *args, **kwargs):
-            """
-            Map a function to an iterable using a MapperActor to
-            dispatch ray tasks and collect results, reducing memory
-            overhead from the calling process.
-            """
-            func = stage.get_stage_fn()
-            options = {
-                "name": stage.name,
-                "resources": stage.resources.extras(),
-                "num_cpus": stage.resources.cpus,
-                "num_gpus": stage.resources.gpus,
-                "memory": stage.resources.memory,
-            }
+        func = stage.get_stage_fn()
+        options = {
+            "name": stage.name,
+            "resources": stage.resources.extras(),
+            "num_cpus": stage.resources.cpus,
+            "num_gpus": stage.resources.gpus,
+            "memory": stage.resources.memory,
+        }
+        mapper = ray.get_actor(self._config["mapper_actor"]["name"], namespace="flowdapt")
 
-            mapper = ray.get_actor(self._config["mapper_actor"]["name"], namespace="flowdapt")
-            return ray.get(mapper.run_map.remote(func, options, list(iterable), *args, **kwargs))
-
-        return getattr(self._create_lazy(map_inner, resources={"mappers": 1}), self._call_attr)
+        if self._config["strategy"] == ExecuteStrategy.GROUP_BY_GROUP:
+            def map_direct(iterable, *args, **kwargs):
+                return ray.get(mapper.run_map.remote(func, options, iterable, *args, **kwargs))
+            return map_direct
+        else:
+            def map_bind(iterable, *args, **kwargs):
+                return mapper.run_map.bind(func, options, iterable, *args, **kwargs)
+            return map_bind
 
     async def _generate_partials(
         self,
