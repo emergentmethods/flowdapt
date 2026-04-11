@@ -1,4 +1,16 @@
 
+<a name="0.1.41"></a>
+## [0.1.41](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.40...0.1.41)
+
+> 2026-04-11
+
+### Fix
+
+* async cascade just to get actor
+* Ensure mapper is using async for map function
+* Improve all at once strategy with new mapper actor approach
+
+
 <a name="0.1.40"></a>
 ## [0.1.40](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.39...0.1.40)
 
@@ -62,7 +74,7 @@
 
 
 <a name="0.1.34"></a>
-## [0.1.34](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.33...0.1.34)
+## 0.1.34
 
 > 2025-08-14
 
@@ -73,25 +85,4 @@
 ### Fix
 
 * Support deactivating connection monitor and ping failure threshold for ray executor
-
-
-<a name="0.1.33"></a>
-## [0.1.33](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.32...0.1.33)
-
-> 2025-06-20
-
-### Fix
-
-* Remove unneeded parameter
-* Ensure exists actually falls back
-
-
-<a name="0.1.32"></a>
-## 0.1.32
-
-> 2025-06-04
-
-### Chore
-
-* Fix local executor cluster memory tests
 
