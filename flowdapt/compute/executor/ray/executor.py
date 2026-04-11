@@ -537,7 +537,7 @@ class RayExecutor(Executor):
         )
         return part(stage.get_stage_fn())
 
-    async def mapped_lazy(self, stage: BaseStage) -> Any:
+    def mapped_lazy(self, stage: BaseStage) -> Any:
         func = stage.get_stage_fn()
         options = {
             "name": stage.name,
@@ -546,9 +546,7 @@ class RayExecutor(Executor):
             "num_gpus": stage.resources.gpus,
             "memory": stage.resources.memory,
         }
-        mapper = await asyncio.to_thread(
-            ray.get_actor, self._config["mapper_actor"]["name"], namespace="flowdapt"
-        )
+        mapper = ray.get_actor(self._config["mapper_actor"]["name"], namespace="flowdapt")
 
         def map_via_actor(iterable, *args, **kwargs):
             return mapper.run_map.remote(func, options, iterable, *args, **kwargs)
