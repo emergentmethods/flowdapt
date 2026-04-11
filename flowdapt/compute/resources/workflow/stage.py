@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from inspect import Signature, getdoc, getsourcefile, iscoroutine, signature
+from inspect import Signature, getdoc, getsourcefile, isawaitable, iscoroutine, signature
 from typing import Any, Awaitable, Callable, ClassVar, TypeVar
 
 from asyncer import runnify
@@ -216,7 +216,7 @@ class ParameterizedStage(BaseStage):
         )
         return value
 
-    def create_lazy(
+    async def create_lazy(
         self, executor: Executor, context: WorkflowRunContext, args: list, kwargs: dict
     ):
         if self.map_on:
@@ -234,7 +234,10 @@ class ParameterizedStage(BaseStage):
         # are any.
         iterable = args.pop(0)
 
-        return executor.mapped_lazy(self)(iterable, *args, **kwargs)
+        map_fn = executor.mapped_lazy(self)
+        if isawaitable(map_fn):
+            map_fn = await map_fn
+        return map_fn(iterable, *args, **kwargs)
 
 
 def get_available_stage_types() -> dict:

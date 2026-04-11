@@ -43,9 +43,11 @@ class MapperActor:
         return ray.get([wrapped.remote(item, *args, **kwargs) for item in list(iterable)])
 
     @classmethod
-    def start(cls, actor_name: str, **options):
+    async def start(cls, actor_name: str, **options):
         try:
-            ray.get_actor(actor_name, namespace="flowdapt")
+            await asyncio.to_thread(
+                ray.get_actor, actor_name, namespace="flowdapt"
+            )
         except ValueError:
             MapperActor.options(
                 name=actor_name, lifetime="detached", namespace="flowdapt", **options
@@ -213,10 +215,8 @@ class RayExecutor(Executor):
         )
         self._running_workflows: list[tuple[str, ObjectRef]] = []
 
-        if strategy == ExecuteStrategy.GROUP_BY_GROUP:
+        if strategy in (ExecuteStrategy.GROUP_BY_GROUP, ExecuteStrategy.ALL_AT_ONCE):
             self._call_attr = "remote"
-        elif strategy == ExecuteStrategy.ALL_AT_ONCE:
-            self._call_attr = "bind"
         else:
             raise ValueError(f"Invalid strategy: {strategy}")
 
@@ -428,7 +428,18 @@ class RayExecutor(Executor):
         await logger.ainfo("StartingMapperActor")
         _mapper_actor_opts = {**self._config["mapper_actor"]}
         _mapper_actor_name = _mapper_actor_opts.pop("name")
-        MapperActor.start(_mapper_actor_name, **_mapper_actor_opts)
+        # Pass runtime env to the actor without py_modules — those contain
+        # live module objects that only ray.init() can serialize. Once init
+        # uploads them to GCS they're available cluster-wide already.
+        _actor_runtime_env = {
+            k: v for k, v in self._get_runtime_env().items()
+            if k != "py_modules" and v is not None
+        }
+        await MapperActor.start(
+            _mapper_actor_name,
+            runtime_env=_actor_runtime_env if _actor_runtime_env else None,
+            **_mapper_actor_opts,
+        )
         await logger.ainfo("StartedMapperActor")
 
         dashboard_url = self._ray_context.dashboard_url or None
@@ -473,13 +484,13 @@ class RayExecutor(Executor):
             # https://github.com/ray-project/ray/issues/36833
             # "gcs_address": runtime_context.gcs_address,
             "nodes": (
-                ray.nodes()
+                await asyncio.to_thread(ray.nodes)
                 if self._ray_context
                 else []
             )
         }
 
-    def _check_resources(self, stage: BaseStage):
+    async def _check_resources(self, stage: BaseStage):
         """
         Ensure the executor has enough resources to run a stage.
         """
@@ -491,7 +502,9 @@ class RayExecutor(Executor):
             "memory": stage_resources.pop("memory", 0.0),
             **stage_resources,
         }
-        available_resources = [node["Resources"] for node in ray.nodes()]
+        available_resources = [
+            node["Resources"] for node in await asyncio.to_thread(ray.nodes)
+        ]
 
         for resource_dict in available_resources:
             for key in required_resources:
@@ -523,7 +536,7 @@ class RayExecutor(Executor):
         )
         return part(stage.get_stage_fn())
 
-    def mapped_lazy(self, stage: BaseStage) -> Any:
+    async def mapped_lazy(self, stage: BaseStage) -> Any:
         func = stage.get_stage_fn()
         options = {
             "name": stage.name,
@@ -532,16 +545,13 @@ class RayExecutor(Executor):
             "num_gpus": stage.resources.gpus,
             "memory": stage.resources.memory,
         }
-        mapper = ray.get_actor(self._config["mapper_actor"]["name"], namespace="flowdapt")
+        mapper = await asyncio.to_thread(
+            ray.get_actor, self._config["mapper_actor"]["name"], namespace="flowdapt"
+        )
 
-        if self._config["strategy"] == ExecuteStrategy.GROUP_BY_GROUP:
-            def map_direct(iterable, *args, **kwargs):
-                return mapper.run_map.remote(func, options, iterable, *args, **kwargs)
-            return map_direct
-        else:
-            def map_bind(iterable, *args, **kwargs):
-                return mapper.run_map.bind(func, options, iterable, *args, **kwargs)
-            return map_bind
+        def map_via_actor(iterable, *args, **kwargs):
+            return mapper.run_map.remote(func, options, iterable, *args, **kwargs)
+        return map_via_actor
 
     async def _generate_partials(
         self,
@@ -559,7 +569,7 @@ class RayExecutor(Executor):
                 stage = workflow_graph.get_stage(stage_name)
 
                 # Check if the Executor has the required resources for this Stage
-                self._check_resources(stage)
+                await self._check_resources(stage)
 
                 args: list = []
                 kwargs: dict = {}
@@ -576,6 +586,8 @@ class RayExecutor(Executor):
                 stage_partial = stage.get_partial(
                     executor=self, context=context, args=args, kwargs=kwargs
                 )
+                if asyncio.isfuture(stage_partial) or asyncio.iscoroutine(stage_partial):
+                    stage_partial = await stage_partial
 
                 ray_graph[stage_name] = group_partials[stage_name] = stage_partial
 
@@ -619,19 +631,20 @@ class RayExecutor(Executor):
         return result
 
     async def _execute_all_at_once(self, definition: WorkflowResource, context: WorkflowRunContext):
+        # All stages use .remote() and produce ObjectRefs. Intermediate
+        # ObjectRefs are passed directly as args to downstream stages
+        # without awaiting — data stays in Ray's object store and never
+        # flows through the driver. We only await the final group.
         async for stage_group in self._generate_partials(definition, context):
             final_group = stage_group
 
-        object_refs = [
-            (stage_name, output_node.execute()) for stage_name, output_node in final_group.items()
-        ]
-        futures = [
-            (stage_name, objectref_to_future(object_ref)) for stage_name, object_ref in object_refs
-        ]
+        stage_names = list(final_group.keys())
+        object_refs = list(final_group.values())
+        futures = [objectref_to_future(ref) for ref in object_refs]
 
         self._running_workflows.extend(object_refs)
         try:
-            result = await asyncio.gather(*[fut for _, fut in futures])
+            result = await asyncio.gather(*futures)
 
             if len(object_refs) == 1:
                 return result[0]
@@ -645,9 +658,9 @@ class RayExecutor(Executor):
         except BaseException as e:
             raise WorkflowExecutionError(f"Unknown error occurred: {str(e)}") from e
         finally:
-            for object_ref in object_refs:
-                if object_ref in self._running_workflows:
-                    self._running_workflows.remove(object_ref)
+            for ref in object_refs:
+                if ref in self._running_workflows:
+                    self._running_workflows.remove(ref)
 
     async def __call__(
         self, definition: WorkflowResource, run: WorkflowRun, context: WorkflowRunContext
