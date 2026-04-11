@@ -38,9 +38,10 @@ class MapperActor:
     own worker process just to orchestrate sub-tasks.
     """
 
-    def run_map(self, func, options, iterable, *args, **kwargs):
+    async def run_map(self, func, options, iterable, *args, **kwargs):
         wrapped = ray.remote(func).options(**options)
-        return ray.get([wrapped.remote(item, *args, **kwargs) for item in list(iterable)])
+        refs = [wrapped.remote(item, *args, **kwargs) for item in list(iterable)]
+        return await asyncio.gather(*refs)
 
     @classmethod
     async def start(cls, actor_name: str, **options):
