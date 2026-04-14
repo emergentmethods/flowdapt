@@ -27,7 +27,17 @@ class TriggerService(Service):
 
         register_rpc(self._rpc)
 
+    async def _wait_for_services_ready(self):
+        # Don't fire triggers until every service (notably compute) has
+        # finished startup. Otherwise a trigger can run a workflow mid
+        # ray.init(), which races with the executor bringup.
+        while not self._stopped.is_set():
+            if self._context.flags.get("services_ready"):
+                return
+            await asyncio.sleep(0.5)
+
     async def _run_scheduled_triggers(self):
+        await self._wait_for_services_ready()
         while not self._stopped.is_set():
             try:
                 async for trigger in get_next_scheduled_triggers():

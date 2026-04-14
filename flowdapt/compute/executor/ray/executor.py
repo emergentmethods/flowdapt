@@ -222,6 +222,7 @@ class RayExecutor(Executor):
             raise ValueError(f"Invalid strategy: {strategy}")
 
         self._connection_monitor_task: asyncio.Task | None = None
+        self._start_lock: asyncio.Lock | None = None
         self._connection_monitor_interval = connection_monitor_interval
         self._max_reconnect_retries = max_reconnect_retries
         self._base_reconnect_delay = base_reconnect_delay
@@ -417,42 +418,46 @@ class RayExecutor(Executor):
             strategy=self._config["strategy"],
         )
 
-        await logger.ainfo("InitializingDriver")
-        self._ray_context = await self._init_ray()
+        if self._start_lock is None:
+            self._start_lock = asyncio.Lock()
 
-        await logger.ainfo("StartingClusterMemory")
-        RayClusterMemoryActor.start(
-            self._config["cluster_memory_actor"].pop("name"), **self._config["cluster_memory_actor"]
-        )
-        await logger.ainfo("StartedClusterMemory")
+        async with self._start_lock:
+            if self.running:
+                return
 
-        await logger.ainfo("StartingMapperActor")
-        _mapper_actor_opts = {**self._config["mapper_actor"]}
-        _mapper_actor_name = _mapper_actor_opts.pop("name")
-        # Pass runtime env to the actor without py_modules — those contain
-        # live module objects that only ray.init() can serialize. Once init
-        # uploads them to GCS they're available cluster-wide already.
-        _actor_runtime_env = {
-            k: v for k, v in self._get_runtime_env().items()
-            if k != "py_modules" and v is not None
-        }
-        await MapperActor.start(
-            _mapper_actor_name,
-            runtime_env=_actor_runtime_env if _actor_runtime_env else None,
-            **_mapper_actor_opts,
-        )
-        await logger.ainfo("StartedMapperActor")
+            await logger.ainfo("InitializingDriver")
+            self._ray_context = await self._init_ray()
 
-        dashboard_url = self._ray_context.dashboard_url or None
-        self.running = True
-        self.connected = True
+            await logger.ainfo("StartingClusterMemory")
+            _cm_actor_opts = {**self._config["cluster_memory_actor"]}
+            _cm_actor_name = _cm_actor_opts.pop("name")
+            RayClusterMemoryActor.start(_cm_actor_name, **_cm_actor_opts)
+            await logger.ainfo("StartedClusterMemory")
 
-        if not self._is_local and self._connection_monitor_interval is not None:
-            self._connection_monitor_task = asyncio.create_task(
-                self._monitor_connection()
+            await logger.ainfo("StartingMapperActor")
+            _mapper_actor_opts = {**self._config["mapper_actor"]}
+            _mapper_actor_name = _mapper_actor_opts.pop("name")
+            _actor_runtime_env = {
+                k: v for k, v in self._get_runtime_env().items()
+                if k != "py_modules" and v is not None
+            }
+            await MapperActor.start(
+                _mapper_actor_name,
+                runtime_env=_actor_runtime_env if _actor_runtime_env else None,
+                **_mapper_actor_opts,
             )
+            await logger.ainfo("StartedMapperActor")
 
-        await logger.ainfo("DriverInitialized", dashboard=dashboard_url)
+            dashboard_url = self._ray_context.dashboard_url or None
+            self.running = True
+            self.connected = True
+
+            if not self._is_local and self._connection_monitor_interval is not None:
+                self._connection_monitor_task = asyncio.create_task(
+                    self._monitor_connection()
+                )
+
+            await logger.ainfo("DriverInitialized", dashboard=dashboard_url)
 
     async def close(self):
         if self.running:
