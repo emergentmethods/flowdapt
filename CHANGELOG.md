@@ -1,4 +1,14 @@
 
+<a name="0.1.42"></a>
+## [0.1.42](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.41...0.1.42)
+
+> 2026-04-14
+
+### Fix
+
+* Ensure start up isnt interrupted by triggers firing
+
+
 <a name="0.1.41"></a>
 ## [0.1.41](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.40...0.1.41)
 
@@ -77,12 +87,4 @@
 ## 0.1.34
 
 > 2025-08-14
-
-### Chore
-
-* Fix markdown badges
-
-### Fix
-
-* Support deactivating connection monitor and ping failure threshold for ray executor
 
