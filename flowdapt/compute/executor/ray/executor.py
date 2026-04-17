@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from enum import Enum
-from functools import partial
 from typing import Any, AsyncIterator, Callable
 
 import ray
@@ -532,15 +531,23 @@ class RayExecutor(Executor):
         return ray.remote(func).options(**options)
 
     def lazy(self, stage: BaseStage):
-        part = partial(
-            lambda func, **options: getattr(self._create_lazy(func, **options), self._call_attr),
-            name=stage.name,
-            resources=stage.resources.extras(),
-            num_cpus=stage.resources.cpus,
-            num_gpus=stage.resources.gpus,
-            memory=stage.resources.memory,
-        )
-        return part(stage.get_stage_fn())
+        func = stage.get_stage_fn()
+        options = {
+            "name": stage.name,
+            "resources": stage.resources.extras(),
+            "num_cpus": stage.resources.cpus,
+            "num_gpus": stage.resources.gpus,
+            "memory": stage.resources.memory,
+        }
+        call_attr = self._call_attr
+
+        async def _submit(*args, **kwargs):
+            def _do():
+                remote_fn = ray.remote(func).options(**options)
+                return getattr(remote_fn, call_attr)(*args, **kwargs)
+            return await asyncio.to_thread(_do)
+
+        return _submit
 
     def mapped_lazy(self, stage: BaseStage) -> Any:
         func = stage.get_stage_fn()
@@ -551,10 +558,14 @@ class RayExecutor(Executor):
             "num_gpus": stage.resources.gpus,
             "memory": stage.resources.memory,
         }
-        mapper = ray.get_actor(self._config["mapper_actor"]["name"], namespace="flowdapt")
+        actor_name = self._config["mapper_actor"]["name"]
 
-        def map_via_actor(iterable, *args, **kwargs):
-            return mapper.run_map.remote(func, options, iterable, *args, **kwargs)
+        async def map_via_actor(iterable, *args, **kwargs):
+            def _do():
+                mapper = ray.get_actor(actor_name, namespace="flowdapt")
+                return mapper.run_map.remote(func, options, iterable, *args, **kwargs)
+            return await asyncio.to_thread(_do)
+
         return map_via_actor
 
     async def _generate_partials(
