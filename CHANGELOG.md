@@ -1,4 +1,14 @@
 
+<a name="0.1.43"></a>
+## [0.1.43](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.42...0.1.43)
+
+> 2026-04-17
+
+### Fix
+
+* Avoid calling remotes in the event loop
+
+
 <a name="0.1.42"></a>
 ## [0.1.42](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.41...0.1.42)
 
@@ -74,17 +84,7 @@
 
 
 <a name="0.1.35"></a>
-## [0.1.35](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.34...0.1.35)
-
-> 2025-08-14
-
-### Fix
-
-* Move docker build job
-
-
-<a name="0.1.34"></a>
-## 0.1.34
+## 0.1.35
 
 > 2025-08-14
 
