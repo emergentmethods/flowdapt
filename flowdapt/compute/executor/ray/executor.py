@@ -44,14 +44,19 @@ class MapperActor:
 
     @classmethod
     async def start(cls, actor_name: str, **options):
+        # Always claim a fresh actor so a stale one left behind by a crashed
+        # prior process (SIGKILL, OOM, node failure) doesn't get reused with
+        # the wrong runtime_env.
         try:
-            await asyncio.to_thread(
+            existing = await asyncio.to_thread(
                 ray.get_actor, actor_name, namespace="flowdapt"
             )
+            ray.kill(existing)
         except ValueError:
-            MapperActor.options(
-                name=actor_name, lifetime="detached", namespace="flowdapt", **options
-            ).remote()
+            pass
+        MapperActor.options(
+            name=actor_name, lifetime="detached", namespace="flowdapt", **options
+        ).remote()
 
 
 class ExecuteStrategy(str, Enum):
@@ -471,6 +476,20 @@ class RayExecutor(Executor):
                     ray.cancel(object_ref)
 
                 self._running_workflows = []
+
+                # Kill the detached MapperActor so the next startup recreates
+                # it against the current runtime_env. Otherwise get_actor would
+                # return the stale one and silently ignore the new env.
+                mapper_name = self._config["mapper_actor"]["name"]
+                try:
+                    mapper = await asyncio.to_thread(
+                        ray.get_actor, mapper_name, namespace="flowdapt"
+                    )
+                    ray.kill(mapper)
+                    await logger.ainfo("KilledMapperActor", name=mapper_name)
+                except ValueError:
+                    pass
+
                 await self._close_ray()
 
             self._ray_context = None
