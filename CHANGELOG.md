@@ -1,4 +1,14 @@
 
+<a name="0.1.44"></a>
+## [0.1.44](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.43...0.1.44)
+
+> 2026-04-24
+
+### Fix
+
+* Ensure mapper actor spins up new with each plugin to guarantee env updates on version push
+
+
 <a name="0.1.43"></a>
 ## [0.1.43](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.42...0.1.43)
 
@@ -74,17 +84,7 @@
 
 
 <a name="0.1.36"></a>
-## [0.1.36](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.35...0.1.36)
+## 0.1.36
 
 > 2025-08-26
-
-### Fix
-
-* Use Gitlab runners for dind
-
-
-<a name="0.1.35"></a>
-## 0.1.35
-
-> 2025-08-14
 
