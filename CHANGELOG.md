@@ -1,4 +1,14 @@
 
+<a name="0.1.45"></a>
+## [0.1.45](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.44...0.1.45)
+
+> 2026-05-10
+
+### Fix
+
+* Connection recovery, improve cluster memory handling
+
+
 <a name="0.1.44"></a>
 ## [0.1.44](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.43...0.1.44)
 
@@ -74,17 +84,7 @@
 
 
 <a name="0.1.37"></a>
-## [0.1.37](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.36...0.1.37)
+## 0.1.37
 
 > 2025-10-13
-
-### Fix
-
-* Bump and relax constraints for some dependencies
-
-
-<a name="0.1.36"></a>
-## 0.1.36
-
-> 2025-08-26
 
