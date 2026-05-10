@@ -47,16 +47,17 @@ class MapperActor:
         # Always claim a fresh actor so a stale one left behind by a crashed
         # prior process (SIGKILL, OOM, node failure) doesn't get reused with
         # the wrong runtime_env.
-        try:
-            existing = await asyncio.to_thread(
-                ray.get_actor, actor_name, namespace="flowdapt"
-            )
-            ray.kill(existing)
-        except ValueError:
-            pass
-        MapperActor.options(
-            name=actor_name, lifetime="detached", namespace="flowdapt", **options
-        ).remote()
+        def _start():
+            try:
+                existing = ray.get_actor(actor_name, namespace="flowdapt")
+                ray.kill(existing)
+            except ValueError:
+                pass
+            MapperActor.options(
+                name=actor_name, lifetime="detached", namespace="flowdapt", **options
+            ).remote()
+
+        await asyncio.to_thread(_start)
 
 
 class ExecuteStrategy(str, Enum):
@@ -406,6 +407,7 @@ class RayExecutor(Executor):
                         # in case the connection was lost and then restored before
                         # the ping failure threshold was reached
                         ping_attempts = 0
+                        self.connected = True
                         await logger.adebug("PingSuccessful")
                 except asyncio.CancelledError:
                     await logger.adebug("ConnectionMonitorCancelled")
@@ -471,24 +473,28 @@ class RayExecutor(Executor):
 
             if ray.is_initialized():
                 # Cancel any running workflows we submitted if we're shutting down
-                for object_ref in self._running_workflows:
-                    await logger.ainfo("WorkflowCancelling", objectref=object_ref)
-                    ray.cancel(object_ref)
-
+                running = list(self._running_workflows)
                 self._running_workflows = []
+                if running:
+                    def _cancel_all():
+                        for ref in running:
+                            ray.cancel(ref)
+                    await asyncio.to_thread(_cancel_all)
 
                 # Kill the detached MapperActor so the next startup recreates
                 # it against the current runtime_env. Otherwise get_actor would
                 # return the stale one and silently ignore the new env.
                 mapper_name = self._config["mapper_actor"]["name"]
-                try:
-                    mapper = await asyncio.to_thread(
-                        ray.get_actor, mapper_name, namespace="flowdapt"
-                    )
-                    ray.kill(mapper)
-                    await logger.ainfo("KilledMapperActor", name=mapper_name)
-                except ValueError:
-                    pass
+
+                def _kill_mapper():
+                    try:
+                        mapper = ray.get_actor(mapper_name, namespace="flowdapt")
+                        ray.kill(mapper)
+                    except ValueError:
+                        pass
+
+                await asyncio.to_thread(_kill_mapper)
+                await logger.ainfo("KilledMapperActor", name=mapper_name)
 
                 await self._close_ray()
 

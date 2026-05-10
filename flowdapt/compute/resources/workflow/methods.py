@@ -42,7 +42,10 @@ workflows_failed_count = meter.create_counter(
 
 async def _publish_workflow_run_event(rpc: RPC, event_type: Type[Event], run: WorkflowRun):
     await logger.adebug("PublishingEvent", event_type=event_type.__name__)
-    await rpc.event_bus.publish(event_type(source="compute", data=run))
+    # Publish a copy without the result payload — result can be arbitrarily large
+    # and gets serialized on the event loop for every conditional trigger check.
+    run_without_result = run.model_copy(update={"result": None})
+    await rpc.event_bus.publish(event_type(source="compute", data=run_without_result))
 
 
 async def _get_workflow(identifier: str | UUID, database: BaseStorage) -> WorkflowResource:

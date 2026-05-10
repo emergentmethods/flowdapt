@@ -6,6 +6,11 @@ from ray import get, get_actor, put, remote
 
 from flowdapt.compute.cluster_memory.base import ClusterMemory
 
+# Module-level actor handle cache keyed by actor name.
+# Ray actor handles are cheap to hold and safe to reuse across calls within
+# the same process, so we pay the ray.get_actor() GCS round-trip only once.
+_actor_handles: dict[str, Any] = {}
+
 
 @remote
 class RayClusterMemoryActor:
@@ -49,7 +54,10 @@ class RayClusterMemoryActor:
 
 class RayClusterMemory(ClusterMemory):
     def __init__(self):
-        self.actor = get_actor(os.environ["CM_ACTOR_NAME"], namespace="flowdapt")
+        actor_name = os.environ["CM_ACTOR_NAME"]
+        if actor_name not in _actor_handles:
+            _actor_handles[actor_name] = get_actor(actor_name, namespace="flowdapt")
+        self.actor = _actor_handles[actor_name]
 
     def put(self, key: str, value: Any, *, namespace: str = "default"):
         object_ref = put(value, _owner=self.actor)

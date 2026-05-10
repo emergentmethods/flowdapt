@@ -190,8 +190,9 @@ async def update_trigger_api(
 @router.add_event_callback(all=True)
 async def handle_all_events_callback(event: Event):
     triggers: list[TriggerRuleResource] = await list_triggers(type=TriggerRuleType.condition)
+    event_data = model_dump(event)
     for trigger in triggers:
-        if trigger.spec.check_condition(model_dump(event)):
+        if trigger.spec.check_condition(event_data):
             await logger.ainfo(
                 "ValidTriggerCondition",
                 trigger=trigger.metadata.name,
