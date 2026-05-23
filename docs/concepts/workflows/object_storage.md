@@ -97,7 +97,7 @@ def use_cities_list():
     cities_list = cluster_memory.get("cities_list")
 ```
 
-In the above example, get_cluster_memory is used to obtain a reference to the Cluster Memory. The put method is then used to store a list of cities under the key `"cities_list"`. Then the data is later retrived via the get method in the second stage.
+In the above example, get_cluster_memory is used to obtain a reference to the Cluster Memory. The put method is then used to store a list of cities under the key `"cities_list"`. Then the data is later retrieved via the get method in the second stage.
 
 ### Details
 
