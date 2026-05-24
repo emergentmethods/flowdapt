@@ -547,8 +547,11 @@ class RayExecutor(Executor):
             "memory": stage_resources.pop("memory", 0.0),
             **stage_resources,
         }
+        if not self._nodes_cache:
+            return True
+
         available_resources = [
-            node["Resources"] for node in await asyncio.to_thread(ray.nodes)
+            node["Resources"] for node in self._nodes_cache
         ]
 
         for resource_dict in available_resources:
@@ -655,7 +658,9 @@ class RayExecutor(Executor):
 
         async for stage_group in self._generate_partials(definition, context):
             stage_names = list(stage_group.keys())
-            group_partials = [objectref_to_future(part) for part in stage_group.values()]
+            group_partials = await asyncio.gather(
+                *[objectref_to_future(part) for part in stage_group.values()]
+            )
 
             # Wait for all stages in the group to finish, and catch any errors
             # before moving on. This ensures we don't submit any stages that
@@ -695,7 +700,7 @@ class RayExecutor(Executor):
 
         stage_names = list(final_group.keys())
         object_refs = list(final_group.values())
-        futures = [objectref_to_future(ref) for ref in object_refs]
+        futures = await asyncio.gather(*[objectref_to_future(ref) for ref in object_refs])
 
         self._running_workflows.extend(object_refs)
         try:
