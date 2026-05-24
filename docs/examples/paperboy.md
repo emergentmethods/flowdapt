@@ -1,7 +1,7 @@
 # Large-scale news distillation for production
 ## Harmonizing Flowdapt, Qdrant, vLLM
 
-Retreival Augmented Generative AI (RAG) is a new approach to infusing large language models with information that was not present during training. Most RAG examples are constrained to off-premise LLMs (like OpenAI or Claude), static knowledge bases (upload documents once) and are designed to interact with a single user. These limitations allow for fun toys, but they do not scale to production.
+Retrieval Augmented Generative AI (RAG) is a new approach to infusing large language models with information that was not present during training. Most RAG examples are constrained to off-premise LLMs (like OpenAI or Claude), static knowledge bases (upload documents once) and are designed to interact with a single user. These limitations allow for fun toys, but they do not scale to production.
 
 Instead, we at Emergent Methods formulated a production scale news distillation architecture that is based on three key softwares:
 - Flowdapt: large-scale orchestration of cluster-compute (with the Ray executor)
