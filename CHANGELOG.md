@@ -1,4 +1,14 @@
 
+<a name="0.1.47"></a>
+## [0.1.47](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.46...0.1.47)
+
+> 2026-05-24
+
+### Fix
+
+* Avoid blocking calls
+
+
 <a name="0.1.46"></a>
 ## [0.1.46](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.45...0.1.46)
 
@@ -73,21 +83,7 @@
 
 
 <a name="0.1.39"></a>
-## [0.1.39](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.38...0.1.39)
+## 0.1.39
 
 > 2026-04-09
-
-### Fix
-
-* Make the mapper actor not reliant on cluster resources
-
-
-<a name="0.1.38"></a>
-## 0.1.38
-
-> 2026-04-09
-
-### Fix
-
-* Use personal access token
 
