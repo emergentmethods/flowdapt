@@ -1,4 +1,14 @@
 
+<a name="0.1.46"></a>
+## [0.1.46](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.45...0.1.46)
+
+> 2026-05-24
+
+### Fix
+
+* Move node check out of the environmnet_info()
+
+
 <a name="0.1.45"></a>
 ## [0.1.45](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.44...0.1.45)
 
@@ -73,18 +83,11 @@
 
 
 <a name="0.1.38"></a>
-## [0.1.38](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.37...0.1.38)
+## 0.1.38
 
 > 2026-04-09
 
 ### Fix
 
 * Use personal access token
-* Optimize memory handling for mappers, bump ray
-
-
-<a name="0.1.37"></a>
-## 0.1.37
-
-> 2025-10-13
 
