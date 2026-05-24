@@ -227,6 +227,8 @@ class RayExecutor(Executor):
             raise ValueError(f"Invalid strategy: {strategy}")
 
         self._connection_monitor_task: asyncio.Task | None = None
+        self._nodes_refresh_task: asyncio.Task | None = None
+        self._nodes_cache: list = []
         self._start_lock: asyncio.Lock | None = None
         self._connection_monitor_interval = connection_monitor_interval
         self._max_reconnect_retries = max_reconnect_retries
@@ -463,6 +465,8 @@ class RayExecutor(Executor):
                     self._monitor_connection()
                 )
 
+            self._nodes_refresh_task = asyncio.create_task(self._refresh_nodes())
+
             await logger.ainfo("DriverInitialized", dashboard=dashboard_url)
 
     async def close(self):
@@ -470,6 +474,10 @@ class RayExecutor(Executor):
             if self._connection_monitor_task:
                 await cancel_task(self._connection_monitor_task)
                 self._connection_monitor_task = None
+
+            if self._nodes_refresh_task:
+                await cancel_task(self._nodes_refresh_task)
+                self._nodes_refresh_task = None
 
             if ray.is_initialized():
                 # Cancel any running workflows we submitted if we're shutting down
@@ -502,6 +510,17 @@ class RayExecutor(Executor):
             self.running = False
             self.connected = False
 
+    async def _refresh_nodes(self):
+        while True:
+            try:
+                if self._ray_context:
+                    self._nodes_cache = await asyncio.to_thread(ray.nodes)
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                pass
+            await asyncio.sleep(30)
+
     async def environment_info(self):
         return {
             "dashboard_url": (
@@ -513,11 +532,7 @@ class RayExecutor(Executor):
             # resolved:
             # https://github.com/ray-project/ray/issues/36833
             # "gcs_address": runtime_context.gcs_address,
-            "nodes": (
-                await asyncio.to_thread(ray.nodes)
-                if self._ray_context
-                else []
-            )
+            "nodes": self._nodes_cache,
         }
 
     async def _check_resources(self, stage: BaseStage):
