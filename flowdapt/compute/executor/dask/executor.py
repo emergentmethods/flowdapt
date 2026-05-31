@@ -57,7 +57,7 @@ def lazy_inner(func: Callable, name: str, *args, **kwargs):
     return delayed(func, name=name)(*args, **kwargs)
 
 
-def map_inner(func: Callable, name: str, resources: dict, iterable: Iterable, *args, **kwargs):
+def map_inner(func: Callable, name: str, resources: dict, allow_partial_failure: bool, iterable: Iterable, *args, **kwargs):
     """
     Map a function to an iterable using dask.delayed
     """
@@ -73,6 +73,16 @@ def map_inner(func: Callable, name: str, resources: dict, iterable: Iterable, *a
             )
             for item in iterable
         ]
+
+        if allow_partial_failure:
+            futures = client.compute(futs, resources=resources)
+            results = []
+            for f in futures:
+                try:
+                    results.append(f.result())
+                except Exception:
+                    pass
+            return results
 
         return client.compute(futs, resources=resources, sync=True)
 
@@ -398,6 +408,7 @@ class DaskExecutor(Executor):
         )
 
     def mapped_lazy(self, stage: BaseStage):
+        allow_partial_failure = getattr(stage, "allow_partial_failure", True)
         return delayed(
-            partial(map_inner, stage.get_stage_fn(), stage.name, stage.get_required_resources())
+            partial(map_inner, stage.get_stage_fn(), stage.name, stage.get_required_resources(), allow_partial_failure)
         )

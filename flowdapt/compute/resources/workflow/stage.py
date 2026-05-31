@@ -199,6 +199,7 @@ class SimpleStage(BaseStage):
 class ParameterizedStage(BaseStage):
     type: ClassVar[str] = "parameterized"
     map_on: str | None = None
+    allow_partial_failure: bool = True
 
     @after_validator()
     def _update_signature(cls, value: ParameterizedStage):

@@ -37,10 +37,13 @@ class MapperActor:
     own worker process just to orchestrate sub-tasks.
     """
 
-    async def run_map(self, func, options, iterable, *args, **kwargs):
+    async def run_map(self, func, options, iterable, allow_partial_failure, *args, **kwargs):
         wrapped = ray.remote(func).options(**options)
         refs = [wrapped.remote(item, *args, **kwargs) for item in list(iterable)]
-        return await asyncio.gather(*refs)
+        results = await asyncio.gather(*refs, return_exceptions=allow_partial_failure)
+        if allow_partial_failure:
+            results = [r for r in results if not isinstance(r, BaseException)]
+        return results
 
     @classmethod
     async def start(cls, actor_name: str, **options):
@@ -603,10 +606,12 @@ class RayExecutor(Executor):
         }
         actor_name = self._config["mapper_actor"]["name"]
 
+        allow_partial_failure = getattr(stage, "allow_partial_failure", True)
+
         async def map_via_actor(iterable, *args, **kwargs):
             def _do():
                 mapper = ray.get_actor(actor_name, namespace="flowdapt")
-                return mapper.run_map.remote(func, options, iterable, *args, **kwargs)
+                return mapper.run_map.remote(func, options, iterable, allow_partial_failure, *args, **kwargs)
             return await asyncio.to_thread(_do)
 
         return map_via_actor

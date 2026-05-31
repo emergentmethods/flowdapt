@@ -178,12 +178,21 @@ class LocalExecutor(Executor):
     def mapped_lazy(self, stage: BaseStage) -> Any:
         part = partial(lazy_func, pool=self._pool)
 
+        allow_partial_failure = getattr(stage, "allow_partial_failure", True)
+
         def map_inner(iterable: Iterable, *args, **kwargs):
             if not stage.is_async:
                 func = stage.get_stage_fn()
             else:
                 func = partial(run_in_thread, stage.get_stage_fn())
 
-            return [func(item, *args, **kwargs) for item in iterable]
+            results = []
+            for item in iterable:
+                try:
+                    results.append(func(item, *args, **kwargs))
+                except Exception:
+                    if not allow_partial_failure:
+                        raise
+            return results
 
         return part(map_inner)
