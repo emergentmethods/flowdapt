@@ -1,4 +1,14 @@
 
+<a name="0.1.48"></a>
+## [0.1.48](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.47...0.1.48)
+
+> 2026-05-31
+
+### Fix
+
+* Add allow_partial_failure to parameterized stages
+
+
 <a name="0.1.47"></a>
 ## [0.1.47](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.46...0.1.47)
 
@@ -72,7 +82,7 @@
 
 
 <a name="0.1.40"></a>
-## [0.1.40](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.39...0.1.40)
+## 0.1.40
 
 > 2026-04-10
 
@@ -80,10 +90,4 @@
 
 * Group by Group
 * Improve mapper actor
-
-
-<a name="0.1.39"></a>
-## 0.1.39
-
-> 2026-04-09
 
