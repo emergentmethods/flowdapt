@@ -70,3 +70,8 @@ class NonUniqueValue(APIError):
 class BadRequestError(APIError):
     status_code: int = 400
     detail: str = "Bad request"
+
+
+class ServiceDrainingError(APIError):
+    status_code: int = 503
+    detail: str = "Service is draining, no new workflow runs accepted"

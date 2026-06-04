@@ -37,8 +37,21 @@ class MapperActor:
     own worker process just to orchestrate sub-tasks.
     """
 
-    async def run_map(self, func, options, iterable, allow_partial_failure, *args, **kwargs):
-        wrapped = ray.remote(func).options(**options)
+    def __init__(self):
+        # Cache of wrapped remote functions keyed by stage identity. Each call
+        # to ``ray.remote(func)`` mints a fresh UUID -> unique function_id ->
+        # a permanent entry in the GCS function table (and in every executing
+        # worker's function cache). Re-wrapping on every ``run_map`` call would
+        # therefore leak memory without bound for the life of this detached
+        # actor. Build the wrapped function once per stage and reuse it.
+        self._wrapped: dict = {}
+
+    async def run_map(
+        self, cache_key, func, options, iterable, allow_partial_failure, *args, **kwargs
+    ):
+        wrapped = self._wrapped.get(cache_key)
+        if wrapped is None:
+            wrapped = self._wrapped[cache_key] = ray.remote(func).options(**options)
         refs = [wrapped.remote(item, *args, **kwargs) for item in list(iterable)]
         results = await asyncio.gather(*refs, return_exceptions=allow_partial_failure)
         if allow_partial_failure:
@@ -223,6 +236,10 @@ class RayExecutor(Executor):
             self._config["cluster_address"] is None or self._config["cluster_address"] == "local"
         )
         self._running_workflows: list[tuple[str, ObjectRef]] = []
+        # Cache of wrapped remote functions keyed by stage identity, to avoid
+        # re-registering a new function_id (and leaking a permanent GCS function
+        # table entry) on every stage submission. See MapperActor for details.
+        self._remote_fn_cache: dict = {}
 
         if strategy in (ExecuteStrategy.GROUP_BY_GROUP, ExecuteStrategy.ALL_AT_ONCE):
             self._call_attr = "remote"
@@ -509,6 +526,10 @@ class RayExecutor(Executor):
 
                 await self._close_ray()
 
+            # Drop cached remote functions; they're bound to the cluster/job
+            # we just tore down and would otherwise be re-exported anyway.
+            self._remote_fn_cache.clear()
+
             self._ray_context = None
             self.running = False
             self.connected = False
@@ -573,6 +594,21 @@ class RayExecutor(Executor):
             f"Required {value} {resource} but only {available} available."
         )
 
+    def _remote_fn(self, cache_key, func: Callable, options: dict):
+        """
+        Return a wrapped remote function for the given stage, reusing a cached
+        one when available. ``ray.remote(func)`` assigns a fresh UUID on every
+        call, producing a unique ``function_id`` that is exported to the GCS
+        function table and never evicted -- so wrapping per submission leaks
+        memory in this long-lived driver process. Caching by ``cache_key``
+        (stage name + source hash) keeps it to one entry per stage version
+        while still picking up new code when a plugin is updated.
+        """
+        cached = self._remote_fn_cache.get(cache_key)
+        if cached is None:
+            cached = self._remote_fn_cache[cache_key] = ray.remote(func).options(**options)
+        return cached
+
     def _create_lazy(self, func: Callable, **options):
         return ray.remote(func).options(**options)
 
@@ -586,10 +622,11 @@ class RayExecutor(Executor):
             "memory": stage.resources.memory,
         }
         call_attr = self._call_attr
+        cache_key = (stage.name, stage.version)
 
         async def _submit(*args, **kwargs):
             def _do():
-                remote_fn = ray.remote(func).options(**options)
+                remote_fn = self._remote_fn(cache_key, func, options)
                 return getattr(remote_fn, call_attr)(*args, **kwargs)
             return await asyncio.to_thread(_do)
 
@@ -605,13 +642,16 @@ class RayExecutor(Executor):
             "memory": stage.resources.memory,
         }
         actor_name = self._config["mapper_actor"]["name"]
+        cache_key = (stage.name, stage.version)
 
         allow_partial_failure = getattr(stage, "allow_partial_failure", True)
 
         async def map_via_actor(iterable, *args, **kwargs):
             def _do():
                 mapper = ray.get_actor(actor_name, namespace="flowdapt")
-                return mapper.run_map.remote(func, options, iterable, allow_partial_failure, *args, **kwargs)
+                return mapper.run_map.remote(
+                    cache_key, func, options, iterable, allow_partial_failure, *args, **kwargs
+                )
             return await asyncio.to_thread(_do)
 
         return map_via_actor

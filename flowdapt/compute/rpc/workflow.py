@@ -28,7 +28,7 @@ from flowdapt.compute.service import logger
 from flowdapt.lib.context import inject_context
 from flowdapt.lib.domain.dto.protocol import DTOPair
 from flowdapt.lib.domain.dto.utils import to_model
-from flowdapt.lib.errors import APIErrorModel, ResourceNotFoundError
+from flowdapt.lib.errors import APIErrorModel, ResourceNotFoundError, ServiceDrainingError
 from flowdapt.lib.rpc import RPC, RPCRouter
 from flowdapt.lib.rpc.api.utils import (
     build_response,
@@ -318,6 +318,9 @@ async def run_workflow_callback(event: RunWorkflowEvent, rpc: RPC):
     except ResourceNotFoundError:
         await logger.aexception("ResourceNotFound", identifier=event.data.identifier)
         response = ("ResourceNotFoundError", event.data.identifier)
+    except ServiceDrainingError:
+        await logger.awarning("WorkflowRejectedDraining", identifier=event.data.identifier)
+        response = ("ServiceDrainingError", event.data.identifier)
 
     if event.reply_channel and event.correlation_id:
         await rpc.event_bus.publish_response(

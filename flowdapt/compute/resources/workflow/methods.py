@@ -17,7 +17,7 @@ from flowdapt.compute.resources.workflow.execute import execute_workflow
 from flowdapt.lib.config import Configuration
 from flowdapt.lib.context import inject_context
 from flowdapt.lib.database.base import BaseStorage
-from flowdapt.lib.errors import ResourceNotFoundError
+from flowdapt.lib.errors import ResourceNotFoundError, ServiceDrainingError
 from flowdapt.lib.logger import get_logger
 from flowdapt.lib.rpc import RPC
 from flowdapt.lib.telemetry import Status, StatusCode, get_meter, get_tracer
@@ -145,6 +145,7 @@ async def run_workflow(
     rpc: RPC,
     config: Configuration,
     executor: Executor,
+    flags: dict,
     wait: bool = True,
     namespace: str | None = None,
     source: str | None = None,
@@ -159,10 +160,14 @@ async def run_workflow(
     :param rpc: The RPC client to use
     :param config: The Application Configuration
     :param executor: The Executor to use
+    :param flags: The application flags dict
     :param wait: Whether to wait for the task to finish or not
     :param namespace: The namespace to run the Workflow in
     :param source: The source that triggered this workflow to run
     """
+    if flags.get("draining"):
+        raise ServiceDrainingError()
+
     # We don't use the tracer decorator here because we want the span
     # to end when the task is done
     with tracer.start_as_current_span("run_workflow", end_on_exit=False) as span:

@@ -128,6 +128,12 @@ class ServiceController:
         """
         log_once(log_method=logger.debug, event="SignalReceived", interval_seconds=1, signal=sig)
 
+        config = self._context.config
+        if config.drain_on_sigterm and not self._should_exit and not self._context.flags.get("draining"):
+            self._context.flags["draining"] = True
+            self._loop.create_task(self._drain_and_shutdown())
+            return
+
         if startup := self._task_sets.get("__startup__"):
             startup.cancel()
 
@@ -135,6 +141,28 @@ class ServiceController:
             main.cancel()
 
         self._should_exit = True
+
+    async def _drain_and_shutdown(self):
+        timeout = self._context.config.drain_timeout_seconds
+        await logger.ainfo("DrainModeActivated", timeout_seconds=timeout)
+
+        try:
+            await asyncio.wait_for(self._wait_for_drain(), timeout=timeout)
+            await logger.ainfo("DrainComplete")
+        except asyncio.TimeoutError:
+            await logger.awarning("DrainTimeout", timeout_seconds=timeout)
+
+        if startup := self._task_sets.get("__startup__"):
+            startup.cancel()
+
+        if main := self._task_sets.get("__run__"):
+            main.cancel()
+
+        self._should_exit = True
+
+    async def _wait_for_drain(self):
+        while self._service_task_set._set:
+            await asyncio.sleep(0.5)
 
     def _install_signal_handlers(self):
         """

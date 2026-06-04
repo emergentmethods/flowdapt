@@ -39,8 +39,12 @@ class TriggerService(Service):
     async def _run_scheduled_triggers(self):
         await self._wait_for_services_ready()
         while not self._stopped.is_set():
+            if self._context.flags.get("draining"):
+                return
             try:
                 async for trigger in get_next_scheduled_triggers():
+                    if self._context.flags.get("draining"):
+                        return
                     await logger.ainfo("RunningScheduledTrigger", trigger=trigger.metadata.name)
                     await set_last_run(trigger)
                     await trigger.spec.action.run()

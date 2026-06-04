@@ -201,6 +201,8 @@ class Configuration(Manifest):
     logging: LoggingSettings = Field(default_factory=LoggingSettings)
     storage: StorageSettings = Field(default_factory=StorageSettings)
     services: ServiceSettings = Field(default_factory=ServiceSettings)
+    drain_on_sigterm: bool = False
+    drain_timeout_seconds: int = 300
 
 
 @cache
