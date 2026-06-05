@@ -1,4 +1,14 @@
 
+<a name="0.1.50"></a>
+## [0.1.50](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.49...0.1.50)
+
+> 2026-06-05
+
+### Fix
+
+* Ensure mapper is unique per plugin to help blue/green drain cycles
+
+
 <a name="0.1.49"></a>
 ## [0.1.49](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.48...0.1.49)
 
@@ -88,6 +98,4 @@
 ### Fix
 
 * async cascade just to get actor
-* Ensure mapper is using async for map function
-* Improve all at once strategy with new mapper actor approach
 
