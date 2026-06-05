@@ -1,4 +1,15 @@
 
+<a name="0.1.49"></a>
+## [0.1.49](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.48...0.1.49)
+
+> 2026-06-05
+
+### Fix
+
+* Tests
+* Add a drain mechanism, and cache ray remote functions to avoid memory leak
+
+
 <a name="0.1.48"></a>
 ## [0.1.48](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.47...0.1.48)
 
@@ -70,7 +81,7 @@
 
 
 <a name="0.1.41"></a>
-## [0.1.41](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.40...0.1.41)
+## 0.1.41
 
 > 2026-04-11
 
@@ -79,15 +90,4 @@
 * async cascade just to get actor
 * Ensure mapper is using async for map function
 * Improve all at once strategy with new mapper actor approach
-
-
-<a name="0.1.40"></a>
-## 0.1.40
-
-> 2026-04-10
-
-### Fix
-
-* Group by Group
-* Improve mapper actor
 
