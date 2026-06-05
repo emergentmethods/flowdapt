@@ -53,7 +53,10 @@ async def test_context(mocked_api_server):
                 await create_event_bus("memory://")
             ),
             "task_set": TaskSet(),
-            "executor": LocalExecutor(use_processes=False)
+            "executor": LocalExecutor(use_processes=False),
+            # Mirror the Service startup (flowdapt/lib/service.py), which seeds
+            # context.flags so DI can inject `flags` into run_workflow et al.
+            "flags": {},
         }
     )
 
