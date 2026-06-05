@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from enum import Enum
+from uuid import uuid4
 from typing import Any, AsyncIterator, Callable
 
 import ray
@@ -60,15 +61,13 @@ class MapperActor:
 
     @classmethod
     async def start(cls, actor_name: str, **options):
-        # Always claim a fresh actor so a stale one left behind by a crashed
-        # prior process (SIGKILL, OOM, node failure) doesn't get reused with
-        # the wrong runtime_env.
+        # Each driver instance owns a uniquely-named MapperActor (see
+        # RayExecutor._mapper_actor_name) so that concurrent deploys of the same
+        # plugin -- e.g. an old version draining while a new one comes up --
+        # don't share or kill one another's mapper. The name is unique per
+        # process, so there is nothing to reclaim here; orphans left by a
+        # crashed driver are reaped in RayExecutor._reap_orphan_mappers.
         def _start():
-            try:
-                existing = ray.get_actor(actor_name, namespace="flowdapt")
-                ray.kill(existing)
-            except ValueError:
-                pass
             MapperActor.options(
                 name=actor_name, lifetime="detached", namespace="flowdapt", **options
             ).remote()
@@ -230,6 +229,13 @@ class RayExecutor(Executor):
         # to the workflows
         assert self._config["cluster_memory_actor"]["name"], "Cluster memory actor name is required"
         self._config["env_vars"]["CM_ACTOR_NAME"] = self._config["cluster_memory_actor"]["name"]
+
+        # Each driver instance gets its own uniquely-named MapperActor so that
+        # concurrent deploys of the same plugin (an old version draining while a
+        # new one starts) each have their own mapper and don't clobber the
+        # other's detached actor. The base name is kept for diagnostics.
+        self._mapper_actor_base_name: str = self._config["mapper_actor"]["name"]
+        self._mapper_actor_name: str = f"{self._mapper_actor_base_name}-{uuid4().hex[:12]}"
 
         self._ray_context: RayContext | ClientContext | None = None
         self._is_local: bool = (
@@ -464,17 +470,21 @@ class RayExecutor(Executor):
 
             await logger.ainfo("StartingMapperActor")
             _mapper_actor_opts = {**self._config["mapper_actor"]}
-            _mapper_actor_name = _mapper_actor_opts.pop("name")
+            _mapper_actor_opts.pop("name")
             _actor_runtime_env = {
                 k: v for k, v in self._get_runtime_env().items()
                 if k != "py_modules" and v is not None
             }
+            # Reap mappers left behind by drivers that have since exited, without
+            # touching any owned by a still-running driver (e.g. a concurrently
+            # draining deploy of another version).
+            await self._reap_orphan_mappers()
             await MapperActor.start(
-                _mapper_actor_name,
+                self._mapper_actor_name,
                 runtime_env=_actor_runtime_env if _actor_runtime_env else None,
                 **_mapper_actor_opts,
             )
-            await logger.ainfo("StartedMapperActor")
+            await logger.ainfo("StartedMapperActor", name=self._mapper_actor_name)
 
             dashboard_url = self._ray_context.dashboard_url or None
             self.running = True
@@ -509,10 +519,10 @@ class RayExecutor(Executor):
                             ray.cancel(ref)
                     await asyncio.to_thread(_cancel_all)
 
-                # Kill the detached MapperActor so the next startup recreates
-                # it against the current runtime_env. Otherwise get_actor would
-                # return the stale one and silently ignore the new env.
-                mapper_name = self._config["mapper_actor"]["name"]
+                # Kill this driver's detached MapperActor on the way out so it
+                # doesn't outlive the process and leak. The name is unique to
+                # this instance, so we only ever kill our own.
+                mapper_name = self._mapper_actor_name
 
                 def _kill_mapper():
                     try:
@@ -533,6 +543,52 @@ class RayExecutor(Executor):
             self._ray_context = None
             self.running = False
             self.connected = False
+
+    async def _reap_orphan_mappers(self) -> None:
+        """
+        Kill detached MapperActors whose creating driver job has exited, so
+        repeated deploys don't leak actors over time. Mappers owned by a
+        still-running driver -- e.g. an older plugin version draining alongside
+        this one -- are left untouched. Best effort: if the Ray state API is
+        unavailable we simply skip reaping.
+        """
+        def _reap() -> list[str]:
+            try:
+                from ray.util.state import list_actors, list_jobs
+            except Exception:
+                return []
+
+            try:
+                live_jobs = {
+                    job.job_id
+                    for job in list_jobs()
+                    if getattr(job, "status", None) == "RUNNING"
+                }
+                actors = list_actors(
+                    filters=[
+                        ("class_name", "=", "MapperActor"),
+                        ("state", "=", "ALIVE"),
+                    ],
+                    limit=10_000,
+                )
+            except Exception:
+                return []
+
+            reaped: list[str] = []
+            for actor in actors:
+                # Never touch our own mapper, or one whose driver is still alive.
+                if actor.name == self._mapper_actor_name or actor.job_id in live_jobs:
+                    continue
+                try:
+                    ray.kill(ray.get_actor(actor.name, namespace="flowdapt"))
+                    reaped.append(actor.name)
+                except Exception:
+                    pass
+            return reaped
+
+        reaped = await asyncio.to_thread(_reap)
+        if reaped:
+            await logger.ainfo("ReapedOrphanMappers", names=reaped, count=len(reaped))
 
     async def _refresh_nodes(self):
         while True:
@@ -641,7 +697,7 @@ class RayExecutor(Executor):
             "num_gpus": stage.resources.gpus,
             "memory": stage.resources.memory,
         }
-        actor_name = self._config["mapper_actor"]["name"]
+        actor_name = self._mapper_actor_name
         cache_key = (stage.name, stage.version)
 
         allow_partial_failure = getattr(stage, "allow_partial_failure", True)
