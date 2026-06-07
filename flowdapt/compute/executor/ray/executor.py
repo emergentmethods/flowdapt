@@ -38,7 +38,7 @@ class MapperActor:
     own worker process just to orchestrate sub-tasks.
     """
 
-    def __init__(self):
+    def __init__(self, max_calls: int | None = None):
         # Cache of wrapped remote functions keyed by stage identity. Each call
         # to ``ray.remote(func)`` mints a fresh UUID -> unique function_id ->
         # a permanent entry in the GCS function table (and in every executing
@@ -46,13 +46,22 @@ class MapperActor:
         # therefore leak memory without bound for the life of this detached
         # actor. Build the wrapped function once per stage and reuse it.
         self._wrapped: dict = {}
+        # When set, mapped tasks run with ``max_calls`` so the worker process
+        # exits (and frees all its memory) after that many invocations instead
+        # of lingering as an idle worker. See RayExecutor.tasks_per_worker for
+        # why this is necessary on Ray 2.54.x.
+        self._max_calls = max_calls
 
     async def run_map(
         self, cache_key, func, options, iterable, allow_partial_failure, *args, **kwargs
     ):
         wrapped = self._wrapped.get(cache_key)
         if wrapped is None:
-            wrapped = self._wrapped[cache_key] = ray.remote(func).options(**options)
+            # ``max_calls`` must be set on ``ray.remote(...)`` -- it is silently
+            # dropped if passed through ``.options()``.
+            base = ray.remote(max_calls=self._max_calls)(func) \
+                if self._max_calls is not None else ray.remote(func)
+            wrapped = self._wrapped[cache_key] = base.options(**options)
         refs = [wrapped.remote(item, *args, **kwargs) for item in list(iterable)]
         results = await asyncio.gather(*refs, return_exceptions=allow_partial_failure)
         if allow_partial_failure:
@@ -60,7 +69,7 @@ class MapperActor:
         return results
 
     @classmethod
-    async def start(cls, actor_name: str, **options):
+    async def start(cls, actor_name: str, max_calls: int | None = None, **options):
         # Each driver instance owns a uniquely-named MapperActor (see
         # RayExecutor._mapper_actor_name) so that concurrent deploys of the same
         # plugin -- e.g. an old version draining while a new one comes up --
@@ -70,7 +79,7 @@ class MapperActor:
         def _start():
             MapperActor.options(
                 name=actor_name, lifetime="detached", namespace="flowdapt", **options
-            ).remote()
+            ).remote(max_calls=max_calls)
 
         await asyncio.to_thread(_start)
 
@@ -146,6 +155,16 @@ class RayExecutor(Executor):
     if it's still alive. Defaults to 10 seconds.
     :param ping_failure_threshold: The number of consecutive ping failures to allow before
     considering the connection lost and attempting to reconnect. Defaults to 3.
+    :param tasks_per_worker: If set, stage tasks and mapped tasks run with Ray's ``max_calls``,
+    so the worker process exits (releasing all of its memory back to the OS) after running that
+    many tasks instead of lingering as an idle worker. Defaults to ``None`` (Ray's default
+    behavior: workers are reused and persist). Set to ``1`` to guarantee each task gets a fresh
+    worker and no idle workers accumulate. This is the only reliable lever against idle-worker
+    RAM accumulation on Ray 2.54.x: ``num_workers_soft_limit`` is not consulted by the raylet's
+    idle-reaping path (``TryKillingIdleWorkers`` keeps ~``num_cpus_available`` idle workers
+    regardless), and workers reused for back-to-back tasks never enter the idle pool to be
+    reaped at all. The trade-off is worker cold-start (re-importing modules) on every task, so
+    a small N (e.g. 4-8) can be used to amortize startup while still bounding memory growth.
     :param kwargs: Additional keyword arguments to pass to ray.init().
     """
 
@@ -179,6 +198,7 @@ class RayExecutor(Executor):
         max_reconnect_delay: float = 60.0,
         ping_timeout: float = 10.0,
         ping_failure_threshold: int = 3,
+        tasks_per_worker: int | None = None,
         **kwargs,
     ):
         _app_config = get_configuration()
@@ -236,6 +256,11 @@ class RayExecutor(Executor):
         # other's detached actor. The base name is kept for diagnostics.
         self._mapper_actor_base_name: str = self._config["mapper_actor"]["name"]
         self._mapper_actor_name: str = f"{self._mapper_actor_base_name}-{uuid4().hex[:12]}"
+
+        # When set, wrap stage/mapped tasks with Ray's ``max_calls`` so workers
+        # exit and free their memory after N tasks rather than persisting as
+        # idle workers. See the ``tasks_per_worker`` docstring for the why.
+        self._tasks_per_worker: int | None = tasks_per_worker
 
         self._ray_context: RayContext | ClientContext | None = None
         self._is_local: bool = (
@@ -481,6 +506,7 @@ class RayExecutor(Executor):
             await self._reap_orphan_mappers()
             await MapperActor.start(
                 self._mapper_actor_name,
+                max_calls=self._tasks_per_worker,
                 runtime_env=_actor_runtime_env if _actor_runtime_env else None,
                 **_mapper_actor_opts,
             )
@@ -662,11 +688,25 @@ class RayExecutor(Executor):
         """
         cached = self._remote_fn_cache.get(cache_key)
         if cached is None:
-            cached = self._remote_fn_cache[cache_key] = ray.remote(func).options(**options)
+            cached = self._remote_fn_cache[cache_key] = self._wrap_remote(func, options)
         return cached
 
+    def _wrap_remote(self, func: Callable, options: dict):
+        """
+        Wrap ``func`` as a Ray remote function, applying ``max_calls`` when
+        ``tasks_per_worker`` is configured. ``max_calls`` must be set on the
+        ``ray.remote(...)`` call -- it is silently dropped if passed through
+        ``.options()`` (see remote_function.py).
+        """
+        base = (
+            ray.remote(max_calls=self._tasks_per_worker)(func)
+            if self._tasks_per_worker is not None
+            else ray.remote(func)
+        )
+        return base.options(**options)
+
     def _create_lazy(self, func: Callable, **options):
-        return ray.remote(func).options(**options)
+        return self._wrap_remote(func, options)
 
     def lazy(self, stage: BaseStage):
         func = stage.get_stage_fn()

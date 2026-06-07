@@ -4,6 +4,7 @@ from fastapi import Depends, Request, Response, status
 
 from flowdapt.lib.domain.dto.protocol import DTOPair
 from flowdapt.lib.domain.dto.utils import to_model
+from flowdapt.lib.context import inject_context
 from flowdapt.lib.errors import APIErrorModel
 from flowdapt.lib.rpc import RPCRouter
 from flowdapt.lib.rpc.api.utils import (
@@ -188,7 +189,10 @@ async def update_trigger_api(
 
 # Event @ $ALL/$ALL
 @router.add_event_callback(all=True)
-async def handle_all_events_callback(event: Event):
+@inject_context
+async def handle_all_events_callback(event: Event, flags: dict):
+    if flags.get("draining"):
+        return
     triggers: list[TriggerRuleResource] = await list_triggers(type=TriggerRuleType.condition)
     event_data = model_dump(event)
     for trigger in triggers:
