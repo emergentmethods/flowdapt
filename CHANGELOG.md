@@ -1,4 +1,14 @@
 
+<a name="0.1.51"></a>
+## [0.1.51](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.50...0.1.51)
+
+> 2026-06-07
+
+### Fix
+
+* Give config option for force reaping idle Ray workers
+
+
 <a name="0.1.50"></a>
 ## [0.1.50](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.49...0.1.50)
 
@@ -81,21 +91,11 @@
 
 
 <a name="0.1.42"></a>
-## [0.1.42](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.41...0.1.42)
+## 0.1.42
 
 > 2026-04-14
 
 ### Fix
 
 * Ensure start up isnt interrupted by triggers firing
-
-
-<a name="0.1.41"></a>
-## 0.1.41
-
-> 2026-04-11
-
-### Fix
-
-* async cascade just to get actor
 
