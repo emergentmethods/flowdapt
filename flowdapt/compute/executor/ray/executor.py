@@ -39,12 +39,15 @@ class MapperActor:
     """
 
     def __init__(self, max_calls: int | None = None):
-        # Cache of wrapped remote functions keyed by stage identity. Each call
+        # Cache of *base* remote functions keyed by stage identity. Each call
         # to ``ray.remote(func)`` mints a fresh UUID -> unique function_id ->
         # a permanent entry in the GCS function table (and in every executing
-        # worker's function cache). Re-wrapping on every ``run_map`` call would
-        # therefore leak memory without bound for the life of this detached
-        # actor. Build the wrapped function once per stage and reuse it.
+        # worker's function cache). Re-creating it on every ``run_map`` call
+        # would therefore leak memory without bound for the life of this
+        # detached actor. We cache only the base ``ray.remote(func)`` (the leaky
+        # part) and apply ``.options(**options)`` fresh on every call, so two
+        # stages that share a cache key but declare different resources don't
+        # collide. ``.options()`` does not re-export to GCS, so this is leak-free.
         self._wrapped: dict = {}
         # When set, mapped tasks run with ``max_calls`` so the worker process
         # exits (and frees all its memory) after that many invocations instead
@@ -55,13 +58,17 @@ class MapperActor:
     async def run_map(
         self, cache_key, func, options, iterable, allow_partial_failure, *args, **kwargs
     ):
-        wrapped = self._wrapped.get(cache_key)
-        if wrapped is None:
-            # ``max_calls`` must be set on ``ray.remote(...)`` -- it is silently
-            # dropped if passed through ``.options()``.
-            base = ray.remote(max_calls=self._max_calls)(func) \
+        # Cache only the leaky base ``ray.remote(func)``; apply ``.options()``
+        # per call so each submission uses its own resources rather than freezing
+        # whichever stage warmed the cache first. ``max_calls`` must be set on
+        # ``ray.remote(...)`` -- it is silently dropped if passed via ``.options()``.
+        base = self._wrapped.get(cache_key)
+        if base is None:
+            base = self._wrapped[cache_key] = (
+                ray.remote(max_calls=self._max_calls)(func)
                 if self._max_calls is not None else ray.remote(func)
-            wrapped = self._wrapped[cache_key] = base.options(**options)
+            )
+        wrapped = base.options(**options)
         refs = [wrapped.remote(item, *args, **kwargs) for item in list(iterable)]
         results = await asyncio.gather(*refs, return_exceptions=allow_partial_failure)
         if allow_partial_failure:
@@ -644,14 +651,23 @@ class RayExecutor(Executor):
     async def _check_resources(self, stage: BaseStage):
         """
         Ensure the executor has enough resources to run a stage.
+
+        Only the physical base resources (CPU, GPU, memory) are hard-checked
+        against the currently-registered nodes. Custom resource labels
+        (``stage_resources`` extras) are deliberately *not* gated here: they are
+        logical labels an autoscaler can satisfy on demand, and a worker type
+        that advertises them may legitimately be scaled to zero replicas at
+        submission time. Gating on them against the static ``ray.nodes()``
+        snapshot would reject such stages outright -- the request would never
+        reach Ray's scheduler, which is the component that marks the task
+        pending and triggers a scale-up. So we let extras pass through to Ray.
         """
         stage_resources = stage.get_required_resources()
 
         required_resources = {
-            "CPU": stage_resources.pop("cpus", 0.0),
-            "GPU": stage_resources.pop("gpus", 0.0),
-            "memory": stage_resources.pop("memory", 0.0),
-            **stage_resources,
+            "CPU": stage_resources.get("cpus", 0.0),
+            "GPU": stage_resources.get("gpus", 0.0),
+            "memory": stage_resources.get("memory", 0.0),
         }
         if not self._nodes_cache:
             return True
@@ -676,37 +692,70 @@ class RayExecutor(Executor):
             f"Required {value} {resource} but only {available} available."
         )
 
+    @staticmethod
+    def _stage_cache_key(stage: BaseStage, func: Callable) -> tuple:
+        """
+        Build the remote-function cache key for a stage.
+
+        ``stage.version`` is a hash of the entire source *file*, so every stage
+        whose target lives in the same module shares it; the stage name alone is
+        then the only discriminator. Two stages with the same name and source
+        file but different target functions would otherwise collide and run the
+        wrong function. Including the target's qualified identity removes that
+        latent hazard.
+        """
+        return (
+            stage.name,
+            stage.version,
+            getattr(func, "__module__", ""),
+            getattr(func, "__qualname__", getattr(func, "__name__", "")),
+        )
+
+    def _base_remote(self, cache_key, func: Callable):
+        """
+        Return the cached *base* remote function for a stage, creating it once.
+
+        Only ``ray.remote(func)`` assigns a fresh UUID -> unique ``function_id``
+        that is exported to the GCS function table and never evicted, so *that*
+        is the part that must be cached to avoid leaking memory in this
+        long-lived driver process. ``max_calls`` is baked into the base because
+        it is a property of the stage code (worker recycling), not of a
+        particular submission's resources. Keying by ``cache_key`` (stage name +
+        source hash) keeps it to one entry per stage version while still picking
+        up new code when a plugin is updated.
+        """
+        base = self._remote_fn_cache.get(cache_key)
+        if base is None:
+            base = self._remote_fn_cache[cache_key] = (
+                ray.remote(max_calls=self._tasks_per_worker)(func)
+                if self._tasks_per_worker is not None
+                else ray.remote(func)
+            )
+        return base
+
     def _remote_fn(self, cache_key, func: Callable, options: dict):
         """
-        Return a wrapped remote function for the given stage, reusing a cached
-        one when available. ``ray.remote(func)`` assigns a fresh UUID on every
-        call, producing a unique ``function_id`` that is exported to the GCS
-        function table and never evicted -- so wrapping per submission leaks
-        memory in this long-lived driver process. Caching by ``cache_key``
-        (stage name + source hash) keeps it to one entry per stage version
-        while still picking up new code when a plugin is updated.
-        """
-        cached = self._remote_fn_cache.get(cache_key)
-        if cached is None:
-            cached = self._remote_fn_cache[cache_key] = self._wrap_remote(func, options)
-        return cached
+        Return a per-submission wrapped remote function for the given stage.
 
-    def _wrap_remote(self, func: Callable, options: dict):
+        The leaky ``ray.remote(func)`` export is cached by ``cache_key`` (see
+        ``_base_remote``), but ``.options(**options)`` is applied *fresh on every
+        submission*. Re-applying ``.options()`` to an already-created remote
+        function does NOT mint a new UUID or re-export to GCS, so it is free with
+        respect to the leak -- while ensuring each workflow's stage gets exactly
+        the resources/cpu/gpu/memory it declared. Caching the post-``.options()``
+        object instead would let two stages that share ``cache_key`` (same name +
+        same source file) but differ in options silently collide, with whichever
+        ran first after a restart freezing its resources onto the others.
         """
-        Wrap ``func`` as a Ray remote function, applying ``max_calls`` when
-        ``tasks_per_worker`` is configured. ``max_calls`` must be set on the
-        ``ray.remote(...)`` call -- it is silently dropped if passed through
-        ``.options()`` (see remote_function.py).
-        """
+        return self._base_remote(cache_key, func).options(**options)
+
+    def _create_lazy(self, func: Callable, **options):
         base = (
             ray.remote(max_calls=self._tasks_per_worker)(func)
             if self._tasks_per_worker is not None
             else ray.remote(func)
         )
         return base.options(**options)
-
-    def _create_lazy(self, func: Callable, **options):
-        return self._wrap_remote(func, options)
 
     def lazy(self, stage: BaseStage):
         func = stage.get_stage_fn()
@@ -718,7 +767,7 @@ class RayExecutor(Executor):
             "memory": stage.resources.memory,
         }
         call_attr = self._call_attr
-        cache_key = (stage.name, stage.version)
+        cache_key = self._stage_cache_key(stage, func)
 
         async def _submit(*args, **kwargs):
             def _do():
@@ -738,7 +787,7 @@ class RayExecutor(Executor):
             "memory": stage.resources.memory,
         }
         actor_name = self._mapper_actor_name
-        cache_key = (stage.name, stage.version)
+        cache_key = self._stage_cache_key(stage, func)
 
         allow_partial_failure = getattr(stage, "allow_partial_failure", True)
 
