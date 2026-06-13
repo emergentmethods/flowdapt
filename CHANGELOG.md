@@ -1,4 +1,14 @@
 
+<a name="0.1.52"></a>
+## [0.1.52](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.51...0.1.52)
+
+> 2026-06-13
+
+### Fix
+
+* Cache stages without the resource definitions, only check physical resources, let Ray handle logical resources
+
+
 <a name="0.1.51"></a>
 ## [0.1.51](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.50...0.1.51)
 
@@ -81,21 +91,11 @@
 
 
 <a name="0.1.43"></a>
-## [0.1.43](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.42...0.1.43)
+## 0.1.43
 
 > 2026-04-17
 
 ### Fix
 
 * Avoid calling remotes in the event loop
-
-
-<a name="0.1.42"></a>
-## 0.1.42
-
-> 2026-04-14
-
-### Fix
-
-* Ensure start up isnt interrupted by triggers firing
 
