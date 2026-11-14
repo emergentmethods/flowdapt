@@ -5,7 +5,7 @@
 include:
   - local: '.gitlab/templates.yml'
 
-image: python:3.11
+image: python:3.14
 
 stages:
   - general
