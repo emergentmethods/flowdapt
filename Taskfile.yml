@@ -13,7 +13,7 @@ vars:
   IMAGE_TAG:
     sh: echo "${IMAGE_TAG:-local}"
   DOCKER_BUILD_ARGS: ""
-  PYTHON_VERSION: 3.12
+  PYTHON_VERSION: 3.14
 
 
 tasks:

@@ -221,13 +221,14 @@ async def _run_workflow(
     span.set_attribute("workflow.run.uid", str(run.uid))
     span.set_attribute("workflow.run.started_at", str(run.started_at))
 
+    # The metrics SDK keeps one series per distinct set of attribute values for
+    # as long as the process lives, so nothing that identifies a single run
+    # (its uid, its start time) may go here. Those are on the span above.
     metrics_attributes = {
         "workflow.uid": str(definition.metadata.uid),
         "workflow.name": definition.metadata.name,
         "workflow.executor": executor.kind,
         "workflow.namespace": str(namespace),
-        "workflow.run.uid": str(run.uid),
-        "workflow.run.started_at": str(run.started_at),
         "workflow.run.source": str(run.source),
     }
 

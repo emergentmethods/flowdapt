@@ -25,6 +25,22 @@ meter = get_meter(__name__)
 
 TEventBus = TypeVar("TEventBus", bound="EventBus")
 
+_RESPONSE_EVENT_TYPE: str = ResponseEvent.model_fields["type"].default
+_REPLY_CHANNEL_LABEL = "$REPLY"
+
+
+def _metric_channel(event_type: str | None, channel: str) -> str:
+    """
+    The channel to record on a metric for an event.
+
+    The metrics SDK keeps one series per distinct set of attribute values for
+    as long as the process lives, so metric attributes must come from a small
+    fixed set. Channels do, except for replies: those are published on a
+    channel named after the request's correlation id, which is unique to each
+    request, so they are all recorded under one label.
+    """
+    return _REPLY_CHANNEL_LABEL if event_type == _RESPONSE_EVENT_TYPE else channel
+
 
 class EventBus:
     def __init__(
@@ -71,7 +87,7 @@ class EventBus:
             self._events_received.add(
                 1,
                 {
-                    "channel": channel,
+                    "channel": _metric_channel(event.get("type"), channel),
                     "event_type": event.get("type"),
                     "event_source": event.get("source"),
                 },
@@ -129,6 +145,14 @@ class EventBus:
                     "event_reply_channel": event.reply_channel or "",
                     "event_source": event.source,
                 }
+                # The span identifies the single event. The metric must not,
+                # see `_metric_channel`.
+                metric_attributes = {
+                    "callback_name": callback.name,
+                    "event_type": event.type,
+                    "event_channel": _metric_channel(event.type, event.channel),
+                    "event_source": event.source,
+                }
 
                 with tracer.start_as_current_span(
                     f"event_bus_callback_{callback.name}", context=ctx, attributes=event_attributes
@@ -137,7 +161,7 @@ class EventBus:
                     await callback(event)
                     latency = (process_time_ns() - start_time) / 1e6
 
-                    self._event_callback_latency.record(latency, event_attributes)
+                    self._event_callback_latency.record(latency, metric_attributes)
             except BaseException as e:
                 await logger.aexception(
                     "Exception occurred",
@@ -269,6 +293,13 @@ class EventBus:
             "event_reply_channel": event["reply_channel"] or "",
             "event_source": event["source"],
         }
+        # The span identifies the single event. The metric must not, see
+        # `_metric_channel`.
+        metric_attributes = {
+            "event_type": event["type"],
+            "event_channel": _metric_channel(event["type"], event["channel"]),
+            "event_source": event["source"],
+        }
 
         with tracer.start_as_current_span("event_bus_publish", attributes=event_attributes):
             if not event["trace_parent"]:
@@ -277,7 +308,7 @@ class EventBus:
             # Publish the Event on the broker
             await self._broker.publish(event, **kwargs)
             # Increment the published counter
-            self._events_published.add(1, event_attributes)
+            self._events_published.add(1, metric_attributes)
 
     async def publish_request_response(
         self, event: BaseEvent | dict, return_event: bool = False, **kwargs

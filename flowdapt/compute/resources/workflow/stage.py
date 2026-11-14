@@ -202,20 +202,20 @@ class ParameterizedStage(BaseStage):
     allow_partial_failure: bool = True
 
     @after_validator()
-    def _update_signature(cls, value: ParameterizedStage):
+    def _update_signature(self):
         # Update the signature to reflect this stage actually returns a list
         # of the original return type
-        if (map_on := value.map_on) and map_on in value.signature.parameters:
-            value.signature = remove_signature_parameter(value.signature, map_on)
+        if (map_on := self.map_on) and map_on in self.signature.parameters:
+            self.signature = remove_signature_parameter(self.signature, map_on)
 
         # Change the output value to reflect the change in behavior for this stage
-        value.signature = update_signature(
-            value.signature,
+        self.signature = update_signature(
+            self.signature,
             {
-                "return": list[value.signature.return_annotation],
+                "return": list[self.signature.return_annotation],
             },
         )
-        return value
+        return self
 
     def create_lazy(
         self, executor: Executor, context: WorkflowRunContext, args: list, kwargs: dict

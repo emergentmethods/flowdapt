@@ -1,6 +1,7 @@
 import pytest
 import ray
 import os
+import psutil
 
 from flowdapt.compute.executor.ray.cluster_memory import (
     RayClusterMemory,
@@ -70,4 +71,27 @@ def test_ray_cluster_memory_exists(cluster_memory: RayClusterMemory):
     assert not cluster_memory.exists('test_key')
 
     assert cluster_memory.get('test_key', namespace='test_namespace') == 'test_value2'
+
+
+def test_ray_cluster_memory_value_outlives_the_worker_that_put_it(
+    cluster_memory: RayClusterMemory
+):
+    # `max_calls=1` makes the worker process exit once it has run this task
+    @ray.remote(max_calls=1)
+    def put_from_short_lived_worker(actor_name: str) -> int:
+        os.environ["CM_ACTOR_NAME"] = actor_name
+        # Large enough to live in the object store rather than be inlined
+        RayClusterMemory().put('from_worker', 'x' * 1_000_000)
+        return os.getpid()
+
+    worker_pid = ray.get(put_from_short_lived_worker.remote(os.environ["CM_ACTOR_NAME"]))
+
+    deadline = time.monotonic() + 30
+    while psutil.pid_exists(worker_pid) and time.monotonic() < deadline:
+        time.sleep(0.2)
+
+    # The stored object belongs to the cluster memory actor, so it neither
+    # keeps the worker that put it alive nor goes away with that worker
+    assert not psutil.pid_exists(worker_pid)
+    assert cluster_memory.get('from_worker') == 'x' * 1_000_000
 

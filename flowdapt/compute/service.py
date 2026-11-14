@@ -1,4 +1,5 @@
 import asyncio
+from datetime import timedelta
 
 from flowdapt.compute.domain.models.workflowrun import WorkflowRun
 from flowdapt.compute.rpc import register_rpc
@@ -52,16 +53,18 @@ class ComputeService(Service):
     async def _expire_workflow_runs(self):
         retention_duration = self._config.services.compute.run_retention_duration
 
+        # 0 stores no runs and -1 keeps them forever, so there is nothing to
+        # expire. Any other value has been validated into a timedelta.
+        if not isinstance(retention_duration, timedelta):
+            return
+
         while not self._stopped.is_set():
             try:
-                if retention_duration <= 0:
-                    return
-
                 if runs := await WorkflowRun.get_by_age(self._db, retention_duration):
                     await logger.ainfo(
                         "ExpiringWorkflowRuns",
                         num_runs=len(runs),
-                        retention_duration=retention_duration,
+                        retention_duration=str(retention_duration),
                     )
                     await self._db.delete(runs)
             except asyncio.CancelledError:

@@ -98,8 +98,8 @@ class CallbackGroup:
         self.register_callback(
             self._callback_cls(
                 callback,
-                event.__fields__["channel"].default,
-                event.__fields__["type"].default,
+                event.model_fields["channel"].default,
+                event.model_fields["type"].default,
                 event,
             )
         )

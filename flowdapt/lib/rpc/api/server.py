@@ -1,5 +1,7 @@
 import asyncio
 import warnings
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import APIRouter, FastAPI, HTTPException
@@ -56,6 +58,15 @@ class APIServer:
     async def _api_shutdown_event(self) -> None:
         await logger.ainfo("APIServerStopped")
 
+    @asynccontextmanager
+    async def _lifespan(self, _app: FastAPI) -> AsyncIterator[None]:
+        # Starlette 1.0 removed add_event_handler/on_event; lifespan works on all versions.
+        await self._api_startup_event()
+        try:
+            yield
+        finally:
+            await self._api_shutdown_event()
+
     def _create_application(self, **kwargs):
         # Disable duplicate operation ID warnings
         warnings.filterwarnings(
@@ -70,6 +81,7 @@ class APIServer:
             # generated sdks so we need to do it all at once.
             # separate_input_output_schemas=False,
             default_response_class=ORJSONResponse,
+            lifespan=self._lifespan,
         )
 
         self._application.openapi = openapi_generator(
@@ -93,10 +105,6 @@ class APIServer:
 
         self._setup_middlewares(**kwargs)
         self._setup_exception_handlers()
-
-        # https://github.com/tiangolo/fastapi/issues/617
-        self._application.add_event_handler(event_type="startup", func=self._api_startup_event)
-        self._application.add_event_handler(event_type="shutdown", func=self._api_shutdown_event)
 
         # Prevent FastAPI from adding the root path to the servers in OpenAPI spec
         self._application.root_path_in_servers = False

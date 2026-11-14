@@ -68,7 +68,11 @@ class WorkflowRun(Document, ActiveRecordMixin):
         age: timedelta,
         workflow_name: str | None = None,
     ) -> list[T]:
-        query = Field.finished_at < (datetime.utcnow() - age)
+        # A run that has not finished has no `finished_at`. It is never old
+        # enough to expire, and comparing None with a datetime raises in the
+        # in-memory and TinyDB storages, so those runs are excluded first.
+        cutoff = datetime.utcnow() - age
+        query = (Field.finished_at != None) & (Field.finished_at < cutoff)  # noqa: E711
 
         if workflow_name:
             query &= Field.workflow == workflow_name

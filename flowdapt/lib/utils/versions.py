@@ -64,7 +64,7 @@ else:
             source_type: Any,
             handler: GetCoreSchemaHandler,
         ) -> CoreSchema:
-            return core_schema.general_plain_validator_function(cls._parse)
+            return core_schema.with_info_plain_validator_function(cls._parse)
 
 
 def parse_version(version: str, optional_minor_and_patch: bool = False) -> Version:

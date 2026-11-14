@@ -32,7 +32,7 @@ class EventStream:
 
         if schemas:
             self._event_schemas.update(
-                dict((event.__fields__["type"].get_default(), event) for event in schemas)
+                dict((event.model_fields["type"].get_default(), event) for event in schemas)
             )
 
     def _validate_event_schema(self, event: dict) -> BaseEvent:

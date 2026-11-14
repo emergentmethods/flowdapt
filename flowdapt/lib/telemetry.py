@@ -26,7 +26,6 @@ from opentelemetry.sdk.metrics import (
     MeterProvider,
 )
 from opentelemetry.sdk.metrics.export import (
-    ConsoleMetricExporter,
     MetricExporter,
     MetricExportResult,
     MetricsData,
@@ -36,7 +35,6 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
-    ConsoleSpanExporter,
     SpanExporter,
 )
 from opentelemetry.semconv.resource import ResourceAttributes
@@ -61,7 +59,16 @@ __all__ = (
 )
 
 
+# The SDK providers created by `setup_telemetry`, kept so that `shutdown_telemetry`
+# closes exactly what was started. `_meter_provider` stays None when telemetry is
+# disabled.
+_meter_provider: MeterProvider | None = None
+_tracer_provider: TracerProvider | None = None
+
+
 def setup_telemetry(config: Configuration):
+    global _meter_provider, _tracer_provider
+
     # Create the resource information for this node
     resource = Resource.create(
         {
@@ -71,11 +78,8 @@ def setup_telemetry(config: Configuration):
         }
     )
 
-    trace_exporter: SpanExporter
-    metrics_exporter: MetricExporter
-
-    # We always keep some metrics in memory to serve in the Rest API
-    # Create the in memory metrics container
+    # The Rest API serves metrics from this container, so it always exists.
+    # It is only filled when telemetry is enabled.
     set_metrics_container(
         MetricsContainer(
             # By default we only keep up to 6 hours of metrics
@@ -86,52 +90,61 @@ def setup_telemetry(config: Configuration):
         )
     )
 
-    # Setup the tracer provider
-    if config.telemetry.enabled:
-        kwargs = {
-            "endpoint": config.telemetry.endpoint,
-            "headers": config.telemetry.headers,
-            "timeout": config.telemetry.timeout,
-        }
+    _tracer_provider = TracerProvider(resource=resource)
 
-        # If enabled we're sending traces and metrics to the collector
-        match config.telemetry.protocol:
-            case TelemetryProtocol.grpc:
-                # Get the compression method
-                compression = {
-                    TelemetryCompression.gzip: grpc.Compression.Gzip,
-                    TelemetryCompression.deflate: grpc.Compression.Deflate,
-                    TelemetryCompression.none: grpc.Compression.NoCompression,
-                }[config.telemetry.compression]
-                trace_exporter = GRPCOTLPSpanExporter(
-                    compression=compression,
-                    **kwargs,  # type: ignore
-                )
-                metrics_exporter = GRPCOTLPMetricExporter(
-                    compression=compression,
-                    **kwargs,  # type: ignore
-                )
-            case TelemetryProtocol.http:
-                # TODO: The HTTP exporter fails to export when compression is passed
-                endpoint = kwargs.pop("endpoint")
-                trace_exporter = HTTPOTLPSpanExporter(
-                    # The collector expects the endpoint to include the full path
-                    endpoint=f"{endpoint}/v1/traces",
-                    **kwargs,  # type: ignore
-                )
-                metrics_exporter = HTTPOTLPMetricExporter(
-                    # The collector expects the endpoint to include the full path
-                    endpoint=f"{endpoint}/v1/metrics",
-                    **kwargs,  # type: ignore
-                )
-    else:
-        # If disabled we just dump the traces and metrics to null
-        trace_exporter = ConsoleSpanExporter(out=open(os.devnull, "w"))
-        metrics_exporter = ConsoleMetricExporter(out=open(os.devnull, "w"))
+    if not config.telemetry.enabled:
+        # Disabled means no metrics are collected at all. No MeterProvider is
+        # registered, so every meter in the application stays the OpenTelemetry
+        # API's no-op: nothing is aggregated, the system metrics are not sampled
+        # and no export threads are started.
+        #
+        # Spans are still created, since log lines and events carry their trace
+        # ids, but with no span processor attached they are dropped as soon as
+        # they end.
+        trace.set_tracer_provider(_tracer_provider)
+        return
 
-    # Create the trace and metrics providers
-    trace_provider = TracerProvider(resource=resource)
-    trace_provider.add_span_processor(
+    trace_exporter: SpanExporter
+    metrics_exporter: MetricExporter
+
+    kwargs = {
+        "endpoint": config.telemetry.endpoint,
+        "headers": config.telemetry.headers,
+        "timeout": config.telemetry.timeout,
+    }
+
+    # We're sending traces and metrics to the collector
+    match config.telemetry.protocol:
+        case TelemetryProtocol.grpc:
+            # Get the compression method
+            compression = {
+                TelemetryCompression.gzip: grpc.Compression.Gzip,
+                TelemetryCompression.deflate: grpc.Compression.Deflate,
+                TelemetryCompression.none: grpc.Compression.NoCompression,
+            }[config.telemetry.compression]
+            trace_exporter = GRPCOTLPSpanExporter(
+                compression=compression,
+                **kwargs,  # type: ignore
+            )
+            metrics_exporter = GRPCOTLPMetricExporter(
+                compression=compression,
+                **kwargs,  # type: ignore
+            )
+        case TelemetryProtocol.http:
+            # TODO: The HTTP exporter fails to export when compression is passed
+            endpoint = kwargs.pop("endpoint")
+            trace_exporter = HTTPOTLPSpanExporter(
+                # The collector expects the endpoint to include the full path
+                endpoint=f"{endpoint}/v1/traces",
+                **kwargs,  # type: ignore
+            )
+            metrics_exporter = HTTPOTLPMetricExporter(
+                # The collector expects the endpoint to include the full path
+                endpoint=f"{endpoint}/v1/metrics",
+                **kwargs,  # type: ignore
+            )
+
+    _tracer_provider.add_span_processor(
         BatchSpanProcessor(
             span_exporter=trace_exporter,
             max_queue_size=config.telemetry.trace_max_queue_size,
@@ -141,7 +154,7 @@ def setup_telemetry(config: Configuration):
         )
     )
 
-    metrics_provider = MeterProvider(
+    _meter_provider = MeterProvider(
         metric_readers=[
             PeriodicExportingMetricReader(
                 exporter=metrics_exporter,
@@ -161,8 +174,8 @@ def setup_telemetry(config: Configuration):
     SystemMetricsInstrumentor().instrument()
 
     # Set the providers as global
-    trace.set_tracer_provider(trace_provider)
-    metrics.set_meter_provider(metrics_provider)
+    trace.set_tracer_provider(_tracer_provider)
+    metrics.set_meter_provider(_meter_provider)
 
     # Sometimes a transient error will pop up randomly, see the following issue:
     # https://github.com/open-telemetry/opentelemetry-collector/issues/6363
@@ -170,13 +183,20 @@ def setup_telemetry(config: Configuration):
 
 
 def shutdown_telemetry() -> None:
+    global _meter_provider, _tracer_provider
+
     # https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#retry
     # https://github.com/open-telemetry/opentelemetry-python/issues/3309
     # If the exporters have not been able to connect to the collector
     # then it will be stuck in a loop during shutdown for at least 30 seconds
     # before it finally gets killed.
-    metrics.get_meter_provider().shutdown(timeout_millis=1000)  # type: ignore
-    trace.get_tracer_provider().shutdown()  # type: ignore
+    if _meter_provider is not None:
+        _meter_provider.shutdown(timeout_millis=1000)
+        _meter_provider = None
+
+    if _tracer_provider is not None:
+        _tracer_provider.shutdown()
+        _tracer_provider = None
 
 
 def get_tracer(name: str, version: str = "") -> Tracer:

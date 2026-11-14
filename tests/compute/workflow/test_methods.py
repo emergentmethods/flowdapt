@@ -2,7 +2,7 @@ import pytest
 import asyncio
 from datetime import datetime
 from uuid import UUID
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 from flowdapt.compute.domain.models.workflow import (
     WorkflowResource,

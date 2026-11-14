@@ -102,9 +102,9 @@ class LoggingSettings(BaseModel):
     traceback_max_frames: int = 10
 
     @after_validator()
-    def _validate(cls, value: LoggingSettings):
-        value.level = value.level.upper()
-        return value
+    def _validate(self):
+        self.level = self.level.upper()
+        return self
 
 
 # ------------------------------ RPC -----------------------------
