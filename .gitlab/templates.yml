@@ -107,7 +107,7 @@ before_script: !reference [.global_before_script, before_script]
   stage: build
   script:
     - echo $CI_GHCR_PAT | docker login $CI_GHCR_REGISTRY -u $CI_GHCR_USER --password-stdin
-    - task build-docker-docs IMAGE_NAME=$CI_GHCR_IMAGE IMAGE_TAG=$CI_COMMIT_SHORT_SHA PYTHON_VERSION=3.11 DOCKER_BUILD_ARGS="--pull"
+    - task build-docker-docs IMAGE_NAME=$CI_GHCR_IMAGE IMAGE_TAG=$CI_COMMIT_SHORT_SHA PYTHON_VERSION=3.14 DOCKER_BUILD_ARGS="--pull"
     - docker push "$CI_GHCR_IMAGE" --all-tags
 
 .build_docs: &build_docs
@@ -156,7 +156,7 @@ before_script: !reference [.global_before_script, before_script]
 
 .lint_commit: &lint_commit
   stage: .pre
-  image: python:3.11
+  image: python:3.14
   script:
     - |
       # Get the commit message of the last commit
