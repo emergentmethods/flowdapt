@@ -1,4 +1,16 @@
 
+<a name="0.1.53"></a>
+## [0.1.53](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.52...0.1.53)
+
+> 2026-11-14
+
+### Fix
+
+* Bump python on all stages
+* Bump python
+* Address memory leak, bump Ray to v2.60.0
+
+
 <a name="0.1.52"></a>
 ## [0.1.52](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.51...0.1.52)
 
@@ -71,31 +83,11 @@
 
 
 <a name="0.1.45"></a>
-## [0.1.45](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.44...0.1.45)
+## 0.1.45
 
 > 2026-05-10
 
 ### Fix
 
 * Connection recovery, improve cluster memory handling
-
-
-<a name="0.1.44"></a>
-## [0.1.44](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.43...0.1.44)
-
-> 2026-04-24
-
-### Fix
-
-* Ensure mapper actor spins up new with each plugin to guarantee env updates on version push
-
-
-<a name="0.1.43"></a>
-## 0.1.43
-
-> 2026-04-17
-
-### Fix
-
-* Avoid calling remotes in the event loop
 
