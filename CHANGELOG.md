@@ -1,4 +1,14 @@
 
+<a name="0.1.54"></a>
+## [0.1.54](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.53...0.1.54)
+
+> 2026-11-16
+
+### Fix
+
+* Full docker build and ensure runtime_env works with ray 2.60.0
+
+
 <a name="0.1.53"></a>
 ## [0.1.53](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.52...0.1.53)
 
@@ -73,21 +83,11 @@
 
 
 <a name="0.1.46"></a>
-## [0.1.46](https://gitlab.com/emergentmethods/flowdapt/compare/0.1.45...0.1.46)
+## 0.1.46
 
 > 2026-05-24
 
 ### Fix
 
 * Move node check out of the environmnet_info()
-
-
-<a name="0.1.45"></a>
-## 0.1.45
-
-> 2026-05-10
-
-### Fix
-
-* Connection recovery, improve cluster memory handling
 
