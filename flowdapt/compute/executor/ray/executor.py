@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from enum import Enum
+from types import ModuleType
 from uuid import uuid4
 from typing import Any, AsyncIterator, Callable
 
@@ -28,6 +29,22 @@ from flowdapt.lib.utils.model import model_dump
 
 
 logger = get_logger(__name__)
+
+
+def _module_path(module: ModuleType) -> str:
+    """
+    The local path Ray uploads for a module in ``py_modules``, resolved the same
+    way Ray does it. Ray 2.60's Ray Client uv hook deep-copies the runtime_env,
+    and module objects can't be deep-copied, so pass the path string instead.
+    """
+    if not hasattr(module, "__path__"):
+        return module.__file__
+    paths = list(module.__path__)
+    if len(paths) != 1:
+        raise ValueError(
+            f"py_modules needs a module with a single __path__, {module.__name__} has {paths}"
+        )
+    return paths[0]
 
 
 @ray.remote
@@ -296,23 +313,26 @@ class RayExecutor(Executor):
         self._ping_failure_threshold = ping_failure_threshold
 
     def _get_runtime_env(self) -> dict:
-        py_modules = self._config["py_modules"] or []
-        pip = self._config["pip"] or []
+        # Copy so repeated calls don't keep appending to the configured lists.
+        py_modules = list(self._config["py_modules"] or [])
+        pip = list(self._config["pip"] or [])
 
         if not self._is_local and self._config["upload_plugins"]:
-            # Pass the module object itself and the list of
+            # Pass the plugin module and the list of
             # requirements as pip installs until https://github.com/ray-project/ray/issues/35559
             for plugin in list_plugins():
                 # TODO: Add support for checking if user already specified a module and a version
                 # Pass the plugin module to the worker
-                py_modules.append(plugin.module)
+                py_modules.append(_module_path(plugin.module))
                 # Ensure requirements are installed
                 pip.extend(plugin.metadata.requirements)
 
         if get_user_modules_dir():
             # Upload the user modules module to the worker
             # if it exists
-            py_modules.append(import_from_string("user_modules", is_module=True))
+            py_modules.append(
+                _module_path(import_from_string("user_modules", is_module=True))
+            )
 
         env = {
             "conda": self._config["conda"],
